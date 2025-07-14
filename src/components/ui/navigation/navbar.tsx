@@ -6,6 +6,8 @@ import { NavbarLinks } from './navbar-links'
 import {useColorModeValue} from "@/components/ui/color-mode";
 import {LuWallet} from "react-icons/lu";
 import {SettingsToggle} from "@/components/ui/settings";
+import { Sidebar } from "@/components/ui/sidebar/sidebar";
+import { WalletSidebarContent } from "@/components/ui/sidebar/wallet-sidebar";
 
 export const TopNavBar = () => {
     return (
@@ -22,7 +24,19 @@ export const TopNavBar = () => {
                     <Spacer hideFrom="md" />
                     <NavbarLinks hideBelow="md" />
                     <Box display={"flex"} gap={{ base: 1, md: 4}}>
-                        <Button size={{ base: 'sm', md: 'md' }}><LuWallet /> Wallet</Button>
+                        {/* Wallet Sidebar */}
+                        <Sidebar
+                            ariaLabel="Wallet"
+                            trigger={
+                                <Button size={{ base: 'sm', md: 'md' }}>
+                                    <LuWallet /> Wallet
+                                </Button>
+                            }
+                        >
+                            <WalletSidebarContent />
+                        </Sidebar>
+
+                        {/* Settings Sidebar */}
                         <ClientOnly fallback={<Skeleton  w="10" h="10" rounded="md" />}>
                             <SettingsToggle />
                         </ClientOnly>
