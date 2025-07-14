@@ -7,51 +7,86 @@ import {
     Switch,
     Button,
     Separator,
-    Select,
     Box,
-    createListCollection
+    Input,
+    Alert
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSettings } from '@/hooks/useSettings'
+import { validateEndpoints } from '@/utils/validation'
+import { EndpointValidationResults } from '@/types/settings'
 
 export const SettingsSidebarContent = () => {
     const { theme, setTheme } = useTheme()
-    const [notifications, setNotifications] = useState(true)
-    const [autoSave, setAutoSave] = useState(false)
-    const [language, setLanguage] = useState('en')
+    const { settings, isLoaded, updateEndpoints, resetToDefaults } = useSettings()
 
-    // Create collection for language select
-    const languageCollection = createListCollection({
-        items: [
-            { label: "English", value: "en" },
-            { label: "Spanish", value: "es" },
-            { label: "French", value: "fr" },
-            { label: "German", value: "de" },
-            { label: "Romanian", value: "ro" },
-        ],
-    })
+    // Local form state
+    const [restEndpoint, setRestEndpoint] = useState('')
+    const [rpcEndpoint, setRpcEndpoint] = useState('')
+    const [isValidating, setIsValidating] = useState(false)
+    const [validationResults, setValidationResults] = useState<EndpointValidationResults>({})
 
-    const handleSave = () => {
-        // Here you would save the settings to your backend/storage
-        console.log('Settings saved:', {
-            theme,
-            notifications,
-            autoSave,
-            language
+    // Initialize form with loaded settings
+    useEffect(() => {
+        if (isLoaded) {
+            setRestEndpoint(settings.endpoints.restEndpoint)
+            setRpcEndpoint(settings.endpoints.rpcEndpoint)
+        }
+    }, [isLoaded, settings])
+
+    const handleValidateEndpoints = async () => {
+        setIsValidating(true)
+        setValidationResults({})
+
+        try {
+            const results = await validateEndpoints(restEndpoint, rpcEndpoint)
+            setValidationResults({
+                rest: results.rest,
+                rpc: results.rpc
+            })
+        } catch (error) {
+            console.error(error)
+
+            setValidationResults({
+                rest: { isValid: false, error: 'Validation failed' },
+                rpc: { isValid: false, error: 'Validation failed' }
+            })
+        } finally {
+            setIsValidating(false)
+        }
+    }
+
+    const handleSaveEndpoints = () => {
+        const success = updateEndpoints({
+            restEndpoint: restEndpoint.trim(),
+            rpcEndpoint: rpcEndpoint.trim()
         })
-        // You could show a toast notification here
+
+        if (success) {
+            console.log('Endpoints saved successfully')
+        } else {
+            console.error('Failed to save endpoints')
+        }
     }
 
-    const handleReset = () => {
-        setTheme('light')
-        setNotifications(true)
-        setAutoSave(false)
-        setLanguage('en')
+    const handleResetToDefaults = () => {
+        const success = resetToDefaults()
+        if (success) {
+            setRestEndpoint(settings.endpoints.restEndpoint)
+            setRpcEndpoint(settings.endpoints.rpcEndpoint)
+            setValidationResults({})
+            console.log('Settings reset to defaults')
+        }
     }
+
+    const hasUnsavedChanges =
+        restEndpoint !== settings.endpoints.restEndpoint ||
+        rpcEndpoint !== settings.endpoints.rpcEndpoint
 
     return (
         <VStack gap="6" align="stretch" height="100%">
-            {/* Theme Setting */}
+            {/* Appearance Section */}
             <Box>
                 <Text fontSize="sm" fontWeight="medium" mb="3">
                     Appearance
@@ -61,8 +96,8 @@ export const SettingsSidebarContent = () => {
                         <Text fontSize="sm">Dark Mode</Text>
                         <Switch.Root
                             checked={theme === 'dark'}
-                            onCheckedChange={(checked) =>
-                                setTheme(checked ? 'dark' : 'light')
+                            onCheckedChange={(details) =>
+                                setTheme(details.checked ? 'dark' : 'light')
                             }
                         >
                             <Switch.Control>
@@ -75,77 +110,89 @@ export const SettingsSidebarContent = () => {
 
             <Separator />
 
-            {/* Notifications */}
-            <Box>
+            {/* BeeZee Endpoints Section */}
+            <Box flex="1" minHeight="0">
                 <Text fontSize="sm" fontWeight="medium" mb="3">
-                    Notifications
+                    BeeZee Endpoints
                 </Text>
-                <VStack gap="3" align="stretch">
-                    <HStack justify="space-between">
-                        <Text fontSize="sm">Enable Notifications</Text>
-                        <Switch.Root
-                            checked={notifications}
-                            onCheckedChange={(details) => setNotifications(details.checked)}
-                        >
-                            <Switch.Control>
-                                <Switch.Thumb />
-                            </Switch.Control>
-                        </Switch.Root>
-                    </HStack>
-                </VStack>
-            </Box>
 
-            <Separator />
-
-            {/* Preferences */}
-            <Box>
-                <Text fontSize="sm" fontWeight="medium" mb="3">
-                    Preferences
-                </Text>
-                <VStack gap="3" align="stretch">
-                    <HStack justify="space-between">
-                        <Text fontSize="sm">Auto-save</Text>
-                        <Switch.Root
-                            checked={autoSave}
-                            onCheckedChange={(details) => setAutoSave(details.checked)}
-                        >
-                            <Switch.Control>
-                                <Switch.Thumb />
-                            </Switch.Control>
-                        </Switch.Root>
-                    </HStack>
-
+                <VStack gap="4" align="stretch">
+                    {/* REST Endpoint */}
                     <Box>
-                        <Text fontSize="sm" mb="2">Language</Text>
-                        <Select.Root
-                            collection={languageCollection}
+                        <Text fontSize="sm" mb="1">REST Endpoint</Text>
+                        <Text fontSize="xs" color="fg.muted" mb="2">
+                            Note: Endpoint must have CORS enabled to work in browser
+                        </Text>
+                        <Input
                             size="sm"
-                            value={[language]}
-                            onValueChange={(details) => setLanguage(details.value[0])}
-                        >
-                            <Select.Trigger>
-                                <Select.ValueText placeholder="Select language" />
-                            </Select.Trigger>
-                            <Select.Content>
-                                {languageCollection.items.map((item) => (
-                                    <Select.Item key={item.value} item={item}>
-                                        {item.label}
-                                    </Select.Item>
-                                ))}
-                            </Select.Content>
-                        </Select.Root>
+                            placeholder="https://rest.getbze.com"
+                            value={restEndpoint}
+                            onChange={(e) => setRestEndpoint(e.target.value)}
+                        />
+                        {validationResults.rest && (
+                            <Box mt="2">
+                                <Alert.Root
+                                    status={validationResults.rest.isValid ? "success" : "error"}
+                                    size="sm"
+                                >
+                                    <Alert.Indicator />
+                                    <Alert.Description>
+                                        {validationResults.rest.error || 'REST endpoint is valid'}
+                                    </Alert.Description>
+                                </Alert.Root>
+                            </Box>
+                        )}
                     </Box>
+
+                    {/* RPC Endpoint */}
+                    <Box>
+                        <Text fontSize="sm" mb="1">RPC Endpoint</Text>
+                        <Text fontSize="xs" color="fg.muted" mb="2">
+                            Note: Must support WebSocket (WS/WSS) connections
+                        </Text>
+                        <Input
+                            size="sm"
+                            placeholder="wss://rpc.getbze.com"
+                            value={rpcEndpoint}
+                            onChange={(e) => setRpcEndpoint(e.target.value)}
+                        />
+                        {validationResults.rpc && (
+                            <Box mt="2">
+                                <Alert.Root
+                                    status={validationResults.rpc.isValid ? "success" : "error"}
+                                    size="sm"
+                                >
+                                    <Alert.Indicator />
+                                    <Alert.Description>
+                                        {validationResults.rpc.error || 'RPC endpoint is valid'}
+                                    </Alert.Description>
+                                </Alert.Root>
+                            </Box>
+                        )}
+                    </Box>
+
+                    {/* Validation Button */}
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleValidateEndpoints}
+                        loading={isValidating}
+                        disabled={!restEndpoint.trim() || !rpcEndpoint.trim()}
+                    >
+                        {isValidating ? 'Validating...' : 'Validate Endpoints'}
+                    </Button>
                 </VStack>
             </Box>
 
             {/* Action Buttons */}
-            <Box mt="auto" pt="4">
+            <Box>
                 <VStack gap="3">
                     <Button
                         size="sm"
                         width="full"
-                        onClick={handleSave}
+                        onClick={handleSaveEndpoints}
                         colorPalette="blue"
+                        disabled={!hasUnsavedChanges}
                     >
                         Save Settings
                     </Button>
@@ -153,7 +200,7 @@ export const SettingsSidebarContent = () => {
                         size="sm"
                         width="full"
                         variant="outline"
-                        onClick={handleReset}
+                        onClick={handleResetToDefaults}
                     >
                         Reset to Defaults
                     </Button>
