@@ -11,18 +11,18 @@ import {
   Input,
   Switch,
   Collapsible,
-  Slider,
   Badge,
   Flex,
   Select,
-  Image,
+  Image, Spacer,
 } from '@chakra-ui/react';
+import { Tooltip } from '@/components/ui/tooltip';
 import {
   LuArrowUpDown,
   LuSettings,
   LuChevronDown,
   LuChevronUp,
-  LuArrowRight,
+  LuArrowRight, LuInfo,
 } from 'react-icons/lu';
 import { useState } from 'react';
 
@@ -62,7 +62,7 @@ const mockRoutes: Route[] = [
   },
 ];
 
-const slippagePresets = [0.1, 0.5, 1, 2, 5];
+const slippagePresets = [1, 2, 5];
 
 export default function SwapPage() {
   const [fromAsset, setFromAsset] = useState<Asset>(mockAssets[0]);
@@ -101,6 +101,12 @@ export default function SwapPage() {
     if (!isNaN(numValue) && numValue > 0 && numValue <= 50) {
       setSlippage(numValue);
     }
+  };
+
+  const calculateUSDValue = (amount: string, asset: Asset) => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) return null;
+    return (numAmount * asset.price).toFixed(2);
   };
 
   const filterAssets = (searchTerm: string) => {
@@ -338,19 +344,28 @@ export default function SwapPage() {
                         </Box>
 
                         <HStack justify="space-between" align="center">
-                          <Text fontSize="sm" fontWeight="medium">Use Order Book</Text>
-                          <Switch.Root
-                              checked={useOrderBook}
-                              onCheckedChange={(details) => {
-                                console.log('Switch changed:', details);
-                                setUseOrderBook(details.checked);
-                              }}
+                          <Tooltip
+                              content="The app will try to match order book pairs for best prices"
+                              showArrow
                           >
-                            <Switch.Control>
-                              <Switch.Thumb />
-                            </Switch.Control>
-                            <Switch.HiddenInput />
-                          </Switch.Root>
+                            <Box display={'flex'} flexDirection="row" alignContent={"center"} alignItems={"center"}>
+                              <LuInfo />
+                              <Spacer />
+                              <Text fontSize="sm" fontWeight="medium">Use Order Book</Text>
+                            </Box>
+                          </Tooltip>
+                            <Switch.Root
+                                checked={useOrderBook}
+                                onCheckedChange={(details) => {
+                                  console.log('Switch changed:', details);
+                                  setUseOrderBook(details.checked);
+                                }}
+                            >
+                              <Switch.Control>
+                                <Switch.Thumb />
+                              </Switch.Control>
+                              <Switch.HiddenInput />
+                            </Switch.Root>
                         </HStack>
                       </VStack>
                     </Card.Root>
@@ -368,14 +383,20 @@ export default function SwapPage() {
                       isOpen={fromSelectOpen}
                       setIsOpen={setFromSelectOpen}
                   />
-                  <Input
-                      mt="2"
-                      placeholder="0.0"
-                      value={fromAmount}
-                      onChange={(e) => setFromAmount(e.target.value)}
-                      fontSize="lg"
-                      textAlign="right"
-                  />
+                  <VStack gap="1" align="stretch" mt="2">
+                    <Input
+                        placeholder="0.0"
+                        value={fromAmount}
+                        onChange={(e) => setFromAmount(e.target.value)}
+                        fontSize="lg"
+                        textAlign="right"
+                    />
+                    {fromAmount && calculateUSDValue(fromAmount, fromAsset) && (
+                        <Text fontSize="sm" color="fg.muted" textAlign="right">
+                          ≈ ${calculateUSDValue(fromAmount, fromAsset)} USD
+                        </Text>
+                    )}
+                  </VStack>
                 </Box>
 
                 {/* Swap Button */}
@@ -405,15 +426,20 @@ export default function SwapPage() {
                       isOpen={toSelectOpen}
                       setIsOpen={setToSelectOpen}
                   />
-                  <Input
-                      mt="2"
-                      placeholder="0.0"
-                      value={toAmount}
-                      onChange={(e) => setToAmount(e.target.value)}
-                      fontSize="lg"
-                      textAlign="right"
-                      readOnly
-                  />
+                  <VStack gap="1" align="stretch" mt="2">
+                    <Input
+                        placeholder="0.0"
+                        value={toAmount}
+                        onChange={(e) => setToAmount(e.target.value)}
+                        fontSize="lg"
+                        textAlign="right"
+                    />
+                    {toAmount && calculateUSDValue(toAmount, toAsset) && (
+                        <Text fontSize="sm" color="fg.muted" textAlign="right">
+                          ≈ ${calculateUSDValue(toAmount, toAsset)} USD
+                        </Text>
+                    )}
+                  </VStack>
                 </Box>
 
                 {/* Estimated Output & Price Impact */}
