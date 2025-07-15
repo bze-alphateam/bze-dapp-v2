@@ -1,3 +1,4 @@
+// src/components/ui/sidebar/settings-sidebar.tsx
 'use client'
 
 import {
@@ -9,14 +10,95 @@ import {
     Separator,
     Box,
     Input,
-    Alert
+    Alert,
+    Drawer,
+    IconButton,
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
 import { useState, useEffect } from 'react'
-import { useSettings } from '../../../hooks/useSettings'
-import { validateEndpoints } from '../../../utils/validation'
-import { EndpointValidationResults } from '../../../types/settings'
+import { useSettings } from '@/hooks/useSettings'
+import { validateEndpoints } from '@/utils/validation'
+import { EndpointValidationResults } from '@/types/settings'
+import { LuSettings, LuX } from 'react-icons/lu'
 
+// Main Settings Sidebar Drawer Component
+interface SettingsSidebarProps {
+    isOpen: boolean
+    onClose: () => void
+}
+
+export const SettingsSidebar = ({ isOpen, onClose }: SettingsSidebarProps) => {
+    return (
+        <Drawer.Root
+            open={isOpen}
+            onOpenChange={({ open }) => !open && onClose()}
+            placement="end"
+            size={{ base: 'full', md: 'md' }}
+        >
+            <Drawer.Backdrop />
+            <Drawer.Positioner>
+                <Drawer.Content>
+                    {/* Fixed Header */}
+                    <Drawer.Header borderBottomWidth="1px">
+                        <HStack justify="space-between" w="full">
+                            <HStack gap="2">
+                                <LuSettings size="20" />
+                                <Drawer.Title fontSize="lg" fontWeight="semibold">
+                                    Settings
+                                </Drawer.Title>
+                            </HStack>
+                            <Drawer.CloseTrigger asChild>
+                                <IconButton
+                                    aria-label="Close settings"
+                                    size="sm"
+                                    variant="ghost"
+                                >
+                                    <LuX size="16" />
+                                </IconButton>
+                            </Drawer.CloseTrigger>
+                        </HStack>
+                    </Drawer.Header>
+
+                    {/* Scrollable Body */}
+                    <Drawer.Body
+                        p="0"
+                        display="flex"
+                        flexDirection="column"
+                        minHeight="0"
+                        height="100%"
+                    >
+                        <Box
+                            flex="1"
+                            overflowY="auto"
+                            overflowX="hidden"
+                            p="6"
+                            css={{
+                                '&::-webkit-scrollbar': {
+                                    width: '6px',
+                                },
+                                '&::-webkit-scrollbar-track': {
+                                    background: 'var(--chakra-colors-bg-subtle)',
+                                    borderRadius: '3px',
+                                },
+                                '&::-webkit-scrollbar-thumb': {
+                                    background: 'var(--chakra-colors-border-subtle)',
+                                    borderRadius: '3px',
+                                },
+                                '&::-webkit-scrollbar-thumb:hover': {
+                                    background: 'var(--chakra-colors-border)',
+                                },
+                            }}
+                        >
+                            <SettingsSidebarContent />
+                        </Box>
+                    </Drawer.Body>
+                </Drawer.Content>
+            </Drawer.Positioner>
+        </Drawer.Root>
+    )
+}
+
+// Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
     const { theme, setTheme } = useTheme()
     const { settings, isLoaded, updateEndpoints, resetToDefaults } = useSettings()
@@ -84,7 +166,7 @@ export const SettingsSidebarContent = () => {
         rpcEndpoint !== settings.endpoints.rpcEndpoint
 
     return (
-        <VStack gap="6" align="stretch" height="100%">
+        <VStack gap="6" align="stretch">
             {/* Appearance Section */}
             <Box>
                 <Text fontSize="sm" fontWeight="medium" mb="3">
@@ -112,7 +194,7 @@ export const SettingsSidebarContent = () => {
             <Separator />
 
             {/* BeeZee Endpoints Section */}
-            <Box flex="1" minHeight="0">
+            <Box>
                 <Text fontSize="sm" fontWeight="medium" mb="3">
                     BeeZee Endpoints
                 </Text>
