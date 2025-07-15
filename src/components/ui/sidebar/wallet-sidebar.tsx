@@ -13,9 +13,11 @@ import {
     Select,
     Image,
     createListCollection,
-    Portal
+    Portal,
+    Drawer,
+    IconButton,
 } from '@chakra-ui/react'
-import { LuCopy, LuExternalLink } from 'react-icons/lu'
+import { LuCopy, LuExternalLink, LuWallet, LuX } from 'react-icons/lu'
 import { useState, useRef } from 'react'
 
 // Mock token data - replace with real data from your wallet/API
@@ -65,7 +67,6 @@ const mockTokens = [
         isIBC: true,
         originalChain: 'Secret Network'
     },
-
 ]
 
 // Mock IBC chains
@@ -78,6 +79,84 @@ const mockIBCChains = [
 
 type ViewState = 'balances' | 'send' | 'ibcSend' | 'ibcDeposit'
 
+// Main Wallet Sidebar Drawer Component
+interface WalletSidebarProps {
+    isOpen: boolean
+    onClose: () => void
+}
+
+export const WalletSidebar = ({ isOpen, onClose }: WalletSidebarProps) => {
+    return (
+        <Drawer.Root
+            open={isOpen}
+            onOpenChange={({ open }) => !open && onClose()}
+            placement="end"
+            size={{ base: 'full', md: 'md' }}
+        >
+            <Drawer.Backdrop />
+            <Drawer.Positioner>
+                <Drawer.Content>
+                    {/* Fixed Header */}
+                    <Drawer.Header borderBottomWidth="1px">
+                        <HStack justify="space-between" w="full">
+                            <HStack gap="2">
+                                <LuWallet size="20" />
+                                <Drawer.Title fontSize="lg" fontWeight="semibold">
+                                    Wallet
+                                </Drawer.Title>
+                            </HStack>
+                            <Drawer.CloseTrigger asChild>
+                                <IconButton
+                                    aria-label="Close wallet"
+                                    size="sm"
+                                    variant="ghost"
+                                >
+                                    <LuX size="16" />
+                                </IconButton>
+                            </Drawer.CloseTrigger>
+                        </HStack>
+                    </Drawer.Header>
+
+                    {/* Scrollable Body */}
+                    <Drawer.Body
+                        p="0"
+                        display="flex"
+                        flexDirection="column"
+                        minHeight="0"
+                        height="100%"
+                    >
+                        <Box
+                            flex="1"
+                            overflowY="auto"
+                            overflowX="hidden"
+                            p="6"
+                            css={{
+                                '&::-webkit-scrollbar': {
+                                    width: '6px',
+                                },
+                                '&::-webkit-scrollbar-track': {
+                                    background: 'var(--chakra-colors-bg-subtle)',
+                                    borderRadius: '3px',
+                                },
+                                '&::-webkit-scrollbar-thumb': {
+                                    background: 'var(--chakra-colors-border-subtle)',
+                                    borderRadius: '3px',
+                                },
+                                '&::-webkit-scrollbar-thumb:hover': {
+                                    background: 'var(--chakra-colors-border)',
+                                },
+                            }}
+                        >
+                            <WalletSidebarContent />
+                        </Box>
+                    </Drawer.Body>
+                </Drawer.Content>
+            </Drawer.Positioner>
+        </Drawer.Root>
+    )
+}
+
+// Updated Wallet Sidebar Content Component (now fully scrollable)
 export const WalletSidebarContent = () => {
     const [viewState, setViewState] = useState<ViewState>('balances')
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
@@ -188,73 +267,60 @@ export const WalletSidebarContent = () => {
     }
 
     const renderBalancesView = () => (
-        <>
-            {/* Token Balances */}
-            <Box flex="1" minHeight="0">
+        <VStack gap="6" align="stretch">
+            {/* Token Balances Section */}
+            <Box>
                 <Text fontSize="sm" fontWeight="medium" mb="3">
                     Balances
                 </Text>
-                <Box
-                    overflowY="auto"
-                    maxHeight="100%"
-                    css={{
-                        '&::-webkit-scrollbar': {
-                            width: '6px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                            background: 'var(--chakra-colors-bg-subtle)',
-                            borderRadius: '3px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                            background: 'var(--chakra-colors-border-subtle)',
-                            borderRadius: '3px',
-                        },
-                        '&::-webkit-scrollbar-thumb:hover': {
-                            background: 'var(--chakra-colors-border)',
-                        },
-                    }}
-                >
-                    <VStack gap="2" align="stretch">
-                        {mockTokens.map((token, index) => (
-                            <Box
-                                key={index}
-                                p="3"
-                                bg="bg.subtle"
-                                borderRadius="md"
-                                borderWidth="1px"
-                            >
-                                <HStack justify="space-between" mb="1">
-                                    <HStack gap="2">
-                                        <Image
-                                            src={token.logo}
-                                            alt={token.symbol}
-                                            width="20px"
-                                            height="20px"
-                                            borderRadius="full"
-                                        />
-                                        <Text fontSize="sm" fontWeight="medium">
-                                            {token.symbol}
-                                        </Text>
-                                        <Text fontSize="xs" color="fg.muted">
-                                            {token.name}
-                                        </Text>
-                                    </HStack>
-                                </HStack>
-                                <HStack justify="space-between">
-                                    <Text fontSize="sm" fontFamily="mono">
-                                        {token.balance}
+                <VStack gap="2" align="stretch">
+                    {mockTokens.map((token, index) => (
+                        <Box
+                            key={index}
+                            p="3"
+                            bg="bg.subtle"
+                            borderRadius="md"
+                            borderWidth="1px"
+                            _hover={{ bg: 'bg.muted' }}
+                            cursor="pointer"
+                            transition="background-color 0.2s"
+                        >
+                            <HStack justify="space-between" mb="1">
+                                <HStack gap="2">
+                                    <Image
+                                        src={token.logo}
+                                        alt={token.symbol}
+                                        width="20px"
+                                        height="20px"
+                                        borderRadius="full"
+                                    />
+                                    <Text fontSize="sm" fontWeight="medium">
+                                        {token.symbol}
                                     </Text>
-                                    <Text fontSize="sm" color="fg.muted">
-                                        {token.value}
+                                    <Text fontSize="xs" color="fg.muted">
+                                        {token.name}
                                     </Text>
+                                    {token.isIBC && (
+                                        <Badge size="xs" colorPalette="blue">
+                                            IBC
+                                        </Badge>
+                                    )}
                                 </HStack>
-                            </Box>
-                        ))}
-                    </VStack>
-                </Box>
+                            </HStack>
+                            <HStack justify="space-between">
+                                <Text fontSize="sm" fontFamily="mono">
+                                    {token.balance}
+                                </Text>
+                                <Text fontSize="sm" color="fg.muted">
+                                    {token.value}
+                                </Text>
+                            </HStack>
+                        </Box>
+                    ))}
+                </VStack>
             </Box>
 
-            {/* Quick Actions */}
+            {/* Quick Actions Section */}
             <Box>
                 <Text fontSize="sm" fontWeight="medium" mb="3">
                     Quick Actions
@@ -264,6 +330,7 @@ export const WalletSidebarContent = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => setViewState('send')}
+                        w="full"
                     >
                         Send
                     </Button>
@@ -271,6 +338,7 @@ export const WalletSidebarContent = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => setViewState('ibcSend')}
+                        w="full"
                     >
                         IBC Send
                     </Button>
@@ -278,353 +346,391 @@ export const WalletSidebarContent = () => {
                         size="sm"
                         variant="outline"
                         onClick={() => setViewState('ibcDeposit')}
+                        w="full"
                     >
                         IBC Deposit
                     </Button>
                     <Button
                         size="sm"
                         variant="outline"
+                        w="full"
                     >
                         <LuExternalLink />
                         View on Explorer
                     </Button>
                 </VStack>
             </Box>
-        </>
+
+            {/* Disconnect Button */}
+            <Box>
+                <Button
+                    size="sm"
+                    width="full"
+                    variant="outline"
+                    colorPalette="red"
+                    onClick={handleDisconnect}
+                >
+                    Disconnect Wallet
+                </Button>
+            </Box>
+        </VStack>
     )
 
     const renderSendForm = () => (
-        <Box flex="1" minHeight="0">
-            <Text fontSize="sm" fontWeight="medium" mb="4">
-                Send Tokens
-            </Text>
+        <VStack gap="4" align="stretch">
+            <HStack justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="medium">
+                    Send Tokens
+                </Text>
+                <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={handleCancel}
+                >
+                    <LuX size="14" />
+                </Button>
+            </HStack>
 
-            <VStack gap="4" align="stretch">
-                <Box>
-                    <Text fontSize="sm" mb="2">Token</Text>
-                    <Select.Root
-                        collection={tokenCollection}
-                        size="sm"
-                        value={selectedToken ? [selectedToken] : []}
-                        onValueChange={(details) => setSelectedToken(details.value[0] || '')}
-                    >
-                        <Select.HiddenSelect />
-                        <Select.Control>
-                            <Select.Trigger>
-                                <Select.ValueText placeholder="Select token" />
-                            </Select.Trigger>
-                            <Select.IndicatorGroup>
-                                <Select.Indicator />
-                            </Select.IndicatorGroup>
-                        </Select.Control>
-                        <Portal>
-                            <Select.Positioner>
-                                <Select.Content>
-                                    {tokenCollection.items.map((item) => (
-                                        <Select.Item key={item.value} item={item}>
-                                            <HStack gap="2">
-                                                <Image
-                                                    src={item.logo}
-                                                    alt={item.value}
-                                                    width="16px"
-                                                    height="16px"
-                                                    borderRadius="full"
-                                                />
-                                                <Text>{item.label}</Text>
-                                            </HStack>
-                                            <Select.ItemIndicator />
-                                        </Select.Item>
-                                    ))}
-                                </Select.Content>
-                            </Select.Positioner>
-                        </Portal>
-                    </Select.Root>
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Token</Text>
+                <Select.Root
+                    collection={tokenCollection}
+                    size="sm"
+                    value={selectedToken ? [selectedToken] : []}
+                    onValueChange={(details) => setSelectedToken(details.value[0] || '')}
+                >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select token" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {tokenCollection.items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        <HStack gap="2">
+                                            <Image
+                                                src={item.logo}
+                                                alt={item.value}
+                                                width="16px"
+                                                height="16px"
+                                                borderRadius="full"
+                                            />
+                                            <Text>{item.label}</Text>
+                                        </HStack>
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Amount</Text>
-                    <Input
-                        size="sm"
-                        placeholder="0.00"
-                        value={sendAmount}
-                        onChange={(e) => setSendAmount(e.target.value)}
-                    />
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Amount</Text>
+                <Input
+                    size="sm"
+                    placeholder="0.00"
+                    value={sendAmount}
+                    onChange={(e) => setSendAmount(e.target.value)}
+                />
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Recipient Address</Text>
-                    <Input
-                        size="sm"
-                        placeholder="bze1..."
-                        value={recipient}
-                        onChange={(e) => setRecipient(e.target.value)}
-                    />
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Recipient Address</Text>
+                <Input
+                    size="sm"
+                    placeholder="bze1..."
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                />
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Memo (Optional)</Text>
-                    <Textarea
-                        size="sm"
-                        placeholder="Transaction memo"
-                        rows={3}
-                        value={memo}
-                        onChange={(e) => setMemo(e.target.value)}
-                    />
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Memo (Optional)</Text>
+                <Textarea
+                    size="sm"
+                    placeholder="Transaction memo"
+                    rows={3}
+                    value={memo}
+                    onChange={(e) => setMemo(e.target.value)}
+                    resize="none"
+                />
+            </Box>
 
-                <HStack gap="2">
-                    <Button
-                        size="sm"
-                        flex="1"
-                        onClick={handleSend}
-                        colorPalette="blue"
-                    >
-                        Sign
-                    </Button>
-                    <Button
-                        size="sm"
-                        flex="1"
-                        variant="outline"
-                        onClick={handleCancel}
-                    >
-                        Cancel
-                    </Button>
-                </HStack>
-            </VStack>
-        </Box>
+            <HStack gap="2">
+                <Button
+                    size="sm"
+                    flex="1"
+                    onClick={handleSend}
+                    colorPalette="blue"
+                >
+                    Sign
+                </Button>
+                <Button
+                    size="sm"
+                    flex="1"
+                    variant="outline"
+                    onClick={handleCancel}
+                >
+                    Cancel
+                </Button>
+            </HStack>
+        </VStack>
     )
 
     const renderIBCSendForm = () => (
-        <Box flex="1" minHeight="0">
-            <Text fontSize="sm" fontWeight="medium" mb="4">
-                IBC Send
-            </Text>
+        <VStack gap="4" align="stretch">
+            <HStack justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="medium">
+                    IBC Send
+                </Text>
+                <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={handleCancel}
+                >
+                    <LuX size="14" />
+                </Button>
+            </HStack>
 
-            <VStack gap="4" align="stretch">
-                <Box>
-                    <Text fontSize="sm" mb="2">IBC Token</Text>
-                    <Select.Root
-                        collection={ibcTokenCollection}
-                        size="sm"
-                        value={ibcToken ? [ibcToken] : []}
-                        onValueChange={(details) => setIbcToken(details.value[0] || '')}
-                    >
-                        <Select.HiddenSelect />
-                        <Select.Control>
-                            <Select.Trigger>
-                                <Select.ValueText placeholder="Select IBC token" />
-                            </Select.Trigger>
-                            <Select.IndicatorGroup>
-                                <Select.Indicator />
-                            </Select.IndicatorGroup>
-                        </Select.Control>
-                        <Portal>
-                            <Select.Positioner>
-                                <Select.Content>
-                                    {ibcTokenCollection.items.map((item) => (
-                                        <Select.Item key={item.value} item={item}>
-                                            <HStack gap="2">
-                                                <Image
-                                                    src={item.logo}
-                                                    alt={item.value}
-                                                    width="16px"
-                                                    height="16px"
-                                                    borderRadius="full"
-                                                />
-                                                <Text>{item.label}</Text>
-                                            </HStack>
-                                            <Select.ItemIndicator />
-                                        </Select.Item>
-                                    ))}
-                                </Select.Content>
-                            </Select.Positioner>
-                        </Portal>
-                    </Select.Root>
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">IBC Token</Text>
+                <Select.Root
+                    collection={ibcTokenCollection}
+                    size="sm"
+                    value={ibcToken ? [ibcToken] : []}
+                    onValueChange={(details) => setIbcToken(details.value[0] || '')}
+                >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select IBC token" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {ibcTokenCollection.items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        <HStack gap="2">
+                                            <Image
+                                                src={item.logo}
+                                                alt={item.value}
+                                                width="16px"
+                                                height="16px"
+                                                borderRadius="full"
+                                            />
+                                            <Text>{item.label}</Text>
+                                        </HStack>
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Destination Chain</Text>
-                    <Select.Root
-                        collection={chainCollection}
-                        size="sm"
-                        value={ibcChain ? [ibcChain] : []}
-                        onValueChange={(details) => setIbcChain(details.value[0] || '')}
-                    >
-                        <Select.HiddenSelect />
-                        <Select.Control>
-                            <Select.Trigger>
-                                <Select.ValueText placeholder="Select chain" />
-                            </Select.Trigger>
-                            <Select.IndicatorGroup>
-                                <Select.Indicator />
-                            </Select.IndicatorGroup>
-                        </Select.Control>
-                        <Portal>
-                            <Select.Positioner>
-                                <Select.Content>
-                                    {chainCollection.items.map((item) => (
-                                        <Select.Item key={item.value} item={item}>
-                                            {item.label}
-                                            <Select.ItemIndicator />
-                                        </Select.Item>
-                                    ))}
-                                </Select.Content>
-                            </Select.Positioner>
-                        </Portal>
-                    </Select.Root>
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Destination Chain</Text>
+                <Select.Root
+                    collection={chainCollection}
+                    size="sm"
+                    value={ibcChain ? [ibcChain] : []}
+                    onValueChange={(details) => setIbcChain(details.value[0] || '')}
+                >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select chain" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {chainCollection.items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        {item.label}
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Amount</Text>
-                    <Input
-                        size="sm"
-                        placeholder="0.00"
-                        value={ibcAmount}
-                        onChange={(e) => setIbcAmount(e.target.value)}
-                    />
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Amount</Text>
+                <Input
+                    size="sm"
+                    placeholder="0.00"
+                    value={ibcAmount}
+                    onChange={(e) => setIbcAmount(e.target.value)}
+                />
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Recipient Address</Text>
-                    <Input
-                        size="sm"
-                        placeholder="cosmos1..."
-                        value={ibcRecipient}
-                        onChange={(e) => setIbcRecipient(e.target.value)}
-                    />
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Recipient Address</Text>
+                <Input
+                    size="sm"
+                    placeholder="cosmos1..."
+                    value={ibcRecipient}
+                    onChange={(e) => setIbcRecipient(e.target.value)}
+                />
+            </Box>
 
-                <Box>
-                    <Text fontSize="sm" mb="2">Memo (Optional)</Text>
-                    <Textarea
-                        size="sm"
-                        placeholder="Transaction memo"
-                        rows={3}
-                        value={ibcMemo}
-                        onChange={(e) => setIbcMemo(e.target.value)}
-                    />
-                </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Memo (Optional)</Text>
+                <Textarea
+                    size="sm"
+                    placeholder="Transaction memo"
+                    rows={3}
+                    value={ibcMemo}
+                    onChange={(e) => setIbcMemo(e.target.value)}
+                    resize="none"
+                />
+            </Box>
 
-                <HStack gap="2">
-                    <Button
-                        size="sm"
-                        flex="1"
-                        onClick={handleIBCSend}
-                        colorPalette="blue"
-                    >
-                        Sign
-                    </Button>
-                    <Button
-                        size="sm"
-                        flex="1"
-                        variant="outline"
-                        onClick={handleCancel}
-                    >
-                        Cancel
-                    </Button>
-                </HStack>
-            </VStack>
-        </Box>
+            <HStack gap="2">
+                <Button
+                    size="sm"
+                    flex="1"
+                    onClick={handleIBCSend}
+                    colorPalette="blue"
+                >
+                    Sign
+                </Button>
+                <Button
+                    size="sm"
+                    flex="1"
+                    variant="outline"
+                    onClick={handleCancel}
+                >
+                    Cancel
+                </Button>
+            </HStack>
+        </VStack>
     )
 
     const renderIBCDepositForm = () => (
-        <Box flex="1" minHeight="0">
-            <Text fontSize="sm" fontWeight="medium" mb="4">
-                IBC Deposit
-            </Text>
-
-            <VStack gap="4" align="stretch">
-                <Box>
-                    <Text fontSize="sm" mb="2">Source Chain</Text>
-                    <Select.Root
-                        collection={chainCollection}
-                        size="sm"
-                        value={depositChain ? [depositChain] : []}
-                        onValueChange={(details) => setDepositChain(details.value[0] || '')}
-                    >
-                        <Select.HiddenSelect />
-                        <Select.Control>
-                            <Select.Trigger>
-                                <Select.ValueText placeholder="Select source chain" />
-                            </Select.Trigger>
-                            <Select.IndicatorGroup>
-                                <Select.Indicator />
-                            </Select.IndicatorGroup>
-                        </Select.Control>
-                        <Portal>
-                            <Select.Positioner>
-                                <Select.Content>
-                                    {chainCollection.items.map((item) => (
-                                        <Select.Item key={item.value} item={item}>
-                                            {item.label}
-                                            <Select.ItemIndicator />
-                                        </Select.Item>
-                                    ))}
-                                </Select.Content>
-                            </Select.Positioner>
-                        </Portal>
-                    </Select.Root>
-                </Box>
-
-                <Box>
-                    <Text fontSize="sm" mb="2">Token</Text>
-                    <Input
-                        size="sm"
-                        placeholder="ATOM, OSMO, etc."
-                        value={depositToken}
-                        onChange={(e) => setDepositToken(e.target.value)}
-                    />
-                </Box>
-
-                <Box>
-                    <Text fontSize="sm" mb="2">Amount</Text>
-                    <Input
-                        size="sm"
-                        placeholder="0.00"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                    />
-                </Box>
-
-                <Box
-                    p="3"
-                    bg="bg.subtle"
-                    borderRadius="md"
-                    borderWidth="1px"
+        <VStack gap="4" align="stretch">
+            <HStack justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="medium">
+                    IBC Deposit
+                </Text>
+                <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={handleCancel}
                 >
-                    <Text fontSize="xs" color="fg.muted" mb="1">
-                        Deposit Address
-                    </Text>
-                    <Text fontSize="sm" fontFamily="mono">
-                        {walletAddress}
-                    </Text>
-                </Box>
+                    <LuX size="14" />
+                </Button>
+            </HStack>
 
-                <HStack gap="2">
-                    <Button
-                        size="sm"
-                        flex="1"
-                        onClick={handleIBCDeposit}
-                        colorPalette="blue"
-                    >
-                        Generate Deposit
-                    </Button>
-                    <Button
-                        size="sm"
-                        flex="1"
-                        variant="outline"
-                        onClick={handleCancel}
-                    >
-                        Cancel
-                    </Button>
-                </HStack>
-            </VStack>
-        </Box>
+            <Box>
+                <Text fontSize="sm" mb="2">Source Chain</Text>
+                <Select.Root
+                    collection={chainCollection}
+                    size="sm"
+                    value={depositChain ? [depositChain] : []}
+                    onValueChange={(details) => setDepositChain(details.value[0] || '')}
+                >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select source chain" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {chainCollection.items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        {item.label}
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
+
+            <Box>
+                <Text fontSize="sm" mb="2">Token</Text>
+                <Input
+                    size="sm"
+                    placeholder="ATOM, OSMO, etc."
+                    value={depositToken}
+                    onChange={(e) => setDepositToken(e.target.value)}
+                />
+            </Box>
+
+            <Box>
+                <Text fontSize="sm" mb="2">Amount</Text>
+                <Input
+                    size="sm"
+                    placeholder="0.00"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                />
+            </Box>
+
+            <Box
+                p="3"
+                bg="bg.subtle"
+                borderRadius="md"
+                borderWidth="1px"
+            >
+                <Text fontSize="xs" color="fg.muted" mb="1">
+                    Deposit Address
+                </Text>
+                <Text fontSize="sm" fontFamily="mono">
+                    {walletAddress}
+                </Text>
+            </Box>
+
+            <HStack gap="2">
+                <Button
+                    size="sm"
+                    flex="1"
+                    onClick={handleIBCDeposit}
+                    colorPalette="blue"
+                >
+                    Generate Deposit
+                </Button>
+                <Button
+                    size="sm"
+                    flex="1"
+                    variant="outline"
+                    onClick={handleCancel}
+                >
+                    Cancel
+                </Button>
+            </HStack>
+        </VStack>
     )
 
     return (
-        <VStack gap="6" align="stretch" height="100%">
-            {/* Wallet Status */}
+        <VStack gap="6" align="stretch">
+            {/* Wallet Status - Always at top */}
             <Box>
                 <HStack justify="space-between" mb="3">
                     <Text fontSize="sm" fontWeight="medium">
@@ -686,21 +792,6 @@ export const WalletSidebarContent = () => {
             {viewState === 'send' && renderSendForm()}
             {viewState === 'ibcSend' && renderIBCSendForm()}
             {viewState === 'ibcDeposit' && renderIBCDepositForm()}
-
-            {/* Disconnect Button - Always at bottom */}
-            {viewState === 'balances' && (
-                <Box>
-                    <Button
-                        size="sm"
-                        width="full"
-                        variant="outline"
-                        colorPalette="red"
-                        onClick={handleDisconnect}
-                    >
-                        Disconnect Wallet
-                    </Button>
-                </Box>
-            )}
         </VStack>
     )
 }
