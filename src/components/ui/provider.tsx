@@ -20,9 +20,9 @@ const system = createSystem(defaultConfig, {
     },
     semanticTokens: {
       radii: {
-        l1: { value: '0.75rem' },
-        l2: { value: '1rem' },
-        l3: { value: '1.5rem' },
+        l1: { value: '0.375rem' },
+        l2: { value: '0.5rem' },
+        l3: { value: '0.75rem' },
       },
     },
   },
