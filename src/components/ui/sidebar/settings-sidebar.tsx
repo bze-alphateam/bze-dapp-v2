@@ -13,9 +13,9 @@ import {
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
 import { useState, useEffect } from 'react'
-import { useSettings } from '@/hooks/useSettings'
-import { validateEndpoints } from '@/utils/validation'
-import { EndpointValidationResults } from '@/types/settings'
+import { useSettings } from '../../../hooks/useSettings'
+import { validateEndpoints } from '../../../utils/validation'
+import { EndpointValidationResults } from '../../../types/settings'
 
 export const SettingsSidebarContent = () => {
     const { theme, setTheme } = useTheme()
@@ -47,7 +47,6 @@ export const SettingsSidebarContent = () => {
             })
         } catch (error) {
             console.error(error)
-
             setValidationResults({
                 rest: { isValid: false, error: 'Validation failed' },
                 rpc: { isValid: false, error: 'Validation failed' }
@@ -96,10 +95,12 @@ export const SettingsSidebarContent = () => {
                         <Text fontSize="sm">Dark Mode</Text>
                         <Switch.Root
                             checked={theme === 'dark'}
-                            onCheckedChange={(details) =>
-                                setTheme(details.checked ? 'dark' : 'light')
-                            }
+                            onCheckedChange={(details) => {
+                                const newTheme = details.checked ? 'dark' : 'light'
+                                setTheme(newTheme)
+                            }}
                         >
+                            <Switch.HiddenInput />
                             <Switch.Control>
                                 <Switch.Thumb />
                             </Switch.Control>
