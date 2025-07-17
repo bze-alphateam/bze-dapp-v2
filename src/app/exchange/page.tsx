@@ -17,6 +17,8 @@ import {
 import { useColorModeValue } from '@/components/ui/color-mode'
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import { useState } from 'react'
+import NextLink from "next/link";
+import {useRouter} from "next/navigation";
 
 // Mock data for market pairs
 const mockMarkets = [
@@ -242,6 +244,8 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                         size="sm"
                         variant="solid"
                         minW="80px"
+                        as={NextLink}
+                        href={"/exchange/market"}
                     >
                         Trade <LuArrowRight />
                     </Button>
@@ -383,6 +387,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
 
 export default function ExchangePage() {
     const [searchTerm, setSearchTerm] = useState('')
+    const router = useRouter();
 
     const filteredMarkets = mockMarkets.filter(market =>
         `${market.baseAsset.symbol}/${market.quoteAsset.symbol}`
@@ -393,8 +398,7 @@ export default function ExchangePage() {
     )
 
     const handleMarketClick = (market: typeof mockMarkets[0]) => {
-        console.log('Navigate to trading pair:', `${market.baseAsset.symbol}/${market.quoteAsset.symbol}`)
-        // Here you would navigate to the specific trading pair page
+        router.push(`/exchange/market?market_id=${market.id}`)
     }
 
     return (
