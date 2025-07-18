@@ -1,13 +1,13 @@
 'use client';
 
 import {Box, Container, HStack, Spacer, Button, Image, ClientOnly, Skeleton} from '@chakra-ui/react'
-import { MobilePopover } from './mobile-popover'
 import { NavbarLinks } from './navbar-links'
 import {useColorModeValue} from "@/components/ui/color-mode";
 import {LuWallet} from "react-icons/lu";
 import {SettingsToggle} from "@/components/ui/settings";
 import { Sidebar } from "@/components/ui/sidebar/sidebar";
 import { WalletSidebarContent } from "@/components/ui/sidebar/wallet-sidebar";
+import {MobileNavbarLinks} from "@/components/ui/navigation/mobile-navbar-links";
 
 export const TopNavBar = () => {
     return (
@@ -41,9 +41,7 @@ export const TopNavBar = () => {
                             <SettingsToggle />
                         </ClientOnly>
                     </Box>
-                    <MobilePopover>
-                        <NavbarLinks />
-                    </MobilePopover>
+                    <MobileNavbarLinks />
                 </HStack>
             </Container>
         </Box>

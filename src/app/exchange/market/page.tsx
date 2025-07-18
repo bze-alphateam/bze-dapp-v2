@@ -428,7 +428,7 @@ const TradingPage = () => {
 
                             <VStack gap={0} align="stretch">
                                 {/* Sticky Header */}
-                                <HStack justify="space-between" mb={2} py={1} bg="bg.panel" position="sticky" top={0} zIndex={1}>
+                                <HStack justify="space-between" mb={2} py={1} bg="bg.panel" position="sticky" top={0}>
                                     <Text fontSize="xs" color="fg.muted">Price</Text>
                                     <Text fontSize="xs" color="fg.muted">Amount</Text>
                                     <Text fontSize="xs" color="fg.muted">Time</Text>

@@ -1,6 +1,10 @@
 import { Link, Stack, type StackProps } from '@chakra-ui/react'
-import { usePathname } from 'next/navigation'
+import {usePathname, useRouter} from 'next/navigation'
 import NextLink from 'next/link'
+
+interface NavbarLinksProps extends StackProps {
+    onLinkClick?: () => void
+}
 
 // Define your navigation items with their routes
 const navItems = [
@@ -15,8 +19,14 @@ const navSubitems: { [key: string]: string } = {
     "/exchange/market": "/exchange",
 }
 
-export const NavbarLinks = (props: StackProps) => {
+export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {
     const pathname = usePathname()
+    const router = useRouter()
+
+    const handleClick = (path: string) => {
+        router.push(path)
+        if (onLinkClick) onLinkClick()
+    }
 
     return (
         <Stack direction={{ base: 'column', md: 'row' }} gap={{ base: '6', md: '8' }} {...props}>
@@ -25,6 +35,7 @@ export const NavbarLinks = (props: StackProps) => {
 
                 return (
                     <Link
+                        onClick={() => handleClick(item.href)}
                         key={item.name}
                         as={NextLink}
                         href={item.href}
