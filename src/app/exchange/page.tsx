@@ -45,7 +45,7 @@ const mockMarkets = [
     {
         id: 3,
         baseAsset: { symbol: 'ETH', name: 'Ethereum', logo: '/images/logo_320px.png' },
-        quoteAsset: { symbol: 'USDC', name: 'USD Coin', logo: '/images/logo_320px.png' },
+        quoteAsset: { symbol: 'USDC', name: 'USD Coin', logo: '/images/token.svg' },
         verified: true,
         price: 2456.78,
         priceChange24h: 3.21,
@@ -54,7 +54,7 @@ const mockMarkets = [
     },
     {
         id: 4,
-        baseAsset: { symbol: 'ATOM', name: 'Cosmos', logo: '/images/logo_320px.png' },
+        baseAsset: { symbol: 'ATOM', name: 'Cosmos', logo: '/images/token.svg' },
         quoteAsset: { symbol: 'USDC', name: 'USD Coin', logo: '/images/bze_alternative_512x512.png' },
         verified: false,
         price: 8.45,
@@ -64,7 +64,7 @@ const mockMarkets = [
     },
     {
         id: 5,
-        baseAsset: { symbol: 'OSMO', name: 'Osmosis', logo: '/images/bze_alternative_512x512.png' },
+        baseAsset: { symbol: 'OSMO', name: 'Osmosis', logo: '/images/token.svg' },
         quoteAsset: { symbol: 'BZE', name: 'BeeZee', logo: '/images/logo_320px.png' },
         verified: true,
         price: 15.67,

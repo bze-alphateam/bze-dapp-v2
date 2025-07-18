@@ -11,13 +11,17 @@ const navItems = [
     { name: 'Assets', href: '/assets' },
 ]
 
+const navSubitems: { [key: string]: string } = {
+    "/exchange/market": "/exchange",
+}
+
 export const NavbarLinks = (props: StackProps) => {
     const pathname = usePathname()
 
     return (
         <Stack direction={{ base: 'column', md: 'row' }} gap={{ base: '6', md: '8' }} {...props}>
             {navItems.map((item) => {
-                const isActive = pathname === item.href
+                const isActive = pathname === item.href || item.href === navSubitems[pathname]
 
                 return (
                     <Link
