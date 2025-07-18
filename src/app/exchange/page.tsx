@@ -34,7 +34,7 @@ const mockMarkets = [
     },
     {
         id: 2,
-        baseAsset: { symbol: 'BZE', name: 'BeeZee', logo: '/images/logo_320px.png' },
+        baseAsset: { symbol: 'BZE', name: 'BeeZee', logo: '/images/token_placeholder.png' },
         quoteAsset: { symbol: 'BTC', name: 'Bitcoin', logo: '/images/bze_alternative_512x512.png' },
         verified: true,
         price: 0.00000298,
