@@ -21,7 +21,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
           </head>
           <body>
             <Provider>
-                <TopNavBar />
+                <TopNavBar appLabel={"DEX"} />
                 {children}
             </Provider>
           </body>
