@@ -6,6 +6,9 @@ import { NavbarLinks } from './navbar-links'
 import {useColorModeValue} from "@/components/ui/color-mode";
 import {LuWallet} from "react-icons/lu";
 import {SettingsToggle} from "@/components/ui/settings";
+import {Sidebar} from "@/components/ui/sidebar/sidebar";
+import {WalletSidebarContent} from "@/components/ui/sidebar/wallet-sidebar";
+import {MobileNavbarLinks} from "@/components/ui/navigation/mobile-navbar-links";
 
 interface TopNavBarProps {
     appLabel?: string;
@@ -19,7 +22,7 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
                     <HStack gap="2" align="center">
                         <ClientOnly fallback={<Image height="28px" src="/images/beezee_light.svg"  alt="BZE application logo"/>}>
                             <Image
-                                height="28px"
+                                height={{base: "22px", md: "28px"}}
                                 src={useColorModeValue("/images/beezee_dark.svg", "/images/beezee_light.svg")}
                                 alt="BZE application logo"
                             />
@@ -27,15 +30,11 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
                         <Text
                             fontSize={{ base: "sm", md: "md" }}
                             fontWeight="extrabold"
-                            color="fg.info"
+                            color="#10a6d8"
                             letterSpacing="tighter"
                             textTransform="uppercase"
                             opacity="0.8"
-                            _hover={{
-                                opacity: "1",
-                                color: "fg.muted"
-                            }}
-                            transition="all 0.2s ease"
+                            transition="all 1s ease"
                         >
                             {appLabel}
                         </Text>
@@ -43,14 +42,22 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
                     <Spacer hideFrom="md" />
                     <NavbarLinks hideBelow="md" />
                     <Box display={"flex"} gap={{ base: 1, md: 4}}>
-                        <Button size={{ base: 'sm', md: 'md' }}><LuWallet /> Wallet</Button>
+                        {/* Wallet Sidebar */}
+                        <Sidebar
+                            ariaLabel="Wallet"
+                            trigger={
+                                <Button size={{ base: 'sm', md: 'md' }}>
+                                    <LuWallet /> Wallet
+                                </Button>
+                            }
+                        >
+                            <WalletSidebarContent />
+                        </Sidebar>
                         <ClientOnly fallback={<Skeleton  w="10" h="10" rounded="md" />}>
                             <SettingsToggle />
                         </ClientOnly>
                     </Box>
-                    <MobilePopover>
-                        <NavbarLinks />
-                    </MobilePopover>
+                    <MobileNavbarLinks />
                 </HStack>
             </Container>
         </Box>

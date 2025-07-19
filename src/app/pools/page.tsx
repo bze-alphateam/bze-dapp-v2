@@ -189,20 +189,6 @@ export default function LiquidityPoolsPage() {
             w="full"
             position="relative"
         >
-            {isUserPool && (
-                <Box
-                    position="absolute"
-                    top={2}
-                    right={2}
-                    bg="blue.500"
-                    color="white"
-                    p={1}
-                    borderRadius="md"
-                    fontSize="xs"
-                >
-                    <LuUser size={12} />
-                </Box>
-            )}
             <VStack gap={3} align="stretch">
                 <HStack justify="space-between" align="center">
                     <HStack gap={2}>
