@@ -17,6 +17,7 @@ const navItems = [
 
 const navSubitems: { [key: string]: string } = {
     "/exchange/market": "/exchange",
+    "/pools/details": "/pools",
 }
 
 export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {

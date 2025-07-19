@@ -164,7 +164,7 @@ export default function LiquidityPoolsPage() {
     }, [searchTerm, sortField, sortOrder])
 
     const handlePoolClick = (poolId: number) => {
-        router.push(`/pools/${poolId}`)
+        router.push(`/pools/details?id=${poolId}`)
     }
 
     const SortIcon = ({ field }: { field: SortField }) => {
