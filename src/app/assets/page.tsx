@@ -250,7 +250,6 @@ export default function AssetsPage() {
                 borderRadius="lg"
                 overflow="hidden"
                 transition="all 0.2s"
-                _hover={{ bg: "bg.muted" }}
             >
                 {/* Main Asset Info */}
                 <Flex
@@ -259,6 +258,7 @@ export default function AssetsPage() {
                     justify="space-between"
                     cursor="pointer"
                     onClick={() => toggleExpanded(asset.id)}
+                    _hover={{ bg: "bg.muted" }}
                 >
                     <HStack gap={3}>
                         <Box
