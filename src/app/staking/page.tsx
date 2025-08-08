@@ -154,7 +154,7 @@ const StakingPage = () => {
                 borderWidth={hasUserStake ? "2px" : "1px"}
                 borderColor={hasUserStake ? "blue.500" : (opportunity.isNative ? "purple.500" : "border")}
                 cursor="pointer"
-                _hover={{ shadow: "md" }}
+                _hover={{ bg: "bg.muted" }}
                 onClick={() => openModal('actions', opportunity)}
             >
                 <Card.Header>

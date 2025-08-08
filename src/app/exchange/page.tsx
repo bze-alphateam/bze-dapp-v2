@@ -80,7 +80,6 @@ interface MarketRowProps {
 }
 
 const MarketRow = ({ market, onClick }: MarketRowProps) => {
-    const hoverBg = useColorModeValue('gray.50', 'gray.800')
     const borderColor = useColorModeValue('gray.200', 'gray.700')
 
     const formatPrice = (price: number) => {
@@ -107,9 +106,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
             cursor="pointer"
             transition="all 0.2s"
             _hover={{
-                bg: hoverBg,
-                transform: 'translateY(-1px)',
-                borderColor: 'colorPalette.300',
+                bg: "bg.muted"
             }}
             onClick={onClick}
         >

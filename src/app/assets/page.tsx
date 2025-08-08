@@ -250,7 +250,7 @@ export default function AssetsPage() {
                 borderRadius="lg"
                 overflow="hidden"
                 transition="all 0.2s"
-                _hover={{ borderColor: 'border.default' }}
+                _hover={{ bg: "bg.muted" }}
             >
                 {/* Main Asset Info */}
                 <Flex
