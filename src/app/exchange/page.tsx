@@ -12,13 +12,13 @@ import {
     Input,
     SimpleGrid,
     Spacer,
-    Image,
 } from '@chakra-ui/react'
 import { useColorModeValue } from '@/components/ui/color-mode'
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import { useState } from 'react'
 import NextLink from "next/link";
 import {useRouter} from "next/navigation";
+import {TokenLogo} from "@/components/ui/token_logo";
 
 // Mock data for market pairs
 const mockMarkets = [
@@ -120,67 +120,23 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                 {/* Asset Pair */}
                 <HStack gap={3}>
                     <HStack gap={-2}>
+                        <TokenLogo
+                            src={market.baseAsset.logo}
+                            symbol={market.baseAsset.symbol}
+                            size="8"
+                            circular={true}
+                        />
                         <Box
+                            ml={-2}
+                            alignItems="center"
+                            justifyContent="center"
                             position="relative"
-                            w="8"
-                            h="8"
-                            borderRadius="full"
-                            overflow="hidden"
-                            border="2px solid"
-                            borderColor="bg"
                         >
-                            <Image
-                                src={market.baseAsset.logo}
-                                alt={market.baseAsset.symbol}
-                                w="full"
-                                h="full"
-                                objectFit="cover"
-                                fallback={
-                                    <Box
-                                        w="full"
-                                        h="full"
-                                        bg="gray.200"
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        fontSize="xs"
-                                        fontWeight="bold"
-                                    >
-                                        {market.baseAsset.symbol.charAt(0)}
-                                    </Box>
-                                }
-                            />
-                        </Box>
-                        <Box
-                            position="relative"
-                            w="8"
-                            h="8"
-                            borderRadius="full"
-                            overflow="hidden"
-                            border="2px solid"
-                            borderColor="bg"
-                            ml="-2"
-                        >
-                            <Image
+                            <TokenLogo
                                 src={market.quoteAsset.logo}
-                                alt={market.quoteAsset.symbol}
-                                w="full"
-                                h="full"
-                                objectFit="cover"
-                                fallback={
-                                    <Box
-                                        w="full"
-                                        h="full"
-                                        bg="gray.200"
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        fontSize="xs"
-                                        fontWeight="bold"
-                                    >
-                                        {market.quoteAsset.symbol.charAt(0)}
-                                    </Box>
-                                }
+                                symbol={market.quoteAsset.symbol}
+                                size="8"
+                                circular={true}
                             />
                         </Box>
                     </HStack>
@@ -254,67 +210,23 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                 <HStack justify="space-between" align="center">
                     <HStack gap={2}>
                         <HStack gap={-1}>
+                            <TokenLogo
+                                src={market.baseAsset.logo}
+                                symbol={market.baseAsset.symbol}
+                                size="8"
+                                circular={true}
+                            />
                             <Box
+                                ml={-2}
+                                alignItems="center"
+                                justifyContent="center"
                                 position="relative"
-                                w="6"
-                                h="6"
-                                borderRadius="full"
-                                overflow="hidden"
-                                border="1px solid"
-                                borderColor="bg"
                             >
-                                <Image
-                                    src={market.baseAsset.logo}
-                                    alt={market.baseAsset.symbol}
-                                    w="full"
-                                    h="full"
-                                    objectFit="cover"
-                                    fallback={
-                                        <Box
-                                            w="full"
-                                            h="full"
-                                            bg="gray.200"
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                            fontSize="10px"
-                                            fontWeight="bold"
-                                        >
-                                            {market.baseAsset.symbol.charAt(0)}
-                                        </Box>
-                                    }
-                                />
-                            </Box>
-                            <Box
-                                position="relative"
-                                w="6"
-                                h="6"
-                                borderRadius="full"
-                                overflow="hidden"
-                                border="1px solid"
-                                borderColor="bg"
-                                ml="-1"
-                            >
-                                <Image
+                                <TokenLogo
                                     src={market.quoteAsset.logo}
-                                    alt={market.quoteAsset.symbol}
-                                    w="full"
-                                    h="full"
-                                    objectFit="cover"
-                                    fallback={
-                                        <Box
-                                            w="full"
-                                            h="full"
-                                            bg="gray.200"
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                            fontSize="10px"
-                                            fontWeight="bold"
-                                        >
-                                            {market.quoteAsset.symbol.charAt(0)}
-                                        </Box>
-                                    }
+                                    symbol={market.quoteAsset.symbol}
+                                    size="8"
+                                    circular={true}
                                 />
                             </Box>
                         </HStack>

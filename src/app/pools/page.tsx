@@ -15,7 +15,7 @@ import {
     Badge
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
-import Image from 'next/image'
+import {TokenLogo} from "@/components/ui/token_logo";
 
 // Define Pool type first
 type Pool = {
@@ -193,45 +193,23 @@ export default function LiquidityPoolsPage() {
                 <HStack justify="space-between" align="center">
                     <HStack gap={2}>
                         <HStack gap={0}>
+                            <TokenLogo
+                                src={pool.asset1.logo}
+                                symbol={pool.asset1.ticker}
+                                size="8"
+                                circular={true}
+                            />
                             <Box
-                                w={10}
-                                h={10}
-                                borderRadius="full"
-                                overflow="hidden"
-                                bg="bg.surface"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                border="2px solid"
-                                borderColor="border.subtle"
-                            >
-                                <Image
-                                    src={pool.asset1.logo}
-                                    alt={pool.asset1.ticker}
-                                    width={40}
-                                    height={40}
-                                    style={{ borderRadius: '50%' }}
-                                />
-                            </Box>
-                            <Box
-                                w={10}
-                                h={10}
-                                borderRadius="full"
-                                overflow="hidden"
-                                bg="bg.surface"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
                                 ml={-2}
-                                border="2px solid"
-                                borderColor="border.subtle"
+                                alignItems="center"
+                                justifyContent="center"
+                                position="relative"
                             >
-                                <Image
+                                <TokenLogo
                                     src={pool.asset2.logo}
-                                    alt={pool.asset2.ticker}
-                                    width={40}
-                                    height={40}
-                                    style={{ borderRadius: '50%' }}
+                                    symbol={pool.asset2.ticker}
+                                    size="8"
+                                    circular={true}
                                 />
                             </Box>
                         </HStack>
@@ -407,45 +385,23 @@ export default function LiquidityPoolsPage() {
                                                         <Box as="td" p={4}>
                                                             <HStack gap={3}>
                                                                 <HStack gap={0}>
+                                                                    <TokenLogo
+                                                                        src={pool.asset1.logo}
+                                                                        symbol={pool.asset1.ticker}
+                                                                        size="8"
+                                                                        circular={true}
+                                                                    />
                                                                     <Box
-                                                                        w={8}
-                                                                        h={8}
-                                                                        borderRadius="full"
-                                                                        overflow="hidden"
-                                                                        bg="bg.surface"
-                                                                        display="flex"
-                                                                        alignItems="center"
-                                                                        justifyContent="center"
-                                                                        border="2px solid"
-                                                                        borderColor="border.subtle"
-                                                                    >
-                                                                        <Image
-                                                                            src={pool.asset1.logo}
-                                                                            alt={pool.asset1.ticker}
-                                                                            width={32}
-                                                                            height={32}
-                                                                            style={{ borderRadius: '50%' }}
-                                                                        />
-                                                                    </Box>
-                                                                    <Box
-                                                                        w={8}
-                                                                        h={8}
-                                                                        borderRadius="full"
-                                                                        overflow="hidden"
-                                                                        bg="bg.surface"
-                                                                        display="flex"
-                                                                        alignItems="center"
-                                                                        justifyContent="center"
                                                                         ml={-2}
-                                                                        border="2px solid"
-                                                                        borderColor="border.subtle"
+                                                                        alignItems="center"
+                                                                        justifyContent="center"
+                                                                        position="relative"
                                                                     >
-                                                                        <Image
+                                                                        <TokenLogo
                                                                             src={pool.asset2.logo}
-                                                                            alt={pool.asset2.ticker}
-                                                                            width={32}
-                                                                            height={32}
-                                                                            style={{ borderRadius: '50%' }}
+                                                                            symbol={pool.asset2.ticker}
+                                                                            size="8"
+                                                                            circular={true}
                                                                         />
                                                                     </Box>
                                                                 </HStack>
@@ -588,45 +544,23 @@ export default function LiquidityPoolsPage() {
                                                         <Box as="td" p={4}>
                                                             <HStack gap={3}>
                                                                 <HStack gap={0}>
+                                                                    <TokenLogo
+                                                                        src={pool.asset1.logo}
+                                                                        symbol={pool.asset1.ticker}
+                                                                        size="8"
+                                                                        circular={true}
+                                                                    />
                                                                     <Box
-                                                                        w={8}
-                                                                        h={8}
-                                                                        borderRadius="full"
-                                                                        overflow="hidden"
-                                                                        bg="bg.surface"
-                                                                        display="flex"
-                                                                        alignItems="center"
-                                                                        justifyContent="center"
-                                                                        border="2px solid"
-                                                                        borderColor="border.subtle"
-                                                                    >
-                                                                        <Image
-                                                                            src={pool.asset1.logo}
-                                                                            alt={pool.asset1.ticker}
-                                                                            width={32}
-                                                                            height={32}
-                                                                            style={{ borderRadius: '50%' }}
-                                                                        />
-                                                                    </Box>
-                                                                    <Box
-                                                                        w={8}
-                                                                        h={8}
-                                                                        borderRadius="full"
-                                                                        overflow="hidden"
-                                                                        bg="bg.surface"
-                                                                        display="flex"
-                                                                        alignItems="center"
-                                                                        justifyContent="center"
                                                                         ml={-2}
-                                                                        border="2px solid"
-                                                                        borderColor="border.subtle"
+                                                                        alignItems="center"
+                                                                        justifyContent="center"
+                                                                        position="relative"
                                                                     >
-                                                                        <Image
+                                                                        <TokenLogo
                                                                             src={pool.asset2.logo}
-                                                                            alt={pool.asset2.ticker}
-                                                                            width={32}
-                                                                            height={32}
-                                                                            style={{ borderRadius: '50%' }}
+                                                                            symbol={pool.asset2.ticker}
+                                                                            size="8"
+                                                                            circular={true}
                                                                         />
                                                                     </Box>
                                                                 </HStack>

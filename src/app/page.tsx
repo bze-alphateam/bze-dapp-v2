@@ -14,7 +14,7 @@ import {
   Badge,
   Flex,
   Select,
-  Image, Spacer,
+  Spacer,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -25,6 +25,7 @@ import {
   LuArrowRight, LuInfo,
 } from 'react-icons/lu';
 import { useState } from 'react';
+import {TokenLogo} from "@/components/ui/token_logo";
 
 interface Asset {
   symbol: string;
@@ -164,12 +165,11 @@ export default function SwapPage() {
                 </Text>
                 <HStack justify="space-between" w="full">
                   <HStack gap="3">
-                    <Image
+                    <TokenLogo
                         src={asset.image}
-                        alt={asset.symbol}
-                        boxSize="10"
-                        borderRadius="full"
-                        fallback={<Box boxSize="10" bg="gray.200" borderRadius="full" />}
+                        symbol={asset.symbol}
+                        size="8"
+                        circular={true}
                     />
                     <VStack align="start" gap="1">
                       <HStack gap="2">
@@ -212,12 +212,11 @@ export default function SwapPage() {
                         >
                           <Select.ItemText>
                             <HStack gap="3" py="2">
-                              <Image
+                              <TokenLogo
                                   src={assetOption.image}
-                                  alt={assetOption.symbol}
-                                  boxSize="8"
-                                  borderRadius="full"
-                                  fallback={<Box boxSize="8" bg="gray.200" borderRadius="full" />}
+                                  symbol={assetOption.symbol}
+                                  size="8"
+                                  circular={true}
                               />
                               <VStack align="start" gap="0" flex="1">
                                 <HStack justify="space-between" w="full">
