@@ -13,9 +13,18 @@ import {
     IconButton,
     HStack,
     VStack,
-    Separator,
+    Separator, Input,
 } from '@chakra-ui/react'
-import { LuChevronDown, LuChevronUp, LuArrowUpRight, LuArrowDownRight, LuInfo, LuDroplets, LuArrowLeftRight } from 'react-icons/lu'
+import {
+    LuChevronDown,
+    LuChevronUp,
+    LuArrowUpRight,
+    LuArrowDownRight,
+    LuInfo,
+    LuDroplets,
+    LuArrowLeftRight,
+    LuSearch
+} from 'react-icons/lu'
 
 // Type definitions
 type TokenType = 'native' | 'factory' | 'ibc'
@@ -212,6 +221,7 @@ type ExpandedAsset = typeof mockAssets[number]
 
 export default function AssetsPage() {
     const [expandedAssets, setExpandedAssets] = useState<Set<string>>(new Set())
+    const [searchTerm, setSearchTerm] = useState('')
 
     const toggleExpanded = (assetId: string) => {
         setExpandedAssets(prev => {
@@ -568,6 +578,18 @@ export default function AssetsPage() {
                     </Box>
                 </Grid>
 
+                <Box position="relative" w="full">
+                    <Input
+                        placeholder="Search assets..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        size="lg"
+                        pl={10}
+                    />
+                    <Box position="absolute" left={3} top="50%" transform="translateY(-50%)">
+                        <LuSearch color="gray" />
+                    </Box>
+                </Box>
                 {/* Assets List */}
                 <VStack align="stretch" gap={3}>
                     {mockAssets.map(renderAssetCard)}
