@@ -192,17 +192,17 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                 </VStack>
 
                 {/* Trade Button */}
-                <Box textAlign="right">
-                    <Button
-                        size="sm"
-                        variant="solid"
-                        minW="80px"
-                        as={NextLink}
-                        href={"/exchange/market"}
-                    >
-                        Trade <LuArrowRight />
-                    </Button>
-                </Box>
+                <NextLink href="/exchange/market">
+                    <Box textAlign="right">
+                        <Button
+                            size="sm"
+                            variant="solid"
+                            minW="80px"
+                        >
+                            Trade <LuArrowRight />
+                        </Button>
+                    </Box>
+                </NextLink>
             </SimpleGrid>
 
             {/* Mobile View */}

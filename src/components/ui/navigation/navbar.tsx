@@ -1,7 +1,6 @@
 'use client';
 
 import {Box, Container, HStack, Spacer, Button, Image, ClientOnly, Skeleton, Text} from '@chakra-ui/react'
-import { MobilePopover } from './mobile-popover'
 import { NavbarLinks } from './navbar-links'
 import {useColorModeValue} from "@/components/ui/color-mode";
 import {LuWallet} from "react-icons/lu";

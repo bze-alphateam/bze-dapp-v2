@@ -12,7 +12,9 @@ import {
     Text,
     Button,
     Flex,
-    Badge
+    Badge,
+    NativeSelectRoot,
+    NativeSelectField,
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
 import {TokenLogo} from "@/components/ui/token_logo";
@@ -315,23 +317,24 @@ export default function LiquidityPoolsPage() {
                                         <Text fontSize="sm" fontWeight="600" color="fg.muted">
                                             Sort by:
                                         </Text>
-                                        <Box as="select"
-                                             value={`${sortField}-${sortOrder}`}
-                                             onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleMobileSort(e.target.value)}
-                                             w="full"
-                                             p={3}
-                                             borderRadius="md"
-                                             border="1px solid"
-                                             borderColor="border.subtle"
-                                             bg="bg.surface"
-                                             fontSize="md"
-                                        >
-                                            {sortOptions.map((option) => (
-                                                <option key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </Box>
+                                        <NativeSelectRoot w="full">
+                                            <NativeSelectField
+                                                value={`${sortField}-${sortOrder}`}
+                                                onChange={(e) => handleMobileSort(e.target.value)}
+                                                p={3}
+                                                borderRadius="md"
+                                                border="1px solid"
+                                                borderColor="border.subtle"
+                                                bg="bg.surface"
+                                                fontSize="md"
+                                            >
+                                                {sortOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </NativeSelectField>
+                                        </NativeSelectRoot>
                                     </VStack>
                                 </Box>
                             </VStack>

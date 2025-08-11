@@ -196,7 +196,7 @@ const StakingPage = () => {
 
                 <Card.Body>
                     <VStack align="stretch" gap="3">
-                        {hasUserStake && (
+                        {opportunity.userStake && (
                             <Alert.Root status={isUnstaking ? "warning" : "info"} variant="subtle">
                                 <Alert.Indicator />
                                 <VStack align="start" gap="2" flex="1">

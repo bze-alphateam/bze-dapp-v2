@@ -16,6 +16,7 @@ import {
     NativeSelectRoot,
     NativeSelectField,
     IconButton,
+    Slider,
 } from '@chakra-ui/react';
 import {
     LuArrowLeft,
@@ -28,7 +29,6 @@ import {
 } from 'react-icons/lu';
 import { Tooltip } from '@/components/ui/tooltip';
 import {useRouter} from "next/navigation";
-import NextLink from "next/link";
 
 // Types based on project requirements
 type Pool = {
@@ -188,38 +188,26 @@ export default function PoolDetailsPage() {
     // Custom slider component
     const CustomSlider = ({ value, onChange }: { value: number; onChange: (value: number) => void }) => (
         <Box w="full">
-            <Box
-                as="input"
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value={value}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(parseInt(e.target.value))}
+            <Slider.Root
+                min={0}
+                max={100}
+                step={1}
+                value={[value]}
+                onValueChange={(details) => onChange(details.value[0])}
                 w="full"
-                h="2"
-                bg="bg.muted"
-                rounded="full"
-                cursor="pointer"
-                css={{
-                    '&::-webkit-slider-thumb': {
-                        appearance: 'none',
-                        width: '16px',
-                        height: '16px',
-                        borderRadius: '50%',
-                        background: 'var(--chakra-colors-blue-500)',
-                        cursor: 'pointer',
-                    },
-                    '&::-moz-range-thumb': {
-                        width: '16px',
-                        height: '16px',
-                        borderRadius: '50%',
-                        background: 'var(--chakra-colors-blue-500)',
-                        cursor: 'pointer',
-                        border: 'none',
-                    },
-                }}
-            />
+            >
+                <Slider.Control>
+                    <Slider.Track h="2" bg="bg.muted" rounded="full">
+                        <Slider.Range bg="blue.500" />
+                    </Slider.Track>
+                    <Slider.Thumb
+                        index={0}
+                        boxSize="4"
+                        bg="blue.500"
+                        _hover={{ bg: "blue.600" }}
+                    />
+                </Slider.Control>
+            </Slider.Root>
         </Box>
     );
 
@@ -608,7 +596,7 @@ export default function PoolDetailsPage() {
                                                                         color="yellow.800"
                                                                         _dark={{ color: "yellow.200" }}
                                                                     >
-                                                                        {program.description}. You can unstake anytime, but there's an unstaking period before you receive your tokens.
+                                                                        {program.description}. You can unstake anytime, but there&#39;s an unstaking period before you receive your tokens.
                                                                     </Text>
                                                                 </HStack>
                                                             </Box>

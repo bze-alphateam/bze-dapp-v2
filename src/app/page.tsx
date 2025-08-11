@@ -14,7 +14,7 @@ import {
   Badge,
   Flex,
   Select,
-  Spacer,
+  Spacer, createListCollection,
 } from '@chakra-ui/react';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -136,9 +136,16 @@ export default function SwapPage() {
     setIsOpen: (open: boolean) => void;
   }) => {
     const filteredAssets = filterAssets(searchTerm);
+    const collection = createListCollection({
+      items: filteredAssets.map(a => ({
+        label: a.symbol,
+        value: a.symbol
+      }))
+    });
 
     return (
         <Select.Root
+            collection={collection}
             value={[asset.symbol]}
             open={isOpen}
             onOpenChange={(details) => {
