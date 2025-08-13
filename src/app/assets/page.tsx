@@ -9,7 +9,6 @@ import {
     Flex,
     Badge,
     Grid,
-    Heading,
     IconButton,
     HStack,
     VStack,

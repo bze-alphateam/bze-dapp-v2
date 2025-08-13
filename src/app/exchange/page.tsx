@@ -3,7 +3,6 @@
 import {
     Box,
     Container,
-    Heading,
     HStack,
     VStack,
     Text,
@@ -13,7 +12,6 @@ import {
     SimpleGrid,
     Spacer,
 } from '@chakra-ui/react'
-import { useColorModeValue } from '@/components/ui/color-mode'
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import { useState } from 'react'
 import NextLink from "next/link";
