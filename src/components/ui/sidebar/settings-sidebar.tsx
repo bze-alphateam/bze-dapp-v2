@@ -101,7 +101,7 @@ export const SettingsSidebar = ({ isOpen, onClose }: SettingsSidebarProps) => {
 // Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
     const { theme, setTheme } = useTheme()
-    const { settings, isLoaded, updateEndpoints, resetToDefaults } = useSettings()
+    const { settings, isLoaded, updateEndpoints, defaultSettings } = useSettings()
 
     // Local form state
     const [restEndpoint, setRestEndpoint] = useState('')
@@ -118,13 +118,11 @@ export const SettingsSidebarContent = () => {
     }, [isLoaded, settings])
 
     const handleValidateEndpoints = async () => {
-        console.log('Validating endpoints...', restEndpoint, rpcEndpoint)
         setIsValidating(true)
         setValidationResults({})
 
         try {
             const results = await validateEndpoints(restEndpoint, rpcEndpoint)
-            console.log('Validation results:', results)
             setValidationResults({
                 rest: results.rest,
                 rpc: results.rpc
@@ -137,10 +135,24 @@ export const SettingsSidebarContent = () => {
             })
         } finally {
             setIsValidating(false)
+            setTimeout(() => setValidationResults({}), 10_000)
         }
     }
 
-    const handleSaveEndpoints = () => {
+    const handleSaveEndpoints = async () => {
+        setValidationResults({})
+        const results = await validateEndpoints(restEndpoint, rpcEndpoint)
+        if (!results.isValid) {
+            setValidationResults({
+                rest: results.rest,
+                rpc: results.rpc
+            })
+
+            setTimeout(() => setValidationResults({}), 10_000)
+
+            return
+        }
+
         const success = updateEndpoints({
             restEndpoint: restEndpoint.trim(),
             rpcEndpoint: convertToWebSocketUrl(rpcEndpoint.trim())
@@ -152,13 +164,9 @@ export const SettingsSidebarContent = () => {
     }
 
     const handleResetToDefaults = () => {
-        const success = resetToDefaults()
-        if (success) {
-            setRestEndpoint(settings.endpoints.restEndpoint)
-            setRpcEndpoint(settings.endpoints.rpcEndpoint)
-            setValidationResults({})
-            console.log('Settings reset to defaults')
-        }
+        setRestEndpoint(defaultSettings.endpoints.restEndpoint)
+        setRpcEndpoint(defaultSettings.endpoints.rpcEndpoint)
+        setValidationResults({})
     }
 
     const hasUnsavedChanges =

@@ -40,12 +40,15 @@ export function useSettings() {
         return settings.endpoints
     }
 
+    const defaultSettings = DEFAULT_SETTINGS
+
     return {
         settings,
         isLoaded,
         saveSettings,
         updateEndpoints,
         resetToDefaults,
-        getEndpoints
+        getEndpoints,
+        defaultSettings
     }
 }
