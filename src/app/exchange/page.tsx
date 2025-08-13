@@ -19,6 +19,7 @@ import { useState } from 'react'
 import NextLink from "next/link";
 import {useRouter} from "next/navigation";
 import {TokenLogo} from "@/components/ui/token_logo";
+import {ListingTitle} from "@/components/ui/listing/title";
 
 // Mock data for market pairs
 const mockMarkets = [
@@ -80,8 +81,6 @@ interface MarketRowProps {
 }
 
 const MarketRow = ({ market, onClick }: MarketRowProps) => {
-    const borderColor = useColorModeValue('gray.200', 'gray.700')
-
     const formatPrice = (price: number) => {
         if (price < 0.001) return price.toExponential(3)
         if (price < 1) return price.toFixed(6)
@@ -101,7 +100,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
         <Box
             p={4}
             borderWidth="1px"
-            borderColor={borderColor}
+            borderColor="border.subtle"
             borderRadius="lg"
             cursor="pointer"
             transition="all 0.2s"
@@ -109,6 +108,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                 bg: "bg.muted"
             }}
             onClick={onClick}
+            bg="bg.surface"
         >
             {/* Desktop View */}
             <SimpleGrid
@@ -314,9 +314,7 @@ export default function ExchangePage() {
         <Container maxW="7xl" py={8}>
             <VStack gap={6} align="stretch">
                 {/* Header */}
-                <VStack gap={4} align="start">
-                    <Heading size="xl">Exchange Markets</Heading>
-                </VStack>
+                <ListingTitle title={"Exchange Markets"} />
 
                 {/* Search and Filters */}
                 <HStack gap={4}>

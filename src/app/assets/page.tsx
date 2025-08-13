@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import {
     Box,
@@ -25,6 +25,7 @@ import {
     LuArrowLeftRight,
     LuSearch
 } from 'react-icons/lu'
+import {ListingTitle} from "@/components/ui/listing/title";
 
 // Type definitions
 type TokenType = 'native' | 'factory' | 'ibc'
@@ -545,12 +546,7 @@ export default function AssetsPage() {
         <Container maxW="7xl" py={8}>
             <VStack align="stretch" gap={6}>
                 {/* Header */}
-                <Box>
-                    <Heading size="xl" mb={2}>Assets</Heading>
-                    <Text color="fg.muted">
-                        Explore all available tokens on the BeeZee blockchain
-                    </Text>
-                </Box>
+                <ListingTitle title={"Assets"} subtitle={"Explore all available tokens on the BeeZee blockchain"} />
 
                 {/* Stats Bar */}
                 <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>

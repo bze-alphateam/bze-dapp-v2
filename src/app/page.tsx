@@ -296,9 +296,9 @@ export default function SwapPage() {
   );
 
   return (
-      <Box minH="100vh" bg="bg.canvas">
+      <Box minH="100vh">
         <Container maxW="md" py="8">
-          <VStack gap="6" align="stretch">
+          <VStack gap="8" align="stretch">
             {/* Swap Form */}
             <Card.Root p="6">
               <VStack gap="4" align="stretch">

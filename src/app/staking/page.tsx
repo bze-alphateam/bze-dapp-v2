@@ -28,6 +28,7 @@ import {
     LuGift,
     LuLockOpen,
 } from 'react-icons/lu';
+import {ListingTitle} from "@/components/ui/listing/title";
 
 interface StakingOpportunity {
     id: string;
@@ -272,15 +273,10 @@ const StakingPage = () => {
     };
 
     return (
-        <Container maxW="6xl" py="8">
+        <Container maxW="7xl" py={8}>
             <VStack align="stretch" gap="8">
                 {/* Header */}
-                <VStack align="start" gap="4">
-                    <Heading size="2xl">Crypto Staking</Heading>
-                    <Text color="gray.600" fontSize="lg">
-                        Earn passive income by staking and locking your tokens
-                    </Text>
-                </VStack>
+                <ListingTitle title={"Crypto Staking"} subtitle={"Earn passive income by staking and locking your tokens"} />
 
                 {/* Search */}
                 <Box position="relative" maxW="md">

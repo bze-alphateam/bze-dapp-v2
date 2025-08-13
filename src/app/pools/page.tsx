@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
     Box,
@@ -18,6 +18,7 @@ import {
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
 import {TokenLogo} from "@/components/ui/token_logo";
+import {ListingTitle} from "@/components/ui/listing/title";
 
 // Define Pool type first
 type Pool = {
@@ -283,17 +284,10 @@ export default function LiquidityPoolsPage() {
     )
 
     return (
-        <Box minH="100vh" bg="bg.panel">
+        <Box minH="100vh">
             <Container maxW="7xl" py={8}>
-                <VStack gap={8}>
-                    <VStack gap={4}>
-                        <Heading size="2xl" textAlign="center">
-                            Liquidity Pools
-                        </Heading>
-                        <Text textAlign="center" color="fg.muted" fontSize="lg">
-                            Provide liquidity to earn fees and rewards
-                        </Text>
-                    </VStack>
+                <VStack gap={8} align="stretch">
+                    <ListingTitle title={"Liquidity Pools"} subtitle={"Provide liquidity to earn fees and rewards"} />
 
                     <Box bg="bg.surface" p={6} borderRadius="l2" shadow="sm" w="full">
                         <VStack gap={6} w="full">
@@ -380,8 +374,12 @@ export default function LiquidityPoolsPage() {
                                                         as="tr"
                                                         cursor="pointer"
                                                         onClick={() => handlePoolClick(pool.id)}
-                                                        _hover={{ bg: "blue.50", _dark: { bg: "blue.900" } }}
+                                                        _hover={{
+                                                            bg: "blue.50",
+                                                            _dark: { bg: "blue.900" }
+                                                    }}
                                                         transition="background-color 0.2s"
+                                                        borderRadius="lg"
                                                         // bg="blue.25"
                                                         // _dark={{ bg: "blue.950" }}
                                                     >
@@ -543,6 +541,7 @@ export default function LiquidityPoolsPage() {
                                                         onClick={() => handlePoolClick(pool.id)}
                                                         _hover={{ bg: "bg.muted" }}
                                                         transition="background-color 0.2s"
+                                                        borderRadius="lg"
                                                     >
                                                         <Box as="td" p={4}>
                                                             <HStack gap={3}>
