@@ -1,5 +1,7 @@
-import { ValidationResult } from '../types/settings'
-import { VALIDATION_ERRORS } from '../constants/settings'
+import { ValidationResult } from '@/types/settings'
+import { VALIDATION_ERRORS } from '@/constants/settings'
+import {getBurnerParamsWithClient} from "@/query/burner";
+import {createRestClient} from "@/query/client";
 
 // URL validation helper
 function isValidUrl(urlString: string): boolean {
@@ -27,11 +29,15 @@ export async function validateRestEndpoint(endpoint: string): Promise<Validation
         return { isValid: false, error: VALIDATION_ERRORS.INVALID_REST_PROTOCOL }
     }
 
-    // Mock validation - replace with actual API call
     try {
-        // In production: make a test request to validate CORS and connectivity
-        // const response = await fetch(`${endpoint}/status`, { method: 'GET' })
-        // return { isValid: response.ok }
+        //make a params call to check the endpoint
+        const client = await createRestClient(endpoint)
+        const params = await getBurnerParamsWithClient(client)
+        if (params) {
+            return {
+                isValid: true,
+            }
+        }
 
         return {
             isValid: false,
@@ -47,9 +53,8 @@ export async function validateRestEndpoint(endpoint: string): Promise<Validation
     }
 }
 
-// Validate RPC endpoint
+// Enhanced validation function with auto-conversion
 export async function validateRpcEndpoint(endpoint: string): Promise<ValidationResult> {
-    // Basic validation
     if (!endpoint.trim()) {
         return { isValid: false, error: VALIDATION_ERRORS.EMPTY_ENDPOINT }
     }
@@ -58,32 +63,66 @@ export async function validateRpcEndpoint(endpoint: string): Promise<ValidationR
         return { isValid: false, error: VALIDATION_ERRORS.INVALID_URL }
     }
 
-    const url = new URL(endpoint)
+    // Convert HTTP/HTTPS to WebSocket if needed
+    const wsEndpoint = convertToWebSocketUrl(endpoint);
+    const url = new URL(wsEndpoint);
+
+    // Now validate WebSocket protocol
     if (url.protocol !== 'ws:' && url.protocol !== 'wss:') {
         return { isValid: false, error: VALIDATION_ERRORS.INVALID_RPC_PROTOCOL }
     }
 
-    // Mock validation - replace with actual WebSocket connection test
+    // Test actual WebSocket connection
     try {
-        // In production: attempt WebSocket connection
-        // const ws = new WebSocket(endpoint)
-        // return new Promise((resolve) => {
-        //   ws.onopen = () => resolve({ isValid: true })
-        //   ws.onerror = () => resolve({ isValid: false, error: VALIDATION_ERRORS.WEBSOCKET_ERROR })
-        // })
+        const isConnectable = await testWebSocketConnection(wsEndpoint);
 
-        return {
-            isValid: false,
-            error: VALIDATION_ERRORS.WEBSOCKET_ERROR
+        if (isConnectable) {
+            return {
+                isValid: true,
+            };
+        } else {
+            return {
+                isValid: false,
+                error: VALIDATION_ERRORS.WEBSOCKET_ERROR
+            };
         }
     } catch (error) {
-        console.error(error)
-
+        console.error('WebSocket validation error:', error);
         return {
             isValid: false,
             error: VALIDATION_ERRORS.NETWORK_ERROR
-        }
+        };
     }
+}
+
+// Test WebSocket connection
+function testWebSocketConnection(endpoint: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        const ws = new WebSocket(`${endpoint}/websocket`);
+        const timeout = setTimeout(() => {
+            ws.close();
+            resolve(false);
+        }, 5000); // 5 second timeout
+
+        ws.onopen = () => {
+            clearTimeout(timeout);
+            ws.close();
+            resolve(true);
+        };
+
+        ws.onerror = () => {
+            clearTimeout(timeout);
+            resolve(false);
+        };
+
+        ws.onclose = (event) => {
+            clearTimeout(timeout);
+            // If it closes immediately after opening, consider it valid
+            if (event.wasClean) {
+                resolve(true);
+            }
+        };
+    });
 }
 
 // Validate both endpoints concurrently
@@ -97,5 +136,26 @@ export async function validateEndpoints(restEndpoint: string, rpcEndpoint: strin
         rest: restResult,
         rpc: rpcResult,
         isValid: restResult.isValid && rpcResult.isValid
+    }
+}
+
+// Convert HTTP/HTTPS URLs to WebSocket URLs
+export function convertToWebSocketUrl(url: string): string {
+    try {
+        const parsedUrl = new URL(url);
+
+        // Convert protocols
+        if (parsedUrl.protocol === 'http:') {
+            parsedUrl.protocol = 'ws:';
+        } else if (parsedUrl.protocol === 'https:') {
+            parsedUrl.protocol = 'wss:';
+        }
+
+        return parsedUrl.toString();
+    } catch (error) {
+        // If URL parsing fails, return original string
+        console.warn('Failed to parse URL for WebSocket conversion:', error);
+
+        return url;
     }
 }

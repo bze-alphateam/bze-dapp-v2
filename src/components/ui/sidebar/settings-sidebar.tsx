@@ -17,7 +17,7 @@ import {
 import { useTheme } from "next-themes"
 import { useState, useEffect } from 'react'
 import { useSettings } from '@/hooks/useSettings'
-import { validateEndpoints } from '@/utils/validation'
+import {convertToWebSocketUrl, validateEndpoints} from '@/utils/validation'
 import { EndpointValidationResults } from '@/types/settings'
 import { LuSettings, LuX } from 'react-icons/lu'
 
@@ -118,11 +118,13 @@ export const SettingsSidebarContent = () => {
     }, [isLoaded, settings])
 
     const handleValidateEndpoints = async () => {
+        console.log('Validating endpoints...', restEndpoint, rpcEndpoint)
         setIsValidating(true)
         setValidationResults({})
 
         try {
             const results = await validateEndpoints(restEndpoint, rpcEndpoint)
+            console.log('Validation results:', results)
             setValidationResults({
                 rest: results.rest,
                 rpc: results.rpc
@@ -141,12 +143,10 @@ export const SettingsSidebarContent = () => {
     const handleSaveEndpoints = () => {
         const success = updateEndpoints({
             restEndpoint: restEndpoint.trim(),
-            rpcEndpoint: rpcEndpoint.trim()
+            rpcEndpoint: convertToWebSocketUrl(rpcEndpoint.trim())
         })
 
-        if (success) {
-            console.log('Endpoints saved successfully')
-        } else {
+        if (!success) {
             console.error('Failed to save endpoints')
         }
     }
