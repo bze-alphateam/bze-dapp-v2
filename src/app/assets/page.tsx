@@ -220,19 +220,11 @@ const mockAssets: Asset[] = [
 type ExpandedAsset = typeof mockAssets[number]
 
 export default function AssetsPage() {
-    const [expandedAssets, setExpandedAssets] = useState<Set<string>>(new Set())
+    const [expandedAsset, setExpandedAsset] = useState<string>('')
     const [searchTerm, setSearchTerm] = useState('')
 
     const toggleExpanded = (assetId: string) => {
-        setExpandedAssets(prev => {
-            const newSet = new Set(prev)
-            if (newSet.has(assetId)) {
-                newSet.delete(assetId)
-            } else {
-                newSet.add(assetId)
-            }
-            return newSet
-        })
+        setExpandedAsset(assetId !== expandedAsset ? assetId : '')
     }
 
     const getTypeColor = (type: TokenType) => {
@@ -249,7 +241,7 @@ export default function AssetsPage() {
     }
 
     const renderAssetCard = (asset: ExpandedAsset) => {
-        const isExpanded = expandedAssets.has(asset.id)
+        const isExpanded = asset.id === expandedAsset
 
         return (
             <Box
