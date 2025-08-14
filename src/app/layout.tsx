@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 
 import {Provider} from "@/components/ui/provider";
 import {TopNavBar} from "@/components/ui/navigation/navbar";
+import {Toaster} from "@/components/ui/toaster";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -23,6 +24,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
             <Provider>
                 <TopNavBar appLabel={"DEX"} />
                 {children}
+                <Toaster />
             </Provider>
           </body>
       </html>

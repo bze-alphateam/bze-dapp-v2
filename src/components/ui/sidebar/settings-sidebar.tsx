@@ -20,6 +20,7 @@ import { useSettings } from '@/hooks/useSettings'
 import {convertToWebSocketUrl, validateEndpoints} from '@/utils/validation'
 import { EndpointValidationResults } from '@/types/settings'
 import { LuSettings, LuX } from 'react-icons/lu'
+import {useToast} from "@/hooks/useToast";
 
 // Main Settings Sidebar Drawer Component
 interface SettingsSidebarProps {
@@ -101,6 +102,7 @@ export const SettingsSidebar = ({ isOpen, onClose }: SettingsSidebarProps) => {
 // Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
     const { theme, setTheme } = useTheme()
+    const {toast} = useToast()
     const { settings, isLoaded, updateEndpoints, defaultSettings } = useSettings()
 
     // Local form state
@@ -158,8 +160,8 @@ export const SettingsSidebarContent = () => {
             rpcEndpoint: convertToWebSocketUrl(rpcEndpoint.trim())
         })
 
-        if (!success) {
-            console.error('Failed to save endpoints')
+        if (success) {
+            toast.success('Settings successfully saved')
         }
     }
 
