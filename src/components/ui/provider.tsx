@@ -6,6 +6,28 @@ import {
   type ColorModeProviderProps,
 } from "./color-mode"
 
+import { ChainProvider } from "@interchain-kit/react"
+import { keplrWallet } from "@interchain-kit/keplr-extension";
+import { leapWallet } from "@interchain-kit/leap-extension";
+import { WCWallet } from "@interchain-kit/core";
+
+import {getAssetLists, getWalletChainsNames} from "@/constants/chain";
+
+const walletConnect = new WCWallet(
+    undefined,
+    {
+        projectId: '7e8510ae772ef527bd711c9bc02f0cb7',
+        metadata: {
+            name: "BeeZee DEX",
+            description: "DEX & More",
+            url: "https://app.getbze.com",
+            icons: [
+                "https://app.getbze.com/images/logo_320px.png",
+            ],
+        },
+    }
+);
+
 const system = createSystem(defaultConfig, {
   globalCss: {
     body: {
@@ -29,9 +51,20 @@ const system = createSystem(defaultConfig, {
 })
 
 export function Provider(props: ColorModeProviderProps) {
-  return (
-    <ChakraProvider value={system}>
-      <ColorModeProvider {...props} />
-    </ChakraProvider>
-  )
+    return (
+        <ChainProvider
+            //@ts-ignore
+            wallets={[keplrWallet, leapWallet, walletConnect]}
+            signerOptions={{
+                preferredSignType: () => 'amino',
+                signing: () => undefined,
+            }}
+            chains={getWalletChainsNames()}
+            assetLists={getAssetLists()}
+        >
+            <ChakraProvider value={system}>
+                <ColorModeProvider {...props} />
+            </ChakraProvider>
+        </ChainProvider>
+      )
 }

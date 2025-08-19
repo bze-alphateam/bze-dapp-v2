@@ -6,8 +6,8 @@ export const SETTINGS_STORAGE_KEY = 'bze_app_settings'
 // Default application settings
 export const DEFAULT_SETTINGS: AppSettings = {
     endpoints: {
-        restEndpoint: process.env.NEXT_PUBLIC_REST_ENDPOINT || 'https://rest.getbze.com',
-        rpcEndpoint: process.env.NEXT_PUBLIC_RPC_ENDPOINT || 'wss://rpc.getbze.com'
+        restEndpoint: process.env.NEXT_PUBLIC_REST_ENDPOINT ?? '',
+        rpcEndpoint: process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? ''
     }
 }
 
