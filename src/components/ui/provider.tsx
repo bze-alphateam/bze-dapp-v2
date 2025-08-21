@@ -53,7 +53,7 @@ const system = createSystem(defaultConfig, {
 export function Provider(props: ColorModeProviderProps) {
     return (
         <ChainProvider
-            //@ts-ignore
+            //@ts-expect-error wallets
             wallets={[keplrWallet, leapWallet, walletConnect]}
             signerOptions={{
                 preferredSignType: () => 'amino',
