@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, {useEffect, useState} from 'react'
 import Image from 'next/image'
 import {
     Box,
@@ -25,227 +25,186 @@ import {
     LuSearch
 } from 'react-icons/lu'
 import {ListingTitle} from "@/components/ui/listing/title";
+import {Asset} from "@/types/asset";
+import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
+import {getChainAssets} from "@/service/assets_factory";
+import {isNativeDenom} from "@/utils/denom";
 
-// Type definitions
-type TokenType = 'native' | 'factory' | 'ibc'
-
-type TradingPair = {
-    pair: string
-    exchange: string
-    volume24h: string
-    priceChange24h: number
-}
-
-type LiquidityPool = {
-    name: string
-    tvl: string
-    apr: string
-    volume24h: string
-}
-
-type FactoryDetails = {
-    creator: string
-    mintable: boolean
-    burnable: boolean
-    maxSupply: string
-    currentSupply: string
-    createdAt: string
-}
-
-type IBCDetails = {
-    sourceChain: string
-    channelId: string
-    baseDenom: string
-    path: string
-    lastUpdate: string
-}
-
-type Asset = {
-    id: string
-    name: string
-    ticker: string
-    type: TokenType
-    logo: string
-    price: string
-    priceChange24h: number
-    marketCap: string
-    volume24h: string
-    tradingPairs: TradingPair[]
-    liquidityPools: LiquidityPool[]
-    factoryDetails?: FactoryDetails
-    ibcDetails?: IBCDetails
-}
-
-// Mock data
-const mockAssets: Asset[] = [
-    {
-        id: '1',
-        name: 'BeeZee',
-        ticker: 'BZE',
-        type: 'native',
-        logo: '/images/bze_alternative_512x512.png',
-        price: '$0.0234',
-        priceChange24h: 5.67,
-        marketCap: '$2.34M',
-        volume24h: '$456.7K',
-        tradingPairs: [
-            { pair: 'BZE/USDT', exchange: 'DEX1', volume24h: '$234.5K', priceChange24h: 5.2 },
-            { pair: 'BZE/ATOM', exchange: 'DEX2', volume24h: '$122.2K', priceChange24h: 6.1 }
-        ],
-        liquidityPools: [
-            { name: 'BZE/USDT Pool', tvl: '$1.2M', apr: '45.6%', volume24h: '$234.5K' },
-            { name: 'BZE/ATOM Pool', tvl: '$890K', apr: '38.2%', volume24h: '$122.2K' }
-        ]
-    },
-    {
-        id: '2',
-        name: 'Wrapped Bitcoin',
-        ticker: 'WBTC',
-        type: 'ibc',
-        logo: '/images/token.svg',
-        price: '$42,156.23',
-        priceChange24h: -2.34,
-        marketCap: '$45.6M',
-        volume24h: '$1.2M',
-        tradingPairs: [
-            { pair: 'WBTC/BZE', exchange: 'DEX1', volume24h: '$567.8K', priceChange24h: -2.1 },
-            { pair: 'WBTC/USDT', exchange: 'DEX1', volume24h: '$632.2K', priceChange24h: -2.5 }
-        ],
-        liquidityPools: [
-            { name: 'WBTC/BZE Pool', tvl: '$3.4M', apr: '22.3%', volume24h: '$567.8K' }
-        ],
-        ibcDetails: {
-            sourceChain: 'Cosmos Hub',
-            channelId: 'channel-141',
-            baseDenom: 'uatom',
-            path: 'transfer/channel-141',
-            lastUpdate: '2024-01-15 14:30:00'
-        }
-    },
-    {
-        id: '3',
-        name: 'Stable USD',
-        ticker: 'SUSD',
-        type: 'factory',
-        logo: '/images/logo_320px.png',
-        price: '$1.00',
-        priceChange24h: 0.01,
-        marketCap: '$12.3M',
-        volume24h: '$2.3M',
-        tradingPairs: [
-            { pair: 'SUSD/BZE', exchange: 'DEX1', volume24h: '$1.1M', priceChange24h: 0.02 },
-            { pair: 'SUSD/USDT', exchange: 'DEX2', volume24h: '$1.2M', priceChange24h: 0.01 }
-        ],
-        liquidityPools: [
-            { name: 'SUSD/BZE Pool', tvl: '$5.6M', apr: '12.4%', volume24h: '$1.1M' },
-            { name: 'SUSD/USDT Pool', tvl: '$7.8M', apr: '8.9%', volume24h: '$1.2M' },
-            { name: 'SUSD/DAI Pool', tvl: '$4.2M', apr: '6.7%', volume24h: '$890K' }
-        ],
-        factoryDetails: {
-            creator: 'bze1qxy...7n8p',
-            mintable: true,
-            burnable: true,
-            maxSupply: '100,000,000',
-            currentSupply: '12,345,678',
-            createdAt: '2023-12-01 10:00:00'
-        }
-    },
-    {
-        id: '4',
-        name: 'Cosmos',
-        ticker: 'ATOM',
-        type: 'ibc',
-        logo: '/images/token.svg',
-        price: '$9.87',
-        priceChange24h: 3.45,
-        marketCap: '$2.8M',
-        volume24h: '$567K',
-        tradingPairs: [
-            { pair: 'ATOM/BZE', exchange: 'DEX1', volume24h: '$567K', priceChange24h: 3.45 }
-        ],
-        liquidityPools: [
-            { name: 'ATOM/BZE Pool', tvl: '$1.8M', apr: '28.9%', volume24h: '$567K' }
-        ],
-        ibcDetails: {
-            sourceChain: 'Cosmos Hub',
-            channelId: 'channel-0',
-            baseDenom: 'uatom',
-            path: 'transfer/channel-0',
-            lastUpdate: '2024-01-15 12:00:00'
-        }
-    },
-    {
-        id: '5',
-        name: 'Meme Token',
-        ticker: 'MEME',
-        type: 'factory',
-        logo: '/images/logo_320px.png',
-        price: '$0.00001234',
-        priceChange24h: 156.78,
-        marketCap: '$456K',
-        volume24h: '$234K',
-        tradingPairs: [],
-        liquidityPools: [],
-        factoryDetails: {
-            creator: 'bze1abc...xyz9',
-            mintable: false,
-            burnable: true,
-            maxSupply: '1,000,000,000,000',
-            currentSupply: '1,000,000,000,000',
-            createdAt: '2024-01-10 15:30:00'
-        }
-    },
-    {
-        id: '6',
-        name: 'Osmosis',
-        ticker: 'OSMO',
-        type: 'ibc',
-        logo: '/images/token.svg',
-        price: '$0.756',
-        priceChange24h: -1.23,
-        marketCap: '$1.2M',
-        volume24h: '$123K',
-        tradingPairs: [],
-        liquidityPools: [],
-        ibcDetails: {
-            sourceChain: 'Osmosis',
-            channelId: 'channel-95',
-            baseDenom: 'uosmo',
-            path: 'transfer/channel-95',
-            lastUpdate: '2024-01-14 09:15:00'
-        }
-    }
-] as const
-
-type ExpandedAsset = typeof mockAssets[number]
+// const mockAssets = [
+//     {
+//         name: 'BeeZee',
+//         ticker: 'BZE',
+//         type: 'native',
+//         logo: '/images/bze_alternative_512x512.png',
+//         price: '$0.0234',
+//         priceChange24h: 5.67,
+//         marketCap: '$2.34M',
+//         volume24h: '$456.7K',
+//         tradingPairs: [
+//             { pair: 'BZE/USDT', exchange: 'DEX1', volume24h: '$234.5K', priceChange24h: 5.2 },
+//             { pair: 'BZE/ATOM', exchange: 'DEX2', volume24h: '$122.2K', priceChange24h: 6.1 }
+//         ],
+//         liquidityPools: [
+//             { name: 'BZE/USDT Pool', tvl: '$1.2M', apr: '45.6%', volume24h: '$234.5K' },
+//             { name: 'BZE/ATOM Pool', tvl: '$890K', apr: '38.2%', volume24h: '$122.2K' }
+//         ]
+//     },
+//     {
+//         name: 'Wrapped Bitcoin',
+//         ticker: 'WBTC',
+//         type: 'ibc',
+//         logo: '/images/token.svg',
+//         price: '$42,156.23',
+//         priceChange24h: -2.34,
+//         marketCap: '$45.6M',
+//         volume24h: '$1.2M',
+//         tradingPairs: [
+//             { pair: 'WBTC/BZE', exchange: 'DEX1', volume24h: '$567.8K', priceChange24h: -2.1 },
+//             { pair: 'WBTC/USDT', exchange: 'DEX1', volume24h: '$632.2K', priceChange24h: -2.5 }
+//         ],
+//         liquidityPools: [
+//             { name: 'WBTC/BZE Pool', tvl: '$3.4M', apr: '22.3%', volume24h: '$567.8K' }
+//         ],
+//         ibcDetails: {
+//             sourceChain: 'Cosmos Hub',
+//             channelId: 'channel-141',
+//             baseDenom: 'uatom',
+//             path: 'transfer/channel-141',
+//             lastUpdate: '2024-01-15 14:30:00'
+//         }
+//     },
+//     {
+//         name: 'Stable USD',
+//         ticker: 'SUSD',
+//         type: 'factory',
+//         logo: '/images/logo_320px.png',
+//         price: '$1.00',
+//         priceChange24h: 0.01,
+//         marketCap: '$12.3M',
+//         volume24h: '$2.3M',
+//         tradingPairs: [
+//             { pair: 'SUSD/BZE', exchange: 'DEX1', volume24h: '$1.1M', priceChange24h: 0.02 },
+//             { pair: 'SUSD/USDT', exchange: 'DEX2', volume24h: '$1.2M', priceChange24h: 0.01 }
+//         ],
+//         liquidityPools: [
+//             { name: 'SUSD/BZE Pool', tvl: '$5.6M', apr: '12.4%', volume24h: '$1.1M' },
+//             { name: 'SUSD/USDT Pool', tvl: '$7.8M', apr: '8.9%', volume24h: '$1.2M' },
+//             { name: 'SUSD/DAI Pool', tvl: '$4.2M', apr: '6.7%', volume24h: '$890K' }
+//         ],
+//         factoryDetails: {
+//             creator: 'bze1qxy...7n8p',
+//             mintable: true,
+//             burnable: true,
+//             maxSupply: '100,000,000',
+//             currentSupply: '12,345,678',
+//             createdAt: '2023-12-01 10:00:00'
+//         }
+//     },
+//     {
+//         name: 'Cosmos',
+//         ticker: 'ATOM',
+//         type: 'ibc',
+//         logo: '/images/token.svg',
+//         price: '$9.87',
+//         priceChange24h: 3.45,
+//         marketCap: '$2.8M',
+//         volume24h: '$567K',
+//         tradingPairs: [
+//             { pair: 'ATOM/BZE', exchange: 'DEX1', volume24h: '$567K', priceChange24h: 3.45 }
+//         ],
+//         liquidityPools: [
+//             { name: 'ATOM/BZE Pool', tvl: '$1.8M', apr: '28.9%', volume24h: '$567K' }
+//         ],
+//         ibcDetails: {
+//             sourceChain: 'Cosmos Hub',
+//             channelId: 'channel-0',
+//             baseDenom: 'uatom',
+//             path: 'transfer/channel-0',
+//             lastUpdate: '2024-01-15 12:00:00'
+//         }
+//     },
+//     {
+//         name: 'Meme Token',
+//         ticker: 'MEME',
+//         type: 'factory',
+//         logo: '/images/logo_320px.png',
+//         price: '$0.00001234',
+//         priceChange24h: 156.78,
+//         marketCap: '$456K',
+//         volume24h: '$234K',
+//         tradingPairs: [],
+//         liquidityPools: [],
+//         factoryDetails: {
+//             creator: 'bze1abc...xyz9',
+//             mintable: false,
+//             burnable: true,
+//             maxSupply: '1,000,000,000,000',
+//             currentSupply: '1,000,000,000,000',
+//             createdAt: '2024-01-10 15:30:00'
+//         }
+//     },
+//     {
+//         name: 'Osmosis',
+//         ticker: 'OSMO',
+//         type: 'ibc',
+//         logo: '/images/token.svg',
+//         price: '$0.756',
+//         priceChange24h: -1.23,
+//         marketCap: '$1.2M',
+//         volume24h: '$123K',
+//         tradingPairs: [],
+//         liquidityPools: [],
+//         ibcDetails: {
+//             sourceChain: 'Osmosis',
+//             channelId: 'channel-95',
+//             baseDenom: 'uosmo',
+//             path: 'transfer/channel-95',
+//             lastUpdate: '2024-01-14 09:15:00'
+//         }
+//     }
+// ] as const
 
 export default function AssetsPage() {
     const [expandedAsset, setExpandedAsset] = useState<string>('')
     const [searchTerm, setSearchTerm] = useState('')
 
+    //TODO: use a hook for asset list
+    const [assets, setAssets] = useState<Asset[]>([]);
+
+    const filteredAssets = () => {
+        if (searchTerm === '') {
+            return assets
+        } else {
+            return assets.filter(asset =>
+                asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                asset.ticker.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+        }
+    }
+
     const toggleExpanded = (assetId: string) => {
         setExpandedAsset(assetId !== expandedAsset ? assetId : '')
     }
 
-    const getTypeColor = (type: TokenType) => {
+    const getTypeColor = (type: string) => {
         switch (type) {
-            case 'native':
+            case ASSET_TYPE_NATIVE:
                 return 'purple'
-            case 'factory':
+            case ASSET_TYPE_FACTORY:
                 return 'blue'
-            case 'ibc':
+            case ASSET_TYPE_IBC:
                 return 'teal'
             default:
                 return 'gray'
         }
     }
 
-    const renderAssetCard = (asset: ExpandedAsset) => {
-        const isExpanded = asset.id === expandedAsset
+    const renderAssetCard = (asset: Asset) => {
+        const isExpanded = asset.denom === expandedAsset
 
         return (
             <Box
-                key={asset.id}
+                key={asset.denom}
                 bg="bg.surface"
                 borderWidth="1px"
                 borderColor="border.subtle"
@@ -259,7 +218,7 @@ export default function AssetsPage() {
                     align="center"
                     justify="space-between"
                     cursor="pointer"
-                    onClick={() => toggleExpanded(asset.id)}
+                    onClick={() => toggleExpanded(asset.denom)}
                     _hover={{ bg: "bg.muted" }}
                 >
                     <HStack gap={3}>
@@ -298,19 +257,19 @@ export default function AssetsPage() {
                     <HStack gap={4}>
                         <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
                             <Text fontWeight="medium" fontSize="md">
-                                {asset.price}
+                                $1.312
                             </Text>
                             <HStack gap={1} justify="flex-end">
-                                {asset.priceChange24h > 0 ? (
+                                {1 > 0 ? (
                                     <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
                                 ) : (
                                     <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
                                 )}
                                 <Text
                                     fontSize="sm"
-                                    color={asset.priceChange24h > 0 ? 'green.500' : 'red.500'}
+                                    color={1 > 0 ? 'green.500' : 'red.500'}
                                 >
-                                    {Math.abs(asset.priceChange24h).toFixed(2)}%
+                                    23%
                                 </Text>
                             </HStack>
                         </Box>
@@ -327,18 +286,18 @@ export default function AssetsPage() {
                 {/* Mobile Price Display */}
                 <Box display={{ base: 'block', sm: 'none' }} px={4} pb={2}>
                     <HStack justify="space-between">
-                        <Text fontWeight="medium">{asset.price}</Text>
+                        <Text fontWeight="medium">$1.312</Text>
                         <HStack gap={1}>
-                            {asset.priceChange24h > 0 ? (
+                            {1 > 0 ? (
                                 <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
                             ) : (
                                 <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
                             )}
                             <Text
                                 fontSize="sm"
-                                color={asset.priceChange24h > 0 ? 'green.500' : 'red.500'}
+                                color={1 > 0 ? 'green.500' : 'red.500'}
                             >
-                                {Math.abs(asset.priceChange24h).toFixed(2)}%
+                                23%
                             </Text>
                         </HStack>
                     </HStack>
@@ -359,11 +318,11 @@ export default function AssetsPage() {
                         <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
                             <Box>
                                 <Text color="fg.muted" fontSize="sm">Market Cap</Text>
-                                <Text fontWeight="medium">{asset.marketCap}</Text>
+                                <Text fontWeight="medium">$32,021.321</Text>
                             </Box>
                             <Box>
                                 <Text color="fg.muted" fontSize="sm">24h Volume</Text>
-                                <Text fontWeight="medium">{asset.volume24h}</Text>
+                                <Text fontWeight="medium">$130.2</Text>
                             </Box>
                             <Box>
                                 <Text color="fg.muted" fontSize="sm">Type</Text>
@@ -381,32 +340,32 @@ export default function AssetsPage() {
                                 <LuArrowLeftRight size={16} />
                                 <Text fontWeight="semibold">Trading Pairs</Text>
                             </HStack>
-                            {asset.tradingPairs.length > 0 ? (
+                            {1 > 2 ? (
                                 <VStack align="stretch" gap={2}>
-                                    {asset.tradingPairs.map((pair, index) => (
-                                        <Box
-                                            key={index}
-                                            p={3}
-                                            bg="bg.muted"
-                                            borderRadius="md"
-                                        >
-                                            <Flex justify="space-between" align="center">
-                                                <Box>
-                                                    <Text fontWeight="medium">{pair.pair}</Text>
-                                                    <Text color="fg.muted" fontSize="sm">{pair.exchange}</Text>
-                                                </Box>
-                                                <Box textAlign="right">
-                                                    <Text fontSize="sm">{pair.volume24h}</Text>
-                                                    <Text
-                                                        fontSize="sm"
-                                                        color={pair.priceChange24h > 0 ? 'green.500' : 'red.500'}
-                                                    >
-                                                        {pair.priceChange24h > 0 ? '+' : ''}{pair.priceChange24h}%
-                                                    </Text>
-                                                </Box>
-                                            </Flex>
-                                        </Box>
-                                    ))}
+                                    {/*{asset.tradingPairs.map((pair, index) => (*/}
+                                    {/*    <Box*/}
+                                    {/*        key={index}*/}
+                                    {/*        p={3}*/}
+                                    {/*        bg="bg.muted"*/}
+                                    {/*        borderRadius="md"*/}
+                                    {/*    >*/}
+                                    {/*        <Flex justify="space-between" align="center">*/}
+                                    {/*            <Box>*/}
+                                    {/*                <Text fontWeight="medium">{pair.pair}</Text>*/}
+                                    {/*                <Text color="fg.muted" fontSize="sm">{pair.exchange}</Text>*/}
+                                    {/*            </Box>*/}
+                                    {/*            <Box textAlign="right">*/}
+                                    {/*                <Text fontSize="sm">{pair.volume24h}</Text>*/}
+                                    {/*                <Text*/}
+                                    {/*                    fontSize="sm"*/}
+                                    {/*                    color={pair.priceChange24h > 0 ? 'green.500' : 'red.500'}*/}
+                                    {/*                >*/}
+                                    {/*                    {pair.priceChange24h > 0 ? '+' : ''}{pair.priceChange24h}%*/}
+                                    {/*                </Text>*/}
+                                    {/*            </Box>*/}
+                                    {/*        </Flex>*/}
+                                    {/*    </Box>*/}
+                                    {/*))}*/}
                                 </VStack>
                             ) : (
                                 <Text color="fg.muted" fontSize="sm">No trading pairs available</Text>
@@ -419,40 +378,40 @@ export default function AssetsPage() {
                                 <LuDroplets size={16} />
                                 <Text fontWeight="semibold">Liquidity Pools</Text>
                             </HStack>
-                            {asset.liquidityPools.length > 0 ? (
-                                <VStack align="stretch" gap={2}>
-                                    {asset.liquidityPools.map((pool, index) => (
-                                        <Box
-                                            key={index}
-                                            p={3}
-                                            bg="bg.muted"
-                                            borderRadius="md"
-                                        >
-                                            <Text fontWeight="medium" mb={2}>{pool.name}</Text>
-                                            <Grid gridTemplateColumns="repeat(3, 1fr)" gap={2}>
-                                                <Box>
-                                                    <Text color="fg.muted" fontSize="xs">TVL</Text>
-                                                    <Text fontSize="sm" fontWeight="medium">{pool.tvl}</Text>
-                                                </Box>
-                                                <Box>
-                                                    <Text color="fg.muted" fontSize="xs">APR</Text>
-                                                    <Text fontSize="sm" fontWeight="medium" color="green.500">{pool.apr}</Text>
-                                                </Box>
-                                                <Box>
-                                                    <Text color="fg.muted" fontSize="xs">24h Volume</Text>
-                                                    <Text fontSize="sm" fontWeight="medium">{pool.volume24h}</Text>
-                                                </Box>
-                                            </Grid>
-                                        </Box>
-                                    ))}
-                                </VStack>
-                            ) : (
+                            {/*{asset.liquidityPools.length > 0 ? (*/}
+                            {/*    <VStack align="stretch" gap={2}>*/}
+                            {/*        {asset.liquidityPools.map((pool, index) => (*/}
+                            {/*            <Box*/}
+                            {/*                key={index}*/}
+                            {/*                p={3}*/}
+                            {/*                bg="bg.muted"*/}
+                            {/*                borderRadius="md"*/}
+                            {/*            >*/}
+                            {/*                <Text fontWeight="medium" mb={2}>{pool.name}</Text>*/}
+                            {/*                <Grid gridTemplateColumns="repeat(3, 1fr)" gap={2}>*/}
+                            {/*                    <Box>*/}
+                            {/*                        <Text color="fg.muted" fontSize="xs">TVL</Text>*/}
+                            {/*                        <Text fontSize="sm" fontWeight="medium">{pool.tvl}</Text>*/}
+                            {/*                    </Box>*/}
+                            {/*                    <Box>*/}
+                            {/*                        <Text color="fg.muted" fontSize="xs">APR</Text>*/}
+                            {/*                        <Text fontSize="sm" fontWeight="medium" color="green.500">{pool.apr}</Text>*/}
+                            {/*                    </Box>*/}
+                            {/*                    <Box>*/}
+                            {/*                        <Text color="fg.muted" fontSize="xs">24h Volume</Text>*/}
+                            {/*                        <Text fontSize="sm" fontWeight="medium">{pool.volume24h}</Text>*/}
+                            {/*                    </Box>*/}
+                            {/*                </Grid>*/}
+                            {/*            </Box>*/}
+                            {/*        ))}*/}
+                            {/*    </VStack>*/}
+                            {/*) : (*/}
                                 <Text color="fg.muted" fontSize="sm">No liquidity pools available</Text>
-                            )}
+                            {/*)}*/}
                         </Box>
 
                         {/* Factory Details */}
-                        {asset.type === 'factory' && asset.factoryDetails && (
+                        {asset.type === 'factory' && (
                             <>
                                 <Separator />
                                 <Box>
@@ -463,27 +422,27 @@ export default function AssetsPage() {
                                     <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Creator</Text>
-                                            <Text fontSize="sm" fontFamily="mono">{asset.factoryDetails.creator}</Text>
+                                            <Text fontSize="sm" fontFamily="mono">bzesdsa...2311213</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Created At</Text>
-                                            <Text fontSize="sm">{asset.factoryDetails.createdAt}</Text>
+                                            <Text fontSize="sm">Joi la 13:30</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Current Supply</Text>
-                                            <Text fontSize="sm">{asset.factoryDetails.currentSupply}</Text>
+                                            <Text fontSize="sm">1,333,212.231</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Max Supply</Text>
-                                            <Text fontSize="sm">{asset.factoryDetails.maxSupply}</Text>
+                                            <Text fontSize="sm">200,000,000</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Features</Text>
                                             <HStack gap={2}>
-                                                {asset.factoryDetails.mintable && (
+                                                {1 && (
                                                     <Badge colorPalette="green" size="sm">Mintable</Badge>
                                                 )}
-                                                {asset.factoryDetails.burnable && (
+                                                {1 && (
                                                     <Badge colorPalette="orange" size="sm">Burnable</Badge>
                                                 )}
                                             </HStack>
@@ -494,7 +453,7 @@ export default function AssetsPage() {
                         )}
 
                         {/* IBC Details */}
-                        {asset.type === 'ibc' && asset.ibcDetails && (
+                        {asset.type === 'ibc' && (
                             <>
                                 <Separator />
                                 <Box>
@@ -505,23 +464,19 @@ export default function AssetsPage() {
                                     <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Source Chain</Text>
-                                            <Text fontSize="sm">{asset.ibcDetails.sourceChain}</Text>
+                                            <Text fontSize="sm">AtomOne</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Channel ID</Text>
-                                            <Text fontSize="sm" fontFamily="mono">{asset.ibcDetails.channelId}</Text>
+                                            <Text fontSize="sm" fontFamily="mono">channel-2</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Base Denom</Text>
-                                            <Text fontSize="sm" fontFamily="mono">{asset.ibcDetails.baseDenom}</Text>
+                                            <Text fontSize="sm" fontFamily="mono">atone</Text>
                                         </Box>
                                         <Box>
                                             <Text color="fg.muted" fontSize="sm">Path</Text>
-                                            <Text fontSize="sm" fontFamily="mono">{asset.ibcDetails.path}</Text>
-                                        </Box>
-                                        <Box gridColumn={{ base: 'span 1', sm: 'span 2' }}>
-                                            <Text color="fg.muted" fontSize="sm">Last Update</Text>
-                                            <Text fontSize="sm">{asset.ibcDetails.lastUpdate}</Text>
+                                            <Text fontSize="sm" fontFamily="mono">transfer/channel-2/test</Text>
                                         </Box>
                                     </Grid>
                                 </Box>
@@ -533,6 +488,30 @@ export default function AssetsPage() {
         )
     }
 
+    const fetchAssets = async () => {
+        const all = await getChainAssets()
+        setAssets(all.sort((token1: Asset, token2: Asset) => {
+            if (isNativeDenom(token1.denom)) {
+                return -1;
+            }
+
+            if (token1.verified && !token2.verified) {
+                return -1;
+            }
+
+            if (token2.verified && !token1.verified) {
+                return 1;
+            }
+
+            return token1.name > token2.name ? 1 : -1;
+        }));
+    }
+
+    useEffect(() => {
+        console.log("use effect")
+        fetchAssets()
+    }, [])
+
     return (
         <Container maxW="7xl" py={8}>
             <VStack align="stretch" gap={6}>
@@ -543,24 +522,24 @@ export default function AssetsPage() {
                 <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Total Assets</Text>
-                        <Text fontSize="2xl" fontWeight="bold">{mockAssets.length}</Text>
+                        <Text fontSize="2xl" fontWeight="bold">{assets.length}</Text>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Native</Text>
                         <Text fontSize="2xl" fontWeight="bold">
-                            {mockAssets.filter(a => a.type === 'native').length}
+                            {assets.filter(a => a.type === ASSET_TYPE_NATIVE).length}
                         </Text>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Factory</Text>
                         <Text fontSize="2xl" fontWeight="bold">
-                            {mockAssets.filter(a => a.type === 'factory').length}
+                            {assets.filter(a => a.type === ASSET_TYPE_FACTORY).length}
                         </Text>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">IBC</Text>
                         <Text fontSize="2xl" fontWeight="bold">
-                            {mockAssets.filter(a => a.type === 'ibc').length}
+                            {assets.filter(a => a.type === ASSET_TYPE_IBC).length}
                         </Text>
                     </Box>
                 </Grid>
@@ -579,7 +558,7 @@ export default function AssetsPage() {
                 </Box>
                 {/* Assets List */}
                 <VStack align="stretch" gap={3}>
-                    {mockAssets.map(renderAssetCard)}
+                    {filteredAssets().map(renderAssetCard)}
                 </VStack>
             </VStack>
         </Container>
