@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@bze/bzejs": "^1.8.4",
+    "@chain-registry/utils": "^2.0.47",
     "@chakra-ui/react": "^3.22.0",
     "@cosmjs/stargate": "^0.35.0",
     "@emotion/react": "^11.14.0",
