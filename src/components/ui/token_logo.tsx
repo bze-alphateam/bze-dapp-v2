@@ -69,7 +69,7 @@ export const TokenLogo = ({
                     alt={`${symbol} token logo`}
                     w="full"
                     h="full"
-                    objectFit="cover"
+                    objectFit="contain"
                     fallback={fallbackComponent}
                     {...props}
                 />

@@ -1,10 +1,10 @@
 import {getAllSupply, getAllSupplyMetadata} from "@/query/supply";
 import {MetadataSDKType} from "@bze/bzejs/cosmos/bank/v1beta1/bank";
 import {Asset} from "@/types/asset";
-import {getDenomType, isIbcDenom, isLpDenom, truncateDenom} from "@/utils/denom";
+import {getDenomType, isFactoryDenom, isIbcDenom, isLpDenom, isNativeDenom, truncateDenom} from "@/utils/denom";
 import {TOKEN_LOGO_PLACEHOLDER} from "@/constants/placeholders";
 import {EXCLUDED_ASSETS, STABLE_COINS, VERIFIED_ASSETS} from "@/constants/assets";
-import {getIBCAssetList} from "@/constants/chain";
+import {getAssetLists, getChainName, getIBCAssetList} from "@/constants/chain";
 import {getExponentByDenomFromAsset} from "@chain-registry/utils";
 
 
@@ -16,33 +16,31 @@ export const getChainAssets = async (): Promise<Asset[]> => {
     }
 
     return supply
-        .filter(asset => !isLpDenom(asset.denom) || !EXCLUDED_ASSETS[asset.denom]) //filter out LP tokens & excluded assets
+        .filter(asset => !isLpDenom(asset.denom) && !EXCLUDED_ASSETS[asset.denom]) //filter out LP tokens & excluded assets
         .map(asset => {
-        const metadataEntry = metadata[asset.denom]
+            //create base asset
+            const baseAsset = createAsset(asset.denom);
+            //try to populate asset from chain registry
+            let finalAsset = populateAssetFromChainRegistry(baseAsset);
 
-        return createAsset(asset.denom, metadataEntry)
+            if (!finalAsset) {
+                //we could not populate asset from chain registry, try to populate from blockchain metadata
+                const metadataEntry = metadata[asset.denom]
+                finalAsset = populateAssetFromBlockchainMetadata(baseAsset, metadataEntry)
+            }
+
+            return finalAsset;
     })
 }
 
-const createAsset = (denom: string, meta: MetadataSDKType|undefined): Asset => {
-    const asset: Asset = {
-        denom: denom,
-        type: getDenomType(denom),
-        name: truncateDenom(denom),
-        ticker: truncateDenom(denom),
-        decimals: 6,
-        logo: TOKEN_LOGO_PLACEHOLDER,
-        stable: false,
-        verified: false
-    }
-
+const populateAssetFromChainRegistry = (asset: Asset): Asset|undefined => {
     if (isIbcDenom(asset.denom)) {
         const ibcList = getIBCAssetList()
         const ibcData = ibcList.find((item) => item.base === asset.denom)
 
         if (ibcData) {
             asset.name = ibcData.name
-            asset.ticker = ibcData.symbol
+            asset.ticker = ibcData.symbol.toUpperCase()
             asset.decimals = getExponentByDenomFromAsset(ibcData, asset.denom) ?? 0
             asset.logo = ibcData.logoURIs?.svg ?? ibcData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
         }
@@ -50,7 +48,30 @@ const createAsset = (denom: string, meta: MetadataSDKType|undefined): Asset => {
         return asset
     }
 
-    if (!meta || meta.base !== denom) {
+    const data = getAssetLists().find((item) => item.chainName.toLowerCase() === getChainName().toLowerCase())
+    if (!data) {
+        return undefined;
+    }
+
+    const assetData = data.assets.find(item => item.base === asset.denom)
+    if (!assetData) {
+        return undefined;
+    }
+
+    if (isNativeDenom(asset.denom) || isFactoryDenom(asset.denom)) {
+        asset.decimals = getExponentByDenomFromAsset(assetData, asset.denom) ?? 0
+        asset.name = assetData.name
+        asset.ticker = assetData.display.toUpperCase()
+        asset.logo = assetData.logoURIs?.svg ?? assetData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
+
+        return asset
+    }
+
+    return undefined
+}
+
+const populateAssetFromBlockchainMetadata = (asset: Asset,  meta: MetadataSDKType|undefined): Asset => {
+    if (!meta || meta.base !== asset.denom) {
         return asset;
     }
 
@@ -60,9 +81,6 @@ const createAsset = (denom: string, meta: MetadataSDKType|undefined): Asset => {
     if (meta.symbol.length > 0) {
         asset.ticker = meta.symbol.toUpperCase()
     }
-
-    asset.stable = STABLE_COINS[denom] ?? false
-    asset.verified = VERIFIED_ASSETS[denom] ?? false
 
     if (meta.denom_units.length === 0) {
         return asset;
@@ -76,6 +94,19 @@ const createAsset = (denom: string, meta: MetadataSDKType|undefined): Asset => {
     })
 
     return asset;
+}
+
+const createAsset = (denom: string): Asset => {
+    return {
+        denom: denom,
+        type: getDenomType(denom),
+        name: truncateDenom(denom),
+        ticker: truncateDenom(denom),
+        decimals: 6,
+        logo: TOKEN_LOGO_PLACEHOLDER,
+        stable: STABLE_COINS[denom] ?? false,
+        verified: VERIFIED_ASSETS[denom] ?? false
+    }
 }
 
 const getAllMetadataMap = async () => {

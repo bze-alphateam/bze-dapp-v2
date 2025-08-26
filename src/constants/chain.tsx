@@ -1,7 +1,8 @@
 import { chains, assetLists } from "chain-registry/mainnet";
-import { chains as testnetChains, assetLists as testnetAssetLists } from "chain-registry/testnet";
+import { chains as testnetChains } from "chain-registry/testnet";
 import { ibcData } from 'chain-registry';
 import {getAssetLists as ibcAssetsList} from "@chain-registry/utils";
+import {BZE_TESTNET_NETWORK} from "@/constants/testnet";
 
 export const getChainId = (): string => {
     return process.env.NEXT_PUBLIC_CHAIN_ID || 'beezee-1'
@@ -35,7 +36,8 @@ export const getWalletChainsNames = () => {
 export const getAssetLists = () => {
     let localAssetLists = assetLists
     if (isTestnetChain()) {
-        localAssetLists = testnetAssetLists
+        //@ts-expect-error - testnet asset lists are not in the chain-registry package
+        localAssetLists = BZE_TESTNET_NETWORK.assets
     }
 
     return localAssetLists

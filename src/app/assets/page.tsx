@@ -1,7 +1,7 @@
 "use client"
 
 import React, {useEffect, useState} from 'react'
-import Image from 'next/image'
+
 import {
     Box,
     Container,
@@ -29,6 +29,7 @@ import {Asset} from "@/types/asset";
 import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
 import {getChainAssets} from "@/service/assets_factory";
 import {isNativeDenom} from "@/utils/denom";
+import {TokenLogo} from "@/components/ui/token_logo";
 
 // const mockAssets = [
 //     {
@@ -232,11 +233,10 @@ export default function AssetsPage() {
                             borderWidth="1px"
                             borderColor="border.subtle"
                         >
-                            <Image
+                            <TokenLogo
                                 src={asset.logo}
-                                alt={asset.name}
-                                fill
-                                style={{ objectFit: 'cover' }}
+                                symbol={asset.ticker}
+                                circular={true}
                             />
                         </Box>
                         <Box>
@@ -508,7 +508,6 @@ export default function AssetsPage() {
     }
 
     useEffect(() => {
-        console.log("use effect")
         fetchAssets()
     }, [])
 
