@@ -43,6 +43,7 @@ const populateAssetFromChainRegistry = (asset: Asset): Asset|undefined => {
             asset.ticker = ibcData.symbol.toUpperCase()
             asset.decimals = getExponentByDenomFromAsset(ibcData, asset.denom) ?? 0
             asset.logo = ibcData.logoURIs?.svg ?? ibcData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
+            asset.verified = true
         }
 
         return asset
