@@ -19,7 +19,7 @@ export const getChainAssets = async (): Promise<Asset[]> => {
         .filter(asset => !isLpDenom(asset.denom) && !EXCLUDED_ASSETS[asset.denom]) //filter out LP tokens & excluded assets
         .map(asset => {
             //create base asset
-            const baseAsset = createAsset(asset.denom);
+            const baseAsset = createAsset(asset.denom, BigInt(asset.amount));
             //try to populate asset from chain registry
             let finalAsset = populateAssetFromChainRegistry(baseAsset);
 
@@ -97,7 +97,7 @@ const populateAssetFromBlockchainMetadata = (asset: Asset,  meta: MetadataSDKTyp
     return asset;
 }
 
-const createAsset = (denom: string): Asset => {
+const createAsset = (denom: string, supply: bigint): Asset => {
     return {
         denom: denom,
         type: getDenomType(denom),
@@ -106,7 +106,8 @@ const createAsset = (denom: string): Asset => {
         decimals: 6,
         logo: TOKEN_LOGO_PLACEHOLDER,
         stable: STABLE_COINS[denom] ?? false,
-        verified: VERIFIED_ASSETS[denom] ?? false
+        verified: VERIFIED_ASSETS[denom] ?? false,
+        supply: supply,
     }
 }
 

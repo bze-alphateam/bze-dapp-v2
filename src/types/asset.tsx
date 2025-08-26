@@ -8,4 +8,5 @@ export interface Asset {
     logo: string; //logo or placeholder
     stable: boolean; //is stablecoin
     verified: boolean; //is verified
+    supply: bigint; //total supply on BZE chain
 }
