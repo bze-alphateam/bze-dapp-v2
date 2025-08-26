@@ -22,7 +22,7 @@ import {
     LuInfo,
     LuDroplets,
     LuArrowLeftRight,
-    LuSearch
+    LuSearch, LuShield
 } from 'react-icons/lu'
 import {ListingTitle} from "@/components/ui/listing/title";
 import {Asset} from "@/types/asset";
@@ -247,6 +247,14 @@ export default function AssetsPage() {
                                 <Badge colorPalette={getTypeColor(asset.type)} size="sm">
                                     {asset.type.toUpperCase()}
                                 </Badge>
+                                {asset.verified &&
+                                    <Badge colorPalette={'green'} variant="subtle">
+                                        <HStack gap="1">
+                                            <LuShield size={12} />
+                                            <Text>Verified</Text>
+                                        </HStack>
+                                    </Badge>
+                                }
                             </HStack>
                             <Text color="fg.muted" fontSize="sm">
                                 {asset.ticker}
