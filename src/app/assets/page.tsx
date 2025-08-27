@@ -12,7 +12,7 @@ import {
     IconButton,
     HStack,
     VStack,
-    Separator, Input,
+    Separator, Input, Skeleton,
 } from '@chakra-ui/react'
 import {
     LuChevronDown,
@@ -30,6 +30,7 @@ import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants
 import {getChainAssets} from "@/service/assets_factory";
 import {isNativeDenom} from "@/utils/denom";
 import {TokenLogo} from "@/components/ui/token_logo";
+import {useAssets} from "@/hooks/useAssets";
 
 // const mockAssets = [
 //     {
@@ -170,11 +171,25 @@ export default function AssetsPage() {
     const [searchTerm, setSearchTerm] = useState('')
 
     //TODO: use a hook for asset list
-    const [assets, setAssets] = useState<Asset[]>([]);
+    const {isLoading, assets} = useAssets()
 
     const filteredAssets = () => {
         if (searchTerm === '') {
-            return assets
+            return assets.sort((token1: Asset, token2: Asset) => {
+                if (isNativeDenom(token1.denom)) {
+                    return -1;
+                }
+
+                if (token1.verified && !token2.verified) {
+                    return -1;
+                }
+
+                if (token2.verified && !token1.verified) {
+                    return 1;
+                }
+
+                return token1.name > token2.name ? 1 : -1;
+            })
         } else {
             return assets.filter(asset =>
                 asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -496,58 +511,42 @@ export default function AssetsPage() {
         )
     }
 
-    const fetchAssets = async () => {
-        const all = await getChainAssets()
-        setAssets(all.sort((token1: Asset, token2: Asset) => {
-            if (isNativeDenom(token1.denom)) {
-                return -1;
-            }
-
-            if (token1.verified && !token2.verified) {
-                return -1;
-            }
-
-            if (token2.verified && !token1.verified) {
-                return 1;
-            }
-
-            return token1.name > token2.name ? 1 : -1;
-        }));
-    }
-
-    useEffect(() => {
-        fetchAssets()
-    }, [])
-
     return (
         <Container maxW="7xl" py={8}>
             <VStack align="stretch" gap={6}>
                 {/* Header */}
                 <ListingTitle title={"Assets"} subtitle={"Explore all available tokens on the BeeZee blockchain"} />
-
                 {/* Stats Bar */}
                 <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Total Assets</Text>
-                        <Text fontSize="2xl" fontWeight="bold">{assets.length}</Text>
+                        <Skeleton asChild loading={isLoading}>
+                            <Text fontSize="2xl" fontWeight="bold">{assets.length}</Text>
+                        </Skeleton>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Native</Text>
-                        <Text fontSize="2xl" fontWeight="bold">
-                            {assets.filter(a => a.type === ASSET_TYPE_NATIVE).length}
-                        </Text>
+                        <Skeleton asChild loading={isLoading}>
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {assets.filter(a => a.type === ASSET_TYPE_NATIVE).length}
+                            </Text>
+                        </Skeleton>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Factory</Text>
-                        <Text fontSize="2xl" fontWeight="bold">
-                            {assets.filter(a => a.type === ASSET_TYPE_FACTORY).length}
-                        </Text>
+                        <Skeleton asChild loading={isLoading}>
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {assets.filter(a => a.type === ASSET_TYPE_FACTORY).length}
+                            </Text>
+                        </Skeleton>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">IBC</Text>
-                        <Text fontSize="2xl" fontWeight="bold">
-                            {assets.filter(a => a.type === ASSET_TYPE_IBC).length}
-                        </Text>
+                        <Skeleton asChild loading={isLoading}>
+                            <Text fontSize="2xl" fontWeight="bold">
+                                {assets.filter(a => a.type === ASSET_TYPE_IBC).length}
+                            </Text>
+                        </Skeleton>
                     </Box>
                 </Grid>
 

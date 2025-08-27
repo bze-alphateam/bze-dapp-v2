@@ -5,6 +5,9 @@ import { Inter } from "next/font/google"
 import {Provider} from "@/components/ui/provider";
 import {TopNavBar} from "@/components/ui/navigation/navbar";
 import {Toaster} from "@/components/ui/toaster";
+import {useBlockchainListener} from "@/hooks/useBlockchainListener";
+import {AssetsProvider} from "@/contexts/assets_context";
+import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,7 +15,7 @@ const inter = Inter({
 })
 
 export default function RootLayout({children}: { children: React.ReactNode }) {
-  return (
+    return (
       <html className={inter.className} suppressHydrationWarning>
           <head>
               <title>BZE App</title>
@@ -21,11 +24,14 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
               <link rel="icon" href="/images/logo_320px.png"/>
           </head>
           <body>
-            <Provider>
-                <TopNavBar appLabel={"DEX"} />
-                {children}
-                <Toaster />
-            </Provider>
+              <AssetsProvider>
+                  <BlockchainListenerWrapper />
+                  <Provider>
+                      <TopNavBar appLabel={"DEX"} />
+                        {children}
+                      <Toaster />
+                  </Provider>
+              </AssetsProvider>
           </body>
       </html>
   )
