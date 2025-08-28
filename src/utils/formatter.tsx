@@ -1,3 +1,4 @@
+import BigNumber from 'bignumber.js';
 
 export const formatUsdAmount = (priceNum: BigNumber): string => {
     const price = priceNum.toString();
@@ -30,4 +31,39 @@ export const formatUsdAmount = (priceNum: BigNumber): string => {
 
     // Construct the final number
     return priceNum.toFixed(decimalsFound).toString();
+}
+
+export function shortNumberFormat(amount: BigNumber): string {
+    if (amount.isNaN() || amount.isZero()) {
+        return '0';
+    }
+
+    // Show 0 for values below 0.001
+    if (amount.lt(0.001)) {
+        return '0';
+    }
+
+    // Define the suffixes and their corresponding values
+    const units = [
+        { value: new BigNumber('1e15'), suffix: 'Q' },  // Quadrillion
+        { value: new BigNumber('1e12'), suffix: 'T' },  // Trillion
+        { value: new BigNumber('1e9'), suffix: 'B' },   // Billion
+        { value: new BigNumber('1e6'), suffix: 'M' },   // Million
+        { value: new BigNumber('1e3'), suffix: 'K' },   // Thousand
+    ];
+
+    // Find the appropriate unit
+    for (const unit of units) {
+        if (amount.gte(unit.value)) {
+            const formatted = amount.div(unit.value);
+
+            // Always show 3 decimal places, then remove trailing zeros
+            const result = formatted.toFixed(3).replace(/\.?0+$/, '');
+
+            return `${result}${unit.suffix}`;
+        }
+    }
+
+    // For numbers below 1000, show the entire number with up to 3 decimals
+    return amount.toFixed(3).replace(/\.?0+$/, '');
 }

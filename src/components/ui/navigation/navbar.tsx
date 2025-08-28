@@ -1,19 +1,41 @@
 'use client';
 
-import {Box, Container, HStack, Spacer, Button, Image, ClientOnly, Skeleton, Text} from '@chakra-ui/react'
-import { NavbarLinks } from './navbar-links'
+import {Box, Button, ClientOnly, Container, HStack, Image, Skeleton, Spacer, Text} from '@chakra-ui/react'
+import {NavbarLinks} from './navbar-links'
 import {useColorModeValue} from "@/components/ui/color-mode";
 import {LuWallet} from "react-icons/lu";
 import {SettingsToggle} from "@/components/ui/settings";
 import {Sidebar} from "@/components/ui/sidebar/sidebar";
 import {WalletSidebarContent} from "@/components/ui/sidebar/wallet-sidebar";
 import {MobileNavbarLinks} from "@/components/ui/navigation/mobile-navbar-links";
+import {useAssets} from "@/hooks/useAssets";
+import {useBalances} from "@/hooks/useBalances";
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
+import {WalletState} from "@interchain-kit/core";
+import {useMemo} from "react";
+import {shortNumberFormat} from "@/utils/formatter";
+import {uAmountToBigNumberAmount} from "@/utils/amount";
 
 interface TopNavBarProps {
     appLabel?: string;
 }
 
 export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
+    const {nativeAsset} = useAssets()
+    const {getAssetBalance} = useBalances()
+    const {status} = useChain(getChainName());
+
+    const walletButtonText = useMemo(() => {
+        if (status !== WalletState.Connected || !nativeAsset) {
+            return "";
+        }
+
+        const humanBalance = uAmountToBigNumberAmount(getAssetBalance(nativeAsset.denom).amount, nativeAsset.decimals)
+
+        return `${shortNumberFormat(humanBalance)} ${nativeAsset.ticker}`
+    }, [status, nativeAsset, getAssetBalance])
+
     return (
         <Box borderBottomWidth="1px" bg="bg.panel">
             <Container py={{ base: '3.5', md: '4' }}>
@@ -47,7 +69,7 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
                                 ariaLabel="Wallet"
                                 trigger={
                                     <Button size={{ base: 'sm', md: 'md' }}>
-                                        <LuWallet /> 1.39K BZE
+                                        <LuWallet /> {walletButtonText}
                                     </Button>
                                 }
                             >

@@ -165,11 +165,8 @@ export const WalletSidebar = ({ isOpen, onClose }: WalletSidebarProps) => {
 export const WalletSidebarContent = () => {
     const {
         status,
-        wallet,
         username,
         address,
-        message,
-        connect,
         openView,
     } = useChain(getChainName());
 
@@ -221,7 +218,7 @@ export const WalletSidebarContent = () => {
     })
 
     const handleCopyAddress = () => {
-        navigator.clipboard.writeText(walletAddress)
+        navigator.clipboard.writeText(address)
         setShowCopiedTooltip(true)
         setTimeout(() => setShowCopiedTooltip(false), 2000)
     }
@@ -775,7 +772,7 @@ export const WalletSidebarContent = () => {
                         borderWidth="1px"
                     >
                         <Text fontSize="xs" color="fg.muted" mb="1">
-                            Address
+                            {username ?? "Address"}
                         </Text>
                         <HStack justify="space-between">
                             <Text fontSize="sm" fontFamily="mono">

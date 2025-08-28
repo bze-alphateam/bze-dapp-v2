@@ -1,16 +1,7 @@
-import {AssetsContext, AssetsContextType} from "@/contexts/assets_context";
-import {useContext} from "react";
 import {Market, MarketData} from "@/types/market";
 import {truncateDenom} from "@/utils/denom";
 import BigNumber from "bignumber.js";
-
-function useAssetsContext(): AssetsContextType {
-    const context = useContext(AssetsContext);
-    if (context === undefined) {
-        throw new Error('useAssets must be used within an AssetsProvider');
-    }
-    return context;
-}
+import {useAssetsContext} from "@/hooks/useAssets";
 
 interface MarketSymbolArgs {
     base: string;

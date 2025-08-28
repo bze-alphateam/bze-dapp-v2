@@ -7,6 +7,11 @@ import {Market, MarketData} from "@/types/market";
 import {createMarketId} from "@/utils/market";
 import {getMarkets} from "@/query/markets";
 import {getAllTickers} from "@/query/aggregator";
+import {Coin} from "@bze/bzejs/cosmos/base/v1beta1/coin";
+import BigNumber from "bignumber.js";
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
+import {getAddressBalances} from "@/query/bank";
 
 export interface AssetsContextType {
     //assets
@@ -18,6 +23,9 @@ export interface AssetsContextType {
 
     marketsDataMap: Map<string, MarketData>;
     updateMarketsData: (newMarkets: MarketData[]) => void;
+
+    balancesMap: Map<string, BigNumber>;
+    updateBalances: (newBalances: Coin[]) => void;
 
     //others
     isLoading: boolean;
@@ -33,7 +41,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const [assetsMap, setAssetsMap] = useState<Map<string, Asset>>(new Map());
     const [marketsMap, setMarketsMap] = useState<Map<string, Market>>(new Map());
     const [marketsDataMap, setMarketsDataMap] = useState<Map<string, MarketData>>(new Map());
+    const [balancesMap, setBalancesMap] = useState<Map<string, BigNumber>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
+    const {address} = useChain(getChainName());
 
     const updateAssets = (newAssets: Asset[]) => {
         // Create map for efficient lookups
@@ -66,6 +76,16 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setIsLoading(false);
     }
 
+    const updateBalances = (newBalances: Coin[]) => {
+        const newMap = new Map<string, BigNumber>();
+        newBalances.forEach(balance => {
+            newMap.set(balance.denom, BigNumber(balance.amount));
+        })
+
+        setBalancesMap(newMap);
+        setIsLoading(false);
+    }
+
     useEffect(() => {
         //initial context loading
         const init = async () => {
@@ -80,6 +100,18 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         init();
     }, [])
 
+    useEffect(() => {
+        if (!address) return;
+
+        const fetchBalances = async () => {
+            const balances = await getAddressBalances(address);
+            updateBalances(balances);
+            setIsLoading(false);
+        }
+
+        fetchBalances()
+    }, [address]);
+
     return (
         <AssetsContext.Provider value={{
             assetsMap,
@@ -88,7 +120,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             updateMarkets,
             isLoading,
             marketsDataMap,
-            updateMarketsData
+            updateMarketsData,
+            balancesMap,
+            updateBalances
         }}>
             {children}
         </AssetsContext.Provider>
