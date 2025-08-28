@@ -66,7 +66,10 @@ export function useBlockchainListener() {
         wsRef.current.onmessage = (event) => {
             // TODO: Parse the message and extract assets
             const data = JSON.parse(event.data);
-            console.log('Received data:', data);
+            if (data) {
+                //yes
+            }
+            // console.log('Received data:', data);
             // updateAssets(data.assets);
         };
 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useState} from 'react'
+import React, {useEffect, useMemo, useState} from 'react'
 
 import {
     Box,
@@ -31,6 +31,10 @@ import {isNativeDenom} from "@/utils/denom";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {useAssets} from "@/hooks/useAssets";
 import {useMarkets, useMarketTradingData} from "@/hooks/useMarkets";
+import {AssetPrice, usePrices} from "@/hooks/usePrices";
+import BigNumber from "bignumber.js";
+import {formatUsdAmount} from "@/utils/formatter";
+import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 
 // const mockAssets = [
 //     {
@@ -166,43 +170,27 @@ import {useMarkets, useMarketTradingData} from "@/hooks/useMarkets";
 //     }
 // ] as const
 
-export default function AssetsPage() {
-    const [expandedAsset, setExpandedAsset] = useState<string>('')
-    const [searchTerm, setSearchTerm] = useState('')
+function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpanded: boolean, toggleExpanded: (denom: string) => void }) {
+    const [price, setPrice] = useState<AssetPrice>({denom: asset.denom, price: BigNumber(0), change: 0})
+    const [priceLoaded, setPriceLoaded] = useState(false)
 
-    const {isLoading, assets, getAssetByDenom} = useAssets()
     const { getMarketSymbol } = useMarkets()
-    const { getAssetMarketsData } = useMarketTradingData()
+    const { getAssetMarketsData, getAsset24hTradedVolume } = useMarketTradingData()
+    const { getAssetUSDPrice } = usePrices()
+    const { getAssetByDenom } = useAssets()
 
-    const filteredAssets = () => {
-        if (searchTerm === '') {
-            return assets.sort((token1: Asset, token2: Asset) => {
-                if (isNativeDenom(token1.denom)) {
-                    return -1;
-                }
+    //todo: add show more button to show more markets if the slice of markets is too long
+    const markets = getAssetMarketsData(asset.denom)
+        .sort((a, b) => {
+            // Get the relevant volume for market 'a'
+            const volumeA = asset.denom === a.base ? (a.base_volume || 0) : (a.quote_volume || 0);
+            // Get the relevant volume for market 'b'
+            const volumeB = asset.denom === b.base ? (b.base_volume || 0) : (b.quote_volume || 0);
 
-                if (token1.verified && !token2.verified) {
-                    return -1;
-                }
-
-                if (token2.verified && !token1.verified) {
-                    return 1;
-                }
-
-                return token1.name > token2.name ? 1 : -1;
-            })
-        } else {
-            return assets.filter(asset =>
-                asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                asset.ticker.toLowerCase().includes(searchTerm.toLowerCase())
-            )
-        }
-    }
-
-    const toggleExpanded = (assetId: string) => {
-        setExpandedAsset(assetId !== expandedAsset ? assetId : '')
-    }
-
+            // Sort descending (highest volume first)
+            return volumeB - volumeA;
+        })
+        .slice(0, 5)
     const getTypeColor = (type: string) => {
         switch (type) {
             case ASSET_TYPE_NATIVE:
@@ -216,168 +204,186 @@ export default function AssetsPage() {
         }
     }
 
-    const renderAssetCard = (asset: Asset) => {
-        const isExpanded = asset.denom === expandedAsset
-        //todo: sort markets by volume24h
-        const markets = getAssetMarketsData(asset.denom).slice(0, 5)
+    const formattedPrice = useMemo(() => {
+        return formatUsdAmount(price.price)
+    }, [price.price])
 
-        return (
-            <Box
-                key={asset.denom}
-                bg="bg.surface"
-                borderWidth="1px"
-                borderColor="border.subtle"
-                borderRadius="lg"
-                overflow="hidden"
-                transition="all 0.2s"
+    const formattedSupply = useMemo(() => {
+        return prettyAmount(uAmountToBigNumberAmount(asset.supply, asset.decimals))
+    }, [asset.supply, asset.decimals])
+
+    useEffect(() => {
+        const loadPrice = async () => {
+            const price = await getAssetUSDPrice(asset.denom)
+            setPrice(price)
+            setPriceLoaded(true)
+        }
+
+        loadPrice()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[asset.denom])
+
+    return (
+        <Box
+            key={asset.denom}
+            bg="bg.surface"
+            borderWidth="1px"
+            borderColor="border.subtle"
+            borderRadius="lg"
+            overflow="hidden"
+            transition="all 0.2s"
+        >
+            {/* Main Asset Info */}
+            <Flex
+                p={4}
+                align="center"
+                justify="space-between"
+                cursor="pointer"
+                onClick={() => toggleExpanded(asset.denom)}
+                _hover={{ bg: "bg.muted" }}
             >
-                {/* Main Asset Info */}
-                <Flex
-                    p={4}
-                    align="center"
-                    justify="space-between"
-                    cursor="pointer"
-                    onClick={() => toggleExpanded(asset.denom)}
-                    _hover={{ bg: "bg.muted" }}
-                >
-                    <HStack gap={3}>
-                        <Box
-                            position="relative"
-                            width="40px"
-                            height="40px"
-                            borderRadius="full"
-                            bg="bg.surface"
-                            borderWidth="1px"
-                            borderColor="border.subtle"
-                        >
-                            <TokenLogo
-                                src={asset.logo}
-                                symbol={asset.ticker}
-                                circular={true}
-                            />
-                        </Box>
-                        <Box>
-                            <HStack gap={2}>
-                                <Text fontWeight="semibold" fontSize="md">
-                                    {asset.name}
-                                </Text>
-                                <Badge colorPalette={getTypeColor(asset.type)} size="sm">
-                                    {asset.type.toUpperCase()}
+                <HStack gap={3}>
+                    <Box
+                        position="relative"
+                        width="40px"
+                        height="40px"
+                        borderRadius="full"
+                        bg="bg.surface"
+                        borderWidth="1px"
+                        borderColor="border.subtle"
+                    >
+                        <TokenLogo
+                            src={asset.logo}
+                            symbol={asset.ticker}
+                            circular={true}
+                        />
+                    </Box>
+                    <Box>
+                        <HStack gap={2}>
+                            <Text fontWeight="semibold" fontSize="md">
+                                {asset.name}
+                            </Text>
+                            <Badge colorPalette={getTypeColor(asset.type)} size="sm">
+                                {asset.type.toUpperCase()}
+                            </Badge>
+                            {asset.verified &&
+                                <Badge colorPalette={'green'} variant="subtle">
+                                    <HStack gap="1">
+                                        <LuShield size={12} />
+                                        <Text>Verified</Text>
+                                    </HStack>
                                 </Badge>
-                                {asset.verified &&
-                                    <Badge colorPalette={'green'} variant="subtle">
-                                        <HStack gap="1">
-                                            <LuShield size={12} />
-                                            <Text>Verified</Text>
-                                        </HStack>
-                                    </Badge>
-                                }
-                            </HStack>
-                            <Text color="fg.muted" fontSize="sm">
-                                {asset.ticker}
-                            </Text>
-                        </Box>
-                    </HStack>
+                            }
+                        </HStack>
+                        <Text color="fg.muted" fontSize="sm">
+                            {asset.ticker}
+                        </Text>
+                    </Box>
+                </HStack>
 
-                    <HStack gap={4}>
-                        <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
+                <HStack gap={4}>
+                    <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
+                        <Skeleton asChild loading={!priceLoaded}>
                             <Text fontWeight="medium" fontSize="md">
-                                $1.312
+                                ${formattedPrice}
                             </Text>
+                        </Skeleton>
+                        <Skeleton asChild loading={!priceLoaded}>
                             <HStack gap={1} justify="flex-end">
-                                {1 > 0 ? (
+                                {price.change > 0 ? (
                                     <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
                                 ) : (
                                     <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
                                 )}
                                 <Text
                                     fontSize="sm"
-                                    color={1 > 0 ? 'green.500' : 'red.500'}
+                                    color={price.change > 0 ? 'green.500' : 'red.500'}
                                 >
-                                    23%
+                                    {price.change > 0 ? '+' : ''}{price.change}%
                                 </Text>
                             </HStack>
-                        </Box>
-                        <IconButton
-                            aria-label="Toggle details"
-                            size="sm"
-                            variant="ghost"
+                        </Skeleton>
+                    </Box>
+                    <IconButton
+                        aria-label="Toggle details"
+                        size="sm"
+                        variant="ghost"
+                    >
+                        {isExpanded ? <LuChevronUp /> : <LuChevronDown />}
+                    </IconButton>
+                </HStack>
+            </Flex>
+
+            {/* Mobile Price Display */}
+            <Box display={{ base: 'block', sm: 'none' }} px={4} pb={2}>
+                <HStack justify="space-between">
+                    <Text fontWeight="medium">$1.312</Text>
+                    <HStack gap={1}>
+                        {price.change > 0 ? (
+                            <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
+                        ) : (
+                            <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
+                        )}
+                        <Text
+                            fontSize="sm"
+                            color={price.change > 0 ? 'green.500' : 'red.500'}
                         >
-                            {isExpanded ? <LuChevronUp /> : <LuChevronDown />}
-                        </IconButton>
+                            {price.change > 0 ? '+' : ''}{price.change}%
+                        </Text>
                     </HStack>
-                </Flex>
+                </HStack>
+            </Box>
 
-                {/* Mobile Price Display */}
-                <Box display={{ base: 'block', sm: 'none' }} px={4} pb={2}>
-                    <HStack justify="space-between">
-                        <Text fontWeight="medium">$1.312</Text>
-                        <HStack gap={1}>
-                            {1 > 0 ? (
-                                <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
-                            ) : (
-                                <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
-                            )}
-                            <Text
-                                fontSize="sm"
-                                color={1 > 0 ? 'green.500' : 'red.500'}
-                            >
-                                23%
-                            </Text>
-                        </HStack>
-                    </HStack>
-                </Box>
-
-                {/* Expanded Details */}
-                <Box
-                    display={isExpanded ? 'block' : 'none'}
-                    borderTopWidth="1px"
-                    borderColor="border.subtle"
-                    p={4}
-                    style={{
-                        transition: 'max-height 0.3s ease-in-out',
-                    }}
-                >
-                    <VStack align="stretch" gap={4}>
-                        {/* Market Stats */}
-                        <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
-                            <Box>
-                                <Text color="fg.muted" fontSize="sm">Market Cap</Text>
-                                <Text fontWeight="medium">$32,021.321</Text>
-                            </Box>
-                            <Box>
-                                <Text color="fg.muted" fontSize="sm">24h Volume</Text>
-                                <Text fontWeight="medium">$130.2</Text>
-                            </Box>
-                            <Box>
-                                <Text color="fg.muted" fontSize="sm">Type</Text>
-                                <Badge colorPalette={getTypeColor(asset.type)} size="sm">
-                                    {asset.type.toUpperCase()}
-                                </Badge>
-                            </Box>
-                        </Grid>
-
-                        <Separator />
-
-                        {/* Trading Pairs */}
+            {/* Expanded Details */}
+            <Box
+                display={isExpanded ? 'block' : 'none'}
+                borderTopWidth="1px"
+                borderColor="border.subtle"
+                p={4}
+                style={{
+                    transition: 'max-height 0.3s ease-in-out',
+                }}
+            >
+                <VStack align="stretch" gap={4}>
+                    {/* Market Stats */}
+                    <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
                         <Box>
-                            <HStack mb={3}>
-                                <LuArrowLeftRight size={16} />
-                                <Text fontWeight="semibold">Trading Pairs</Text>
-                            </HStack>
-                            {markets.length > 0 ? (
-                                <VStack align="stretch" gap={2}>
-                                    {markets.map((market) => {
-                                        const base = getAssetByDenom(market.base)
-                                        const quote = getAssetByDenom(market.quote)
+                            <Text color="fg.muted" fontSize="sm">Supply on BeeZee</Text>
+                            <Text fontWeight="medium">{formattedSupply} {asset.ticker}</Text>
+                        </Box>
+                        <Box>
+                            <Text color="fg.muted" fontSize="sm">24h Volume</Text>
+                            <Text fontWeight="medium">{prettyAmount(getAsset24hTradedVolume(asset.denom))} {asset.ticker}</Text>
+                        </Box>
+                        <Box>
+                            <Text color="fg.muted" fontSize="sm">Type</Text>
+                            <Badge colorPalette={getTypeColor(asset.type)} size="sm">
+                                {asset.type.toUpperCase()}
+                            </Badge>
+                        </Box>
+                    </Grid>
 
-                                        return (
-                                            <Box
-                                                key={market.market_id}
-                                                p={3}
-                                                bg="bg.muted"
-                                                borderRadius="md"
-                                            >
+                    <Separator />
+
+                    {/* Trading Pairs */}
+                    <Box>
+                        <HStack mb={3}>
+                            <LuArrowLeftRight size={16} />
+                            <Text fontWeight="semibold">Trading Pairs</Text>
+                        </HStack>
+                        {markets.length > 0 ? (
+                            <VStack align="stretch" gap={2}>
+                                {markets.map((market) => {
+                                    const base = getAssetByDenom(market.base)
+                                    const quote = getAssetByDenom(market.quote)
+
+                                    return (
+                                        <Box
+                                            key={market.market_id}
+                                            p={3}
+                                            bg="bg.muted"
+                                            borderRadius="md"
+                                        >
                                             {/*{ pair: 'ATOM/BZE', exchange: 'DEX1', volume24h: '$567K', priceChange24h: 3.45 }*/}
                                             <Flex justify="space-between" align="center">
                                                 <Box>
@@ -425,127 +431,161 @@ export default function AssetsPage() {
                                                 </Box>
                                             </Flex>
                                         </Box>)
-                                    })}
-                                </VStack>
-                            ) : (
-                                <Text color="fg.muted" fontSize="sm">No trading pairs available</Text>
-                            )}
-                        </Box>
-
-                        {/* Liquidity Pools */}
-                        <Box>
-                            <HStack mb={3}>
-                                <LuDroplets size={16} />
-                                <Text fontWeight="semibold">Liquidity Pools</Text>
-                            </HStack>
-                            {/*{asset.liquidityPools.length > 0 ? (*/}
-                            {/*    <VStack align="stretch" gap={2}>*/}
-                            {/*        {asset.liquidityPools.map((pool, index) => (*/}
-                            {/*            <Box*/}
-                            {/*                key={index}*/}
-                            {/*                p={3}*/}
-                            {/*                bg="bg.muted"*/}
-                            {/*                borderRadius="md"*/}
-                            {/*            >*/}
-                            {/*                <Text fontWeight="medium" mb={2}>{pool.name}</Text>*/}
-                            {/*                <Grid gridTemplateColumns="repeat(3, 1fr)" gap={2}>*/}
-                            {/*                    <Box>*/}
-                            {/*                        <Text color="fg.muted" fontSize="xs">TVL</Text>*/}
-                            {/*                        <Text fontSize="sm" fontWeight="medium">{pool.tvl}</Text>*/}
-                            {/*                    </Box>*/}
-                            {/*                    <Box>*/}
-                            {/*                        <Text color="fg.muted" fontSize="xs">APR</Text>*/}
-                            {/*                        <Text fontSize="sm" fontWeight="medium" color="green.500">{pool.apr}</Text>*/}
-                            {/*                    </Box>*/}
-                            {/*                    <Box>*/}
-                            {/*                        <Text color="fg.muted" fontSize="xs">24h Volume</Text>*/}
-                            {/*                        <Text fontSize="sm" fontWeight="medium">{pool.volume24h}</Text>*/}
-                            {/*                    </Box>*/}
-                            {/*                </Grid>*/}
-                            {/*            </Box>*/}
-                            {/*        ))}*/}
-                            {/*    </VStack>*/}
-                            {/*) : (*/}
-                                <Text color="fg.muted" fontSize="sm">No liquidity pools available</Text>
-                            {/*)}*/}
-                        </Box>
-
-                        {/* Factory Details */}
-                        {asset.type === 'factory' && (
-                            <>
-                                <Separator />
-                                <Box>
-                                    <HStack mb={3}>
-                                        <LuInfo size={16} />
-                                        <Text fontWeight="semibold">Factory Details</Text>
-                                    </HStack>
-                                    <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Creator</Text>
-                                            <Text fontSize="sm" fontFamily="mono">bzesdsa...2311213</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Created At</Text>
-                                            <Text fontSize="sm">Joi la 13:30</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Current Supply</Text>
-                                            <Text fontSize="sm">1,333,212.231</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Max Supply</Text>
-                                            <Text fontSize="sm">200,000,000</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Features</Text>
-                                            <HStack gap={2}>
-                                                {1 && (
-                                                    <Badge colorPalette="green" size="sm">Mintable</Badge>
-                                                )}
-                                                {1 && (
-                                                    <Badge colorPalette="orange" size="sm">Burnable</Badge>
-                                                )}
-                                            </HStack>
-                                        </Box>
-                                    </Grid>
-                                </Box>
-                            </>
+                                })}
+                            </VStack>
+                        ) : (
+                            <Text color="fg.muted" fontSize="sm">No trading pairs available</Text>
                         )}
+                    </Box>
 
-                        {/* IBC Details */}
-                        {asset.type === 'ibc' && (
-                            <>
-                                <Separator />
-                                <Box>
-                                    <HStack mb={3}>
-                                        <LuInfo size={16} />
-                                        <Text fontWeight="semibold">IBC Details</Text>
-                                    </HStack>
-                                    <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Source Chain</Text>
-                                            <Text fontSize="sm">AtomOne</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Channel ID</Text>
-                                            <Text fontSize="sm" fontFamily="mono">channel-2</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Base Denom</Text>
-                                            <Text fontSize="sm" fontFamily="mono">atone</Text>
-                                        </Box>
-                                        <Box>
-                                            <Text color="fg.muted" fontSize="sm">Path</Text>
-                                            <Text fontSize="sm" fontFamily="mono">transfer/channel-2/test</Text>
-                                        </Box>
-                                    </Grid>
-                                </Box>
-                            </>
-                        )}
-                    </VStack>
-                </Box>
+                    {/* Liquidity Pools */}
+                    <Box>
+                        <HStack mb={3}>
+                            <LuDroplets size={16} />
+                            <Text fontWeight="semibold">Liquidity Pools</Text>
+                        </HStack>
+                        {/*{asset.liquidityPools.length > 0 ? (*/}
+                        {/*    <VStack align="stretch" gap={2}>*/}
+                        {/*        {asset.liquidityPools.map((pool, index) => (*/}
+                        {/*            <Box*/}
+                        {/*                key={index}*/}
+                        {/*                p={3}*/}
+                        {/*                bg="bg.muted"*/}
+                        {/*                borderRadius="md"*/}
+                        {/*            >*/}
+                        {/*                <Text fontWeight="medium" mb={2}>{pool.name}</Text>*/}
+                        {/*                <Grid gridTemplateColumns="repeat(3, 1fr)" gap={2}>*/}
+                        {/*                    <Box>*/}
+                        {/*                        <Text color="fg.muted" fontSize="xs">TVL</Text>*/}
+                        {/*                        <Text fontSize="sm" fontWeight="medium">{pool.tvl}</Text>*/}
+                        {/*                    </Box>*/}
+                        {/*                    <Box>*/}
+                        {/*                        <Text color="fg.muted" fontSize="xs">APR</Text>*/}
+                        {/*                        <Text fontSize="sm" fontWeight="medium" color="green.500">{pool.apr}</Text>*/}
+                        {/*                    </Box>*/}
+                        {/*                    <Box>*/}
+                        {/*                        <Text color="fg.muted" fontSize="xs">24h Volume</Text>*/}
+                        {/*                        <Text fontSize="sm" fontWeight="medium">{pool.volume24h}</Text>*/}
+                        {/*                    </Box>*/}
+                        {/*                </Grid>*/}
+                        {/*            </Box>*/}
+                        {/*        ))}*/}
+                        {/*    </VStack>*/}
+                        {/*) : (*/}
+                        <Text color="fg.muted" fontSize="sm">No liquidity pools available</Text>
+                        {/*)}*/}
+                    </Box>
+
+                    {/* Factory Details */}
+                    {asset.type === 'factory' && (
+                        <>
+                            <Separator />
+                            <Box>
+                                <HStack mb={3}>
+                                    <LuInfo size={16} />
+                                    <Text fontWeight="semibold">Factory Details</Text>
+                                </HStack>
+                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Creator</Text>
+                                        <Text fontSize="sm" fontFamily="mono">bzesdsa...2311213</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Created At</Text>
+                                        <Text fontSize="sm">Joi la 13:30</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Current Supply</Text>
+                                        <Text fontSize="sm">1,333,212.231</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Max Supply</Text>
+                                        <Text fontSize="sm">200,000,000</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Features</Text>
+                                        <HStack gap={2}>
+                                            {1 && (
+                                                <Badge colorPalette="green" size="sm">Mintable</Badge>
+                                            )}
+                                            {1 && (
+                                                <Badge colorPalette="orange" size="sm">Burnable</Badge>
+                                            )}
+                                        </HStack>
+                                    </Box>
+                                </Grid>
+                            </Box>
+                        </>
+                    )}
+
+                    {/* IBC Details */}
+                    {asset.type === 'ibc' && (
+                        <>
+                            <Separator />
+                            <Box>
+                                <HStack mb={3}>
+                                    <LuInfo size={16} />
+                                    <Text fontWeight="semibold">IBC Details</Text>
+                                </HStack>
+                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Source Chain</Text>
+                                        <Text fontSize="sm">AtomOne</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Channel ID</Text>
+                                        <Text fontSize="sm" fontFamily="mono">channel-2</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Base Denom</Text>
+                                        <Text fontSize="sm" fontFamily="mono">atone</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Path</Text>
+                                        <Text fontSize="sm" fontFamily="mono">transfer/channel-2/test</Text>
+                                    </Box>
+                                </Grid>
+                            </Box>
+                        </>
+                    )}
+                </VStack>
             </Box>
-        )
+        </Box>
+    )
+}
+
+export default function AssetsPage() {
+    const [expandedAsset, setExpandedAsset] = useState<string>('')
+    const [searchTerm, setSearchTerm] = useState('')
+    const {isLoading, assets} = useAssets()
+
+    const filteredAssets = () => {
+        if (searchTerm === '') {
+            return assets.sort((token1: Asset, token2: Asset) => {
+                if (isNativeDenom(token1.denom)) {
+                    return -1;
+                }
+
+                if (token1.verified && !token2.verified) {
+                    return -1;
+                }
+
+                if (token2.verified && !token1.verified) {
+                    return 1;
+                }
+
+                return token1.name > token2.name ? 1 : -1;
+            })
+        } else {
+            return assets.filter(asset =>
+                asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                asset.ticker.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+        }
+    }
+
+    const toggleExpanded = (assetId: string) => {
+        setExpandedAsset(assetId !== expandedAsset ? assetId : '')
     }
 
     return (
@@ -601,7 +641,9 @@ export default function AssetsPage() {
                 </Box>
                 {/* Assets List */}
                 <VStack align="stretch" gap={3}>
-                    {filteredAssets().map(renderAssetCard)}
+                    {filteredAssets().map(asset =>
+                        <AssetItem asset={asset} isExpanded={expandedAsset === asset.denom} key={asset.denom} toggleExpanded={toggleExpanded} />
+                    )}
                 </VStack>
             </VStack>
         </Container>

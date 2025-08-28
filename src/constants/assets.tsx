@@ -29,3 +29,7 @@ export const STABLE_COINS: { [key: string]: boolean } = {
 export const getChainNativeAssetDenom = (): string => {
     return process.env.NEXT_PUBLIC_CHAIN_NATIVE_ASSET_DENOM || 'ubze'
 }
+
+export const getUSDCDenom = (): string => {
+    return process.env.NEXT_PUBLIC_USDC_IBC_DENOM || ''
+}

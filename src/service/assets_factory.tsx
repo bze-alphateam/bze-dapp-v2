@@ -41,7 +41,7 @@ const populateAssetFromChainRegistry = (asset: Asset): Asset|undefined => {
         if (ibcData) {
             asset.name = ibcData.name
             asset.ticker = ibcData.symbol.toUpperCase()
-            asset.decimals = getExponentByDenomFromAsset(ibcData, asset.denom) ?? 0
+            asset.decimals = getExponentByDenomFromAsset(ibcData, ibcData.display) ?? 0
             asset.logo = ibcData.logoURIs?.svg ?? ibcData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
             asset.verified = true
         }
@@ -60,7 +60,7 @@ const populateAssetFromChainRegistry = (asset: Asset): Asset|undefined => {
     }
 
     if (isNativeDenom(asset.denom) || isFactoryDenom(asset.denom)) {
-        asset.decimals = getExponentByDenomFromAsset(assetData, asset.denom) ?? 0
+        asset.decimals = getExponentByDenomFromAsset(assetData, assetData.display) ?? 0
         asset.name = assetData.name
         asset.ticker = assetData.display.toUpperCase()
         asset.logo = isNativeDenom(asset.denom) ? BZE_CIRCLE_LOGO : assetData.logoURIs?.svg ?? assetData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER

@@ -1,10 +1,8 @@
-
-
-// Base hook to access context (private)
 import {AssetsContext, AssetsContextType} from "@/contexts/assets_context";
 import {useContext} from "react";
 import {Market, MarketData} from "@/types/market";
 import {truncateDenom} from "@/utils/denom";
+import BigNumber from "bignumber.js";
 
 function useAssetsContext(): AssetsContextType {
     const context = useContext(AssetsContext);
@@ -46,6 +44,8 @@ export function useMarkets() {
         return `${base}/${quote}`
     }
 
+    const marketExists = (marketId: string): boolean => marketsMap.has(marketId)
+
     const markets = Array.from(marketsMap.values())
 
     return {
@@ -53,7 +53,8 @@ export function useMarkets() {
         getMarketById,
         getAssetMarkets,
         getMarketSymbol,
-        isLoading
+        isLoading,
+        marketExists
     };
 }
 
@@ -66,10 +67,35 @@ export function useMarketTradingData(){
 
     const marketsData = Array.from(marketsDataMap.values())
 
+    const getMarketDataById = (id: string): MarketData | undefined => {
+        return marketsDataMap.get(id);
+    }
+
+    const getAsset24hTradedVolume = (denom: string): BigNumber => {
+        const assetMarkets = getAssetMarketsData(denom)
+
+        return assetMarkets.reduce((acc, market) => {
+            // Only sum base_volume if the asset denom matches the market's base
+            if (denom === market.base) {
+                return acc.plus(market.base_volume || 0)
+            }
+
+            // Only sum quote_volume if the asset denom matches the market's quote
+            else if (denom === market.quote) {
+                return acc.plus(market.quote_volume || 0)
+            }
+
+            // If denom doesn't match either base or quote, don't add anything
+            return acc
+        }, new BigNumber(0))
+    }
+
     return {
         isLoading,
         getAssetMarketsData,
-        marketsData
+        marketsData,
+        getMarketDataById,
+        getAsset24hTradedVolume
     }
 }
 
