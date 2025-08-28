@@ -23,14 +23,14 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
               <link rel="icon" href="/images/logo_320px.png"/>
           </head>
           <body>
+            <Provider>
               <AssetsProvider>
                   <BlockchainListenerWrapper />
-                  <Provider>
-                      <TopNavBar appLabel={"DEX"} />
-                        {children}
-                      <Toaster />
-                  </Provider>
+                  <TopNavBar appLabel={"DEX"} />
+                    {children}
+                  <Toaster />
               </AssetsProvider>
+            </Provider>
           </body>
       </html>
   )

@@ -1,30 +1,30 @@
 import {getChainNativeAssetDenom} from "@/constants/assets";
 
-const BZE_TESTNET_2_SUGGEST_CHAIN = {
-    chain_id: "bzetestnet-2",
-    chain_name: "BeeZee Testnet",
-    pretty_name: 'BeeZee Testnet',
-    network_type: 'mainnet',
-    chain_type: "cosmos",
-    bech32_prefix: "testbz",
+export const BZE_TESTNET_2_SUGGEST_CHAIN = {
+    chainId: "bzetestnet-2",
+    chainType: "cosmos",
+    chainName: "BeeZee Testnet",
+    prettyName: 'BeeZee Testnet',
+    networkType: 'mainnet',
+    bech32Prefix: "testbz",
     status: "live",
     slip44: 118,
-    logo_URIs: {
+    logoURIs: {
         svg: 'https://raw.githubusercontent.com/cosmos/chain-registry/master/beezee/images/bze.svg',
     },
     fees: {
-        fee_tokens: [
+        feeTokens: [
             {
                 denom: getChainNativeAssetDenom(),
-                fixed_min_gas_price: 0
+                fixedMinGasPrice: 0
             }
         ]
     },
-    key_algos: [
+    keyAlgos: [
         "secp256k1"
     ],
     staking: {
-        staking_tokens: [
+        stakingTokens: [
             {
                 denom: getChainNativeAssetDenom()
             }
@@ -81,12 +81,12 @@ export const BZE_TESTNET_NETWORK = {
         explorerBaseUrl: 'https://explorer.getbze.com/bze%20testnet',
         rpcUrl: 'https://testnet-rpc.getbze.com',
         restUrl: 'https://testnet.getbze.com',
-        chainName: BZE_TESTNET_2_SUGGEST_CHAIN.chain_name,
+        chainName: BZE_TESTNET_2_SUGGEST_CHAIN.chainName,
     },
     chain: [BZE_TESTNET_2_SUGGEST_CHAIN],
     assets: [
         {
-            chainName: BZE_TESTNET_2_SUGGEST_CHAIN.chain_name,
+            chainName: BZE_TESTNET_2_SUGGEST_CHAIN.chainName,
             assets: [
                 {
                     "description": "BeeZee native blockchain",

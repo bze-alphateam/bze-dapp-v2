@@ -444,6 +444,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
                             <LuDroplets size={16} />
                             <Text fontWeight="semibold">Liquidity Pools</Text>
                         </HStack>
+                        {/*TODO: add liquidity pools*/}
                         {/*{asset.liquidityPools.length > 0 ? (*/}
                         {/*    <VStack align="stretch" gap={2}>*/}
                         {/*        {asset.liquidityPools.map((pool, index) => (*/}

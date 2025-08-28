@@ -42,16 +42,18 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
                     <NavbarLinks hideBelow="md" />
                     <Box display={"flex"} gap={{ base: 1, md: 4}}>
                         {/* Wallet Sidebar */}
-                        <Sidebar
-                            ariaLabel="Wallet"
-                            trigger={
-                                <Button size={{ base: 'sm', md: 'md' }}>
-                                    <LuWallet /> Wallet
-                                </Button>
-                            }
-                        >
-                            <WalletSidebarContent />
-                        </Sidebar>
+                        <ClientOnly fallback={<Skeleton  w="10" h="10" rounded="md" />}>
+                            <Sidebar
+                                ariaLabel="Wallet"
+                                trigger={
+                                    <Button size={{ base: 'sm', md: 'md' }}>
+                                        <LuWallet /> 1.39K BZE
+                                    </Button>
+                                }
+                            >
+                                <WalletSidebarContent />
+                            </Sidebar>
+                        </ClientOnly>
                         <ClientOnly fallback={<Skeleton  w="10" h="10" rounded="md" />}>
                             <SettingsToggle />
                         </ClientOnly>

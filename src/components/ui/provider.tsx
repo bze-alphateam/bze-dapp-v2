@@ -50,7 +50,7 @@ const system = createSystem(defaultConfig, {
   },
 })
 
-export function Provider(props: ColorModeProviderProps) {
+export function Provider({ children, ...props }: ColorModeProviderProps & { children: React.ReactNode }) {
     return (
         <ChainProvider
             //@ts-expect-error wallets
@@ -63,7 +63,9 @@ export function Provider(props: ColorModeProviderProps) {
             assetLists={getAssetLists()}
         >
             <ChakraProvider value={system}>
-                <ColorModeProvider {...props} />
+                <ColorModeProvider {...props} >
+                    {children}
+                </ColorModeProvider>
             </ChakraProvider>
         </ChainProvider>
       )

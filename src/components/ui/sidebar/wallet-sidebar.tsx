@@ -1,24 +1,29 @@
 'use client'
-
+import "@interchain-kit/react/styles.css"; // Import styles for the wallet modal
+import { InterchainWalletModal, useWalletModal } from "@interchain-kit/react";
 import {
-    VStack,
-    HStack,
-    Text,
-    Button,
-    Box,
-    Separator,
     Badge,
-    Input,
-    Textarea,
-    Select,
-    Image,
+    Box,
+    Button,
     createListCollection,
-    Portal,
     Drawer,
+    HStack,
     IconButton,
+    Image,
+    Input,
+    Portal,
+    Select,
+    Separator,
+    Text,
+    Textarea,
+    VStack,
 } from '@chakra-ui/react'
-import { LuCopy, LuExternalLink, LuWallet, LuX } from 'react-icons/lu'
-import { useState, useRef } from 'react'
+import {LuCopy, LuExternalLink, LuWallet, LuX} from 'react-icons/lu'
+import {useMemo, useRef, useState} from 'react'
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
+import {WalletState} from "@interchain-kit/core";
+import {stringTruncateFromCenter} from "@/utils/strings";
 
 // Mock token data - replace with real data from your wallet/API
 const mockTokens = [
@@ -158,6 +163,16 @@ export const WalletSidebar = ({ isOpen, onClose }: WalletSidebarProps) => {
 
 // Updated Wallet Sidebar Content Component (now fully scrollable)
 export const WalletSidebarContent = () => {
+    const {
+        status,
+        wallet,
+        username,
+        address,
+        message,
+        connect,
+        openView,
+    } = useChain(getChainName());
+
     const [viewState, setViewState] = useState<ViewState>('balances')
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
     const copyButtonRef = useRef<HTMLButtonElement>(null)
@@ -180,7 +195,9 @@ export const WalletSidebarContent = () => {
     const [depositToken, setDepositToken] = useState('')
     const [depositAmount, setDepositAmount] = useState('')
 
-    const walletAddress = "bze1abc...xyz789"
+    const { open } = useWalletModal();
+
+    const walletAddress = stringTruncateFromCenter(address ?? "", 16)
 
     // Create collections for selects
     const tokenCollection = createListCollection({
@@ -260,10 +277,6 @@ export const WalletSidebarContent = () => {
         resetIBCSendForm()
         resetIBCDepositForm()
         setViewState('balances')
-    }
-
-    const handleDisconnect = () => {
-        console.log('Wallet disconnected')
     }
 
     const renderBalancesView = () => (
@@ -368,7 +381,7 @@ export const WalletSidebarContent = () => {
                     width="full"
                     variant="outline"
                     colorPalette="red"
-                    onClick={handleDisconnect}
+                    onClick={openView}
                 >
                     Disconnect Wallet
                 </Button>
@@ -728,70 +741,95 @@ export const WalletSidebarContent = () => {
         </VStack>
     )
 
+    const statusColor = useMemo(() => {
+        switch (status) {
+            case WalletState.Connected:
+                return 'green'
+            case WalletState.Connecting:
+                return 'yellow'
+            case WalletState.Disconnected:
+                return 'red'
+            default:
+                return 'gray'
+        }
+    }, [status])
+
     return (
         <VStack gap="6" align="stretch">
             {/* Wallet Status - Always at top */}
             <Box>
+                <InterchainWalletModal />
                 <HStack justify="space-between" mb="3">
                     <Text fontSize="sm" fontWeight="medium">
                         Wallet Status
                     </Text>
-                    <Badge colorPalette="green" size="sm">
-                        Connected
+                    <Badge colorPalette={statusColor} size="sm">
+                        {status}
                     </Badge>
                 </HStack>
-
-                <Box
-                    p="3"
-                    bg="bg.subtle"
-                    borderRadius="md"
-                    borderWidth="1px"
-                >
-                    <Text fontSize="xs" color="fg.muted" mb="1">
-                        Address
-                    </Text>
-                    <HStack justify="space-between">
-                        <Text fontSize="sm" fontFamily="mono">
-                            {walletAddress}
+                {status === WalletState.Connected &&
+                    <Box
+                        p="3"
+                        bg="bg.subtle"
+                        borderRadius="md"
+                        borderWidth="1px"
+                    >
+                        <Text fontSize="xs" color="fg.muted" mb="1">
+                            Address
                         </Text>
-                        <Box position="relative">
-                            <Button
-                                ref={copyButtonRef}
-                                size="xs"
-                                variant="ghost"
-                                onClick={handleCopyAddress}
-                            >
-                                <LuCopy />
-                            </Button>
-                            {showCopiedTooltip && (
-                                <Box
-                                    position="absolute"
-                                    top="-35px"
-                                    right="0"
-                                    bg="green.500"
-                                    color="white"
-                                    px="2"
-                                    py="1"
-                                    borderRadius="md"
-                                    fontSize="xs"
-                                    whiteSpace="nowrap"
-                                    zIndex="tooltip"
+                        <HStack justify="space-between">
+                            <Text fontSize="sm" fontFamily="mono">
+                                {walletAddress}
+                            </Text>
+                            <Box position="relative">
+                                <Button
+                                    ref={copyButtonRef}
+                                    size="xs"
+                                    variant="ghost"
+                                    onClick={handleCopyAddress}
                                 >
-                                    Copied!
-                                </Box>
-                            )}
-                        </Box>
-                    </HStack>
-                </Box>
+                                    <LuCopy />
+                                </Button>
+                                {showCopiedTooltip && (
+                                    <Box
+                                        position="absolute"
+                                        top="-35px"
+                                        right="0"
+                                        bg="green"
+                                        color="white"
+                                        px="2"
+                                        py="1"
+                                        borderRadius="md"
+                                        fontSize="xs"
+                                        whiteSpace="nowrap"
+                                        zIndex="tooltip"
+                                    >
+                                        Copied!
+                                    </Box>
+                                )}
+                            </Box>
+                        </HStack>
+                    </Box>
+                }
+                {status !== WalletState.Connected &&
+                    <Button
+                        size="sm"
+                        variant="solid"
+                        w="full"
+                        onClick={open}
+                    >
+                        Connect Wallet
+                    </Button>
+                }
             </Box>
 
             <Separator />
 
             {/* Dynamic Content Based on View State */}
-            {viewState === 'balances' && renderBalancesView()}
-            {viewState === 'send' && renderSendForm()}
-            {viewState === 'ibcSend' && renderIBCSendForm()}
-            {viewState === 'ibcDeposit' && renderIBCDepositForm()}
+            {status === WalletState.Connected && viewState === 'balances' && renderBalancesView()}
+            {status === WalletState.Connected && viewState === 'send' && renderSendForm()}
+            {status === WalletState.Connected && viewState === 'ibcSend' && renderIBCSendForm()}
+            {status === WalletState.Connected && viewState === 'ibcDeposit' && renderIBCDepositForm()}
         </VStack>
     )
 }
