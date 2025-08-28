@@ -12,8 +12,6 @@ import { leapWallet } from "@interchain-kit/leap-extension";
 import { WCWallet } from "@interchain-kit/core";
 
 import {getAssetLists, getWalletChainsNames} from "@/constants/chain";
-import {AssetsProvider} from "@/contexts/assets_context";
-import {useBlockchainListener} from "@/hooks/useBlockchainListener";
 
 const walletConnect = new WCWallet(
     undefined,

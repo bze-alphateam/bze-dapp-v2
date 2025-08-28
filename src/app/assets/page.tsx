@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useEffect, useState} from 'react'
+import React, {useState} from 'react'
 
 import {
     Box,
@@ -27,7 +27,6 @@ import {
 import {ListingTitle} from "@/components/ui/listing/title";
 import {Asset} from "@/types/asset";
 import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
-import {getChainAssets} from "@/service/assets_factory";
 import {isNativeDenom} from "@/utils/denom";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {useAssets} from "@/hooks/useAssets";
@@ -171,7 +170,6 @@ export default function AssetsPage() {
     const [expandedAsset, setExpandedAsset] = useState<string>('')
     const [searchTerm, setSearchTerm] = useState('')
 
-    //TODO: use a hook for asset list
     const {isLoading, assets, getAssetByDenom} = useAssets()
     const { getAssetMarkets, getMarketTicker } = useMarkets()
 
@@ -219,6 +217,8 @@ export default function AssetsPage() {
 
     const renderAssetCard = (asset: Asset) => {
         const isExpanded = asset.denom === expandedAsset
+        //todo: sort markets by volume24h
+        const markets = getAssetMarkets(asset.denom).slice(0, 5)
 
         return (
             <Box
@@ -364,9 +364,9 @@ export default function AssetsPage() {
                                 <LuArrowLeftRight size={16} />
                                 <Text fontWeight="semibold">Trading Pairs</Text>
                             </HStack>
-                            {getAssetMarkets(asset.denom).length > 0 ? (
+                            {markets.length > 0 ? (
                                 <VStack align="stretch" gap={2}>
-                                    {getAssetMarkets(asset.denom).map((market, index) => {
+                                    {markets.map((market, index) => {
                                         const base = getAssetByDenom(market.base)
                                         const quote = getAssetByDenom(market.quote)
 

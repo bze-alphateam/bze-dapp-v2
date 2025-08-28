@@ -103,5 +103,6 @@ export function useBlockchainListener() {
 
             wsRef.current?.close(1000, 'Component unmounting');
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [updateAssets]);
 }

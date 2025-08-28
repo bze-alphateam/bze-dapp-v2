@@ -5,7 +5,6 @@ import { Inter } from "next/font/google"
 import {Provider} from "@/components/ui/provider";
 import {TopNavBar} from "@/components/ui/navigation/navbar";
 import {Toaster} from "@/components/ui/toaster";
-import {useBlockchainListener} from "@/hooks/useBlockchainListener";
 import {AssetsProvider} from "@/contexts/assets_context";
 import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
 
