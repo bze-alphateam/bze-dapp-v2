@@ -3,7 +3,7 @@
 // Base hook to access context (private)
 import {AssetsContext, AssetsContextType} from "@/contexts/assets_context";
 import {useContext} from "react";
-import {Market} from "@/types/market";
+import {Market, MarketData} from "@/types/market";
 import {truncateDenom} from "@/utils/denom";
 
 function useAssetsContext(): AssetsContextType {
@@ -12,6 +12,11 @@ function useAssetsContext(): AssetsContextType {
         throw new Error('useAssets must be used within an AssetsProvider');
     }
     return context;
+}
+
+interface MarketSymbolArgs {
+    base: string;
+    quote: string;
 }
 
 // Hook for reading assets data
@@ -27,7 +32,7 @@ export function useMarkets() {
         return [...markets.filter(market => market.base === denom), ...markets.filter(market => market.quote === denom)]
     }
 
-    const getMarketTicker = (market: Market): string => {
+    const getMarketSymbol = (market: MarketSymbolArgs): string => {
         let base = assetsMap.get(market.base)?.ticker
         if (!base) {
             base = truncateDenom(market.base)
@@ -47,9 +52,25 @@ export function useMarkets() {
         markets,
         getMarketById,
         getAssetMarkets,
-        getMarketTicker,
+        getMarketSymbol,
         isLoading
     };
+}
+
+export function useMarketTradingData(){
+    const { marketsDataMap, isLoading } = useAssetsContext();
+
+    const getAssetMarketsData = (denom: string): MarketData[] => {
+        return [...marketsData.filter(market => market.base === denom), ...marketsData.filter(market => market.quote === denom)]
+    }
+
+    const marketsData = Array.from(marketsDataMap.values())
+
+    return {
+        isLoading,
+        getAssetMarketsData,
+        marketsData
+    }
 }
 
 // Hook for managing/writing markets data

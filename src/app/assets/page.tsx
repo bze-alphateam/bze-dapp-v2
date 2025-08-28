@@ -30,7 +30,7 @@ import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants
 import {isNativeDenom} from "@/utils/denom";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {useAssets} from "@/hooks/useAssets";
-import {useMarkets} from "@/hooks/useMarkets";
+import {useMarkets, useMarketTradingData} from "@/hooks/useMarkets";
 
 // const mockAssets = [
 //     {
@@ -171,7 +171,8 @@ export default function AssetsPage() {
     const [searchTerm, setSearchTerm] = useState('')
 
     const {isLoading, assets, getAssetByDenom} = useAssets()
-    const { getAssetMarkets, getMarketTicker } = useMarkets()
+    const { getMarketSymbol } = useMarkets()
+    const { getAssetMarketsData } = useMarketTradingData()
 
     const filteredAssets = () => {
         if (searchTerm === '') {
@@ -218,7 +219,7 @@ export default function AssetsPage() {
     const renderAssetCard = (asset: Asset) => {
         const isExpanded = asset.denom === expandedAsset
         //todo: sort markets by volume24h
-        const markets = getAssetMarkets(asset.denom).slice(0, 5)
+        const markets = getAssetMarketsData(asset.denom).slice(0, 5)
 
         return (
             <Box
@@ -366,13 +367,13 @@ export default function AssetsPage() {
                             </HStack>
                             {markets.length > 0 ? (
                                 <VStack align="stretch" gap={2}>
-                                    {markets.map((market, index) => {
+                                    {markets.map((market) => {
                                         const base = getAssetByDenom(market.base)
                                         const quote = getAssetByDenom(market.quote)
 
                                         return (
                                             <Box
-                                                key={index}
+                                                key={market.market_id}
                                                 p={3}
                                                 bg="bg.muted"
                                                 borderRadius="md"
@@ -406,17 +407,20 @@ export default function AssetsPage() {
                                                             justifyContent="center"
                                                             position="relative"
                                                         >
-                                                            <Text fontWeight="medium">{getMarketTicker(market)}</Text>
+                                                            <Text fontWeight="medium">{getMarketSymbol(market)}</Text>
                                                         </Box>
                                                     </HStack>
                                                 </Box>
                                                 <Box textAlign="right">
-                                                    <Text fontSize="sm">$567K</Text>
+                                                    <Text fontSize="xs" color="fg.muted">24h Volume</Text>
+                                                    <Text fontSize="sm" fontWeight="medium">{market.quote_volume} {quote?.ticker}</Text>
+                                                    <Text fontSize="xs" color="fg.muted">24h Change</Text>
                                                     <Text
                                                         fontSize="sm"
-                                                        color={1 > 0 ? 'green.500' : 'red.500'}
+                                                        fontWeight="medium"
+                                                        color={market.change > 0 ? 'green.500' : 'red.500'}
                                                     >
-                                                        {1 > 0 ? '+' : ''}3.45%
+                                                        {market.change > 0 ? '+' : ''}{market.change}%
                                                     </Text>
                                                 </Box>
                                             </Flex>

@@ -54,3 +54,7 @@ export function getOmniFlixRestURL(): string {
 export function getAtomOneRestURL(): string {
     return process.env.NEXT_PUBLIC_REST_URL_ATOMONE || '';
 }
+
+export const getAggregatorHost = (): string => {
+    return process.env.NEXT_PUBLIC_AGG_API_HOST ?? "https://getbze.com";
+}
