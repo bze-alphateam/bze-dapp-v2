@@ -2,7 +2,7 @@ import {getAllSupply, getAllSupplyMetadata} from "@/query/supply";
 import {MetadataSDKType} from "@bze/bzejs/cosmos/bank/v1beta1/bank";
 import {Asset} from "@/types/asset";
 import {getDenomType, isFactoryDenom, isIbcDenom, isLpDenom, isNativeDenom, truncateDenom} from "@/utils/denom";
-import {TOKEN_LOGO_PLACEHOLDER} from "@/constants/placeholders";
+import {BZE_CIRCLE_LOGO, TOKEN_LOGO_PLACEHOLDER} from "@/constants/placeholders";
 import {EXCLUDED_ASSETS, STABLE_COINS, VERIFIED_ASSETS} from "@/constants/assets";
 import {getAssetLists, getChainName, getIBCAssetList} from "@/constants/chain";
 import {getExponentByDenomFromAsset} from "@chain-registry/utils";
@@ -63,7 +63,7 @@ const populateAssetFromChainRegistry = (asset: Asset): Asset|undefined => {
         asset.decimals = getExponentByDenomFromAsset(assetData, asset.denom) ?? 0
         asset.name = assetData.name
         asset.ticker = assetData.display.toUpperCase()
-        asset.logo = assetData.logoURIs?.svg ?? assetData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
+        asset.logo = isNativeDenom(asset.denom) ? BZE_CIRCLE_LOGO : assetData.logoURIs?.svg ?? assetData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
 
         return asset
     }

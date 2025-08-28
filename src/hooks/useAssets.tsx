@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { AssetsContext, AssetsContextType } from '@/contexts/assets_context';
+import {Asset} from "@/types/asset";
 
 // Base hook to access context (private)
 function useAssetsContext(): AssetsContextType {
@@ -12,7 +13,15 @@ function useAssetsContext(): AssetsContextType {
 
 // Hook for reading assets data
 export function useAssets() {
-    const { assets, getAssetByDenom, isLoading } = useAssetsContext();
+    const { assetsMap, isLoading } = useAssetsContext();
+
+    const getAssetByDenom = (denom: string): Asset | undefined => {
+        return assetsMap.get(denom);
+    };
+
+    // Derive assets array from map when needed
+    const assets = Array.from(assetsMap.values());
+
     return {
         assets,
         getAssetByDenom,

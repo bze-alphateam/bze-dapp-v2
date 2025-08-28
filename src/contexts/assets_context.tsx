@@ -3,12 +3,19 @@
 import {createContext, useState, ReactNode, useEffect} from 'react';
 import { Asset } from '@/types/asset';
 import {getChainAssets} from "@/service/assets_factory";
+import {Market} from "@/types/market";
+import {createMarketId} from "@/utils/market";
+import {getMarkets} from "@/query/markets";
 
 export interface AssetsContextType {
-    assets: Asset[]; // derived from assetsMap
+    //assets
     assetsMap: Map<string, Asset>;
     updateAssets: (newAssets: Asset[]) => void;
-    getAssetByDenom: (denom: string) => Asset | undefined;
+
+    marketsMap: Map<string, Market>;
+    updateMarkets: (newMarkets: Market[]) => void;
+
+    //others
     isLoading: boolean;
 }
 
@@ -20,6 +27,7 @@ interface AssetsProviderProps {
 
 export function AssetsProvider({ children }: AssetsProviderProps) {
     const [assetsMap, setAssetsMap] = useState<Map<string, Asset>>(new Map());
+    const [marketsMap, setMarketsMap] = useState<Map<string, Market>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
 
     const updateAssets = (newAssets: Asset[]) => {
@@ -33,18 +41,23 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setIsLoading(false);
     };
 
-    const getAssetByDenom = (denom: string): Asset | undefined => {
-        return assetsMap.get(denom);
-    };
+    const updateMarkets = (newMarkets: Market[]) => {
+        const newMap = new Map<string, Market>();
+        newMarkets.forEach(market => {
+            newMap.set(createMarketId(market.base, market.quote), market);
+        })
 
-    // Derive assets array from map when needed
-    const assets = Array.from(assetsMap.values());
+        setMarketsMap(newMap);
+        setIsLoading(false);
+    }
 
     useEffect(() => {
         //initial context loading
         const init = async () => {
-            const fetched = await getChainAssets()
-            updateAssets(fetched)
+            const [assets, markets] = await Promise.all([getChainAssets(), getMarkets()])
+            updateAssets(assets)
+            updateMarkets(markets)
+
             setIsLoading(false)
         }
 
@@ -53,10 +66,10 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
     return (
         <AssetsContext.Provider value={{
-            assets,
             assetsMap,
             updateAssets,
-            getAssetByDenom,
+            marketsMap,
+            updateMarkets,
             isLoading
         }}>
             {children}

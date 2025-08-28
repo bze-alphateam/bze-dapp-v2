@@ -7,7 +7,7 @@ import {
     getChainNativeAssetDenom
 } from "@/constants/assets";
 
-const MAX_DENOM_LEN = 12;
+const MAX_DENOM_LEN = 6;
 
 export const isFactoryDenom = (denom: string) => denom.startsWith("factory/");
 export const isIbcDenom = (denom: string) => denom.startsWith("ibc/");

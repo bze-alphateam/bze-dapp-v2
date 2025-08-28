@@ -31,6 +31,7 @@ import {getChainAssets} from "@/service/assets_factory";
 import {isNativeDenom} from "@/utils/denom";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {useAssets} from "@/hooks/useAssets";
+import {useMarkets} from "@/hooks/useMarkets";
 
 // const mockAssets = [
 //     {
@@ -171,7 +172,8 @@ export default function AssetsPage() {
     const [searchTerm, setSearchTerm] = useState('')
 
     //TODO: use a hook for asset list
-    const {isLoading, assets} = useAssets()
+    const {isLoading, assets, getAssetByDenom} = useAssets()
+    const { getAssetMarkets, getMarketTicker } = useMarkets()
 
     const filteredAssets = () => {
         if (searchTerm === '') {
@@ -243,7 +245,6 @@ export default function AssetsPage() {
                             width="40px"
                             height="40px"
                             borderRadius="full"
-                            overflow="hidden"
                             bg="bg.surface"
                             borderWidth="1px"
                             borderColor="border.subtle"
@@ -363,32 +364,64 @@ export default function AssetsPage() {
                                 <LuArrowLeftRight size={16} />
                                 <Text fontWeight="semibold">Trading Pairs</Text>
                             </HStack>
-                            {1 > 2 ? (
+                            {getAssetMarkets(asset.denom).length > 0 ? (
                                 <VStack align="stretch" gap={2}>
-                                    {/*{asset.tradingPairs.map((pair, index) => (*/}
-                                    {/*    <Box*/}
-                                    {/*        key={index}*/}
-                                    {/*        p={3}*/}
-                                    {/*        bg="bg.muted"*/}
-                                    {/*        borderRadius="md"*/}
-                                    {/*    >*/}
-                                    {/*        <Flex justify="space-between" align="center">*/}
-                                    {/*            <Box>*/}
-                                    {/*                <Text fontWeight="medium">{pair.pair}</Text>*/}
-                                    {/*                <Text color="fg.muted" fontSize="sm">{pair.exchange}</Text>*/}
-                                    {/*            </Box>*/}
-                                    {/*            <Box textAlign="right">*/}
-                                    {/*                <Text fontSize="sm">{pair.volume24h}</Text>*/}
-                                    {/*                <Text*/}
-                                    {/*                    fontSize="sm"*/}
-                                    {/*                    color={pair.priceChange24h > 0 ? 'green.500' : 'red.500'}*/}
-                                    {/*                >*/}
-                                    {/*                    {pair.priceChange24h > 0 ? '+' : ''}{pair.priceChange24h}%*/}
-                                    {/*                </Text>*/}
-                                    {/*            </Box>*/}
-                                    {/*        </Flex>*/}
-                                    {/*    </Box>*/}
-                                    {/*))}*/}
+                                    {getAssetMarkets(asset.denom).map((market, index) => {
+                                        const base = getAssetByDenom(market.base)
+                                        const quote = getAssetByDenom(market.quote)
+
+                                        return (
+                                            <Box
+                                                key={index}
+                                                p={3}
+                                                bg="bg.muted"
+                                                borderRadius="md"
+                                            >
+                                            {/*{ pair: 'ATOM/BZE', exchange: 'DEX1', volume24h: '$567K', priceChange24h: 3.45 }*/}
+                                            <Flex justify="space-between" align="center">
+                                                <Box>
+                                                    <HStack>
+                                                        <TokenLogo
+                                                            src={base?.logo ?? ""}
+                                                            symbol={base?.ticker ?? ""}
+                                                            size="8"
+                                                            circular={true}
+                                                        />
+                                                        <Box
+                                                            ml={-1}
+                                                            alignItems="center"
+                                                            justifyContent="center"
+                                                            position="relative"
+                                                        >
+                                                            <TokenLogo
+                                                                src={quote?.logo ?? ""}
+                                                                symbol={quote?.logo ?? ""}
+                                                                size="8"
+                                                                circular={true}
+                                                            />
+                                                        </Box>
+                                                        <Box
+                                                            ml={2}
+                                                            alignItems="center"
+                                                            justifyContent="center"
+                                                            position="relative"
+                                                        >
+                                                            <Text fontWeight="medium">{getMarketTicker(market)}</Text>
+                                                        </Box>
+                                                    </HStack>
+                                                </Box>
+                                                <Box textAlign="right">
+                                                    <Text fontSize="sm">$567K</Text>
+                                                    <Text
+                                                        fontSize="sm"
+                                                        color={1 > 0 ? 'green.500' : 'red.500'}
+                                                    >
+                                                        {1 > 0 ? '+' : ''}3.45%
+                                                    </Text>
+                                                </Box>
+                                            </Flex>
+                                        </Box>)
+                                    })}
                                 </VStack>
                             ) : (
                                 <Text color="fg.muted" fontSize="sm">No trading pairs available</Text>

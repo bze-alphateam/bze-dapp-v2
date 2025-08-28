@@ -117,7 +117,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
             >
                 {/* Asset Pair */}
                 <HStack gap={3}>
-                    <HStack gap={-2}>
+                    <HStack>
                         <TokenLogo
                             src={market.baseAsset.logo}
                             symbol={market.baseAsset.symbol}
@@ -125,7 +125,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                             circular={true}
                         />
                         <Box
-                            ml={-2}
+                            ml={-1}
                             alignItems="center"
                             justifyContent="center"
                             position="relative"
@@ -207,7 +207,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
             <VStack align="stretch" gap={3} hideFrom="md">
                 <HStack justify="space-between" align="center">
                     <HStack gap={2}>
-                        <HStack gap={-1}>
+                        <HStack>
                             <TokenLogo
                                 src={market.baseAsset.logo}
                                 symbol={market.baseAsset.symbol}
@@ -215,7 +215,7 @@ const MarketRow = ({ market, onClick }: MarketRowProps) => {
                                 circular={true}
                             />
                             <Box
-                                ml={-2}
+                                ml={-1}
                                 alignItems="center"
                                 justifyContent="center"
                                 position="relative"
