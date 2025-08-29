@@ -5,7 +5,7 @@ import {
     Badge,
     Box,
     Button,
-    createListCollection, Field,
+    createListCollection, Field, Group,
     HStack,
     Image,
     Input,
@@ -176,6 +176,7 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
     const [recipientError, setRecipientError] = useState('')
 
     const [memo, setMemo] = useState('')
+    const [memoError, setMemoError] = useState('')
 
     // Create collections for selects
     const coinsCollection = createListCollection({
@@ -213,7 +214,7 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
     }
 
     const onAmountChange = (amount: string) => {
-        setSendAmount(amount)
+        setSendAmount(sanitizeNumberInput(amount))
         setSendAmountError('')
     }
 
@@ -242,6 +243,24 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
         if (selectedCoin) {
             setSelectedCoin(selectedCoin)
             validateAmount(sendAmount, selectedCoin)
+        }
+    }
+
+    const setMaxAmount = () => {
+        if (!selectedCoin) return
+        const maxAmount = uAmountToBigNumberAmount(selectedCoin.amount, selectedCoin.decimals)
+        onAmountChange(maxAmount.toString())
+        validateAmount(maxAmount.toString(), selectedCoin)
+    }
+
+    const onMemoChange = (memo: string) => {
+        setMemo(memo)
+        if (memo.length > 256) {
+            console.log('Memo is too long')
+            setMemoError('Memo must be less than or equal to 256 characters')
+        } else {
+            console.log('Memo is valid')
+            setMemoError('')
         }
     }
 
@@ -311,13 +330,18 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
             <Box>
                 <Field.Root invalid={sendAmountError !== ""}>
                     <Field.Label>Amount</Field.Label>
-                    <Input
-                        size="sm"
-                        placeholder="Amount to send"
-                        value={sendAmount}
-                        onChange={(e) => onAmountChange(sanitizeNumberInput(e.target.value))}
-                        onBlur={() => validateAmount(sendAmount, selectedCoin)}
-                    />
+                    <Group attached w="full" maxW="sm">
+                        <Input
+                            size="sm"
+                            placeholder="Amount to send"
+                            value={sendAmount}
+                            onChange={(e) => onAmountChange(e.target.value)}
+                            onBlur={() => validateAmount(sendAmount, selectedCoin)}
+                        />
+                        <Button variant="outline" size="sm" onClick={setMaxAmount}>
+                            Max
+                        </Button>
+                    </Group>
                     <Field.ErrorText>{sendAmountError}</Field.ErrorText>
                 </Field.Root>
             </Box>
@@ -335,16 +359,25 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
             </Box>
 
             <Box>
-                <Field.Root>
-                    <Field.Label>Memo (Optional)</Field.Label>
+                <Field.Root invalid={memoError !== ""}>
+                    <Field.Label>Memo
+                        <Field.RequiredIndicator
+                            fallback={
+                                <Badge size="xs" variant="surface">
+                                    Optional
+                                </Badge>
+                            }
+                        />
+                    </Field.Label>
                     <Textarea
                         size="sm"
                         placeholder="Transaction memo"
                         rows={3}
                         value={memo}
-                        onChange={(e) => setMemo(e.target.value)}
+                        onChange={(e) => onMemoChange(e.target.value)}
                         resize="none"
                     />
+                    <Field.ErrorText>{memoError}</Field.ErrorText>
                 </Field.Root>
             </Box>
 
