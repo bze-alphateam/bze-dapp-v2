@@ -5,7 +5,7 @@ import {
     Badge,
     Box,
     Button,
-    createListCollection,
+    createListCollection, Field,
     HStack,
     Image,
     Input,
@@ -22,13 +22,16 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
-import {useBalances} from "@/hooks/useBalances";
+import {AssetBalance, useBalances} from "@/hooks/useBalances";
 import {useAsset} from "@/hooks/useAssets";
 import {isIbcDenom} from "@/utils/denom";
 import {Balance} from "@/types/balance";
 import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {getChainNativeAssetDenom} from "@/constants/assets";
+import {sanitizeNumberInput} from "@/utils/number";
+import {validateBZEBech32Address} from "@/utils/address";
+import BigNumber from "bignumber.js";
 
 // Mock token data - replace with real data from your wallet/API
 const mockTokens = [
@@ -162,6 +165,211 @@ const BalanceItem = ({balance}: BalanceItemProps) => {
     )
 }
 
+const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () => void}) => {
+    // Send form state
+    const [selectedCoin, setSelectedCoin] = useState<AssetBalance|undefined>()
+
+    const [sendAmount, setSendAmount] = useState('')
+    const [sendAmountError, setSendAmountError] = useState('')
+
+    const [recipient, setRecipient] = useState('')
+    const [recipientError, setRecipientError] = useState('')
+
+    const [memo, setMemo] = useState('')
+
+    // Create collections for selects
+    const coinsCollection = createListCollection({
+        items: balances.map(item => ({
+            label: `${item.ticker} - ${uAmountToBigNumberAmount(item.amount, item?.decimals ?? 0)}`,
+            value: item.ticker,
+            logo: item.logo
+        }))
+    })
+
+    const handleSend = () => {
+        console.log('Sending:', { selectedCoin, sendAmount, recipient, memo })
+        // Reset form
+        resetSendForm()
+    }
+    const handleCancel = () => {
+        // Reset all forms when canceling
+        resetSendForm()
+        onClose()
+    }
+
+    const onRecipientChange = (recipient: string) => {
+        setRecipient(recipient)
+        if (recipient.length === 0) {
+            setRecipientError('')
+            return
+        }
+
+        const validate = validateBZEBech32Address(recipient)
+        if (validate.isValid) {
+            setRecipientError('')
+        } else {
+            setRecipientError(validate.message)
+        }
+    }
+
+    const onAmountChange = (amount: string) => {
+        setSendAmount(amount)
+        setSendAmountError('')
+    }
+
+    const validateAmount = (amount: string, coin: AssetBalance|undefined) => {
+        if (!coin) return
+        if (amount === "") return
+
+        const amountNumber = BigNumber(amount)
+        if (amountNumber.isNaN()) {
+            setSendAmountError('Invalid amount')
+            return
+        }
+
+        const coinBalance = uAmountToBigNumberAmount(coin.amount, coin.decimals)
+        if (coinBalance.isLessThan(amount)) {
+            setSendAmountError('Insufficient balance')
+        } else {
+            setSendAmountError('')
+        }
+    }
+
+    const onCoinSelectChange = (ticker: string) => {
+        if (ticker === "") return
+
+        const selectedCoin = balances.find(item => item.ticker === ticker)
+        if (selectedCoin) {
+            setSelectedCoin(selectedCoin)
+            validateAmount(sendAmount, selectedCoin)
+        }
+    }
+
+    const resetSendForm = () => {
+        setSelectedCoin(undefined)
+        setSendAmount('')
+        setRecipient('')
+        setMemo('')
+    }
+
+    return (
+        <VStack gap="4" align="stretch">
+            <HStack justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="medium">
+                    Send Coins
+                </Text>
+                <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={handleCancel}
+                >
+                    <LuX size="14" />
+                </Button>
+            </HStack>
+
+            <Box>
+                <Select.Root
+                    collection={coinsCollection}
+                    size="sm"
+                    value={selectedCoin?.ticker ? [selectedCoin.ticker] : []}
+                    onValueChange={(details) => onCoinSelectChange(details.value[0] || '')}
+                >
+                    <Select.Label>Coin</Select.Label>
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select token" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {coinsCollection.items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        <HStack gap="2">
+                                            <Image
+                                                src={item.logo}
+                                                alt={item.value}
+                                                width="16px"
+                                                height="16px"
+                                                borderRadius="full"
+                                            />
+                                            <Text>{item.label}</Text>
+                                        </HStack>
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
+
+            <Box>
+                <Field.Root invalid={sendAmountError !== ""}>
+                    <Field.Label>Amount</Field.Label>
+                    <Input
+                        size="sm"
+                        placeholder="Amount to send"
+                        value={sendAmount}
+                        onChange={(e) => onAmountChange(sanitizeNumberInput(e.target.value))}
+                        onBlur={() => validateAmount(sendAmount, selectedCoin)}
+                    />
+                    <Field.ErrorText>{sendAmountError}</Field.ErrorText>
+                </Field.Root>
+            </Box>
+            <Box>
+                <Field.Root invalid={recipientError !== ""}>
+                    <Field.Label>Recipient Address</Field.Label>
+                    <Input
+                        size="sm"
+                        placeholder="bze...2a1b"
+                        value={recipient}
+                        onChange={(e) => onRecipientChange(e.target.value)}
+                    />
+                    <Field.ErrorText>{recipientError}</Field.ErrorText>
+                </Field.Root>
+            </Box>
+
+            <Box>
+                <Field.Root>
+                    <Field.Label>Memo (Optional)</Field.Label>
+                    <Textarea
+                        size="sm"
+                        placeholder="Transaction memo"
+                        rows={3}
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        resize="none"
+                    />
+                </Field.Root>
+            </Box>
+
+            <HStack gap="2">
+                <Button
+                    size="sm"
+                    flex="1"
+                    onClick={handleSend}
+                    colorPalette="blue"
+                >
+                    Sign
+                </Button>
+                <Button
+                    size="sm"
+                    flex="1"
+                    variant="outline"
+                    onClick={handleCancel}
+                >
+                    Cancel
+                </Button>
+            </HStack>
+        </VStack>
+    )
+}
+
 // Updated Wallet Sidebar Content Component (now fully scrollable)
 export const WalletSidebarContent = () => {
     const {
@@ -202,12 +410,6 @@ export const WalletSidebarContent = () => {
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
     const copyButtonRef = useRef<HTMLButtonElement>(null)
 
-    // Send form state
-    const [selectedToken, setSelectedToken] = useState('')
-    const [sendAmount, setSendAmount] = useState('')
-    const [recipient, setRecipient] = useState('')
-    const [memo, setMemo] = useState('')
-
     // IBC Send form state
     const [ibcToken, setIbcToken] = useState('')
     const [ibcChain, setIbcChain] = useState('')
@@ -223,15 +425,6 @@ export const WalletSidebarContent = () => {
     const { open } = useWalletModal();
 
     const walletAddress = stringTruncateFromCenter(address ?? "", 16)
-
-    // Create collections for selects
-    const tokenCollection = createListCollection({
-        items: mockTokens.map(token => ({
-            label: `${token.symbol} - ${token.name}`,
-            value: token.symbol,
-            logo: token.logo
-        }))
-    })
 
     const ibcTokenCollection = createListCollection({
         items: mockTokens.filter(token => token.isIBC).map(token => ({
@@ -251,14 +444,6 @@ export const WalletSidebarContent = () => {
         setTimeout(() => setShowCopiedTooltip(false), 2000)
     }
 
-    const handleSend = () => {
-        console.log('Sending:', { selectedToken, sendAmount, recipient, memo })
-        // Handle send logic
-        setViewState('balances')
-        // Reset form
-        resetSendForm()
-    }
-
     const handleIBCSend = () => {
         console.log('IBC Sending:', { ibcToken, ibcChain, ibcAmount, ibcRecipient, ibcMemo })
         // Handle IBC send logic
@@ -273,13 +458,6 @@ export const WalletSidebarContent = () => {
         setViewState('balances')
         // Reset form
         resetIBCDepositForm()
-    }
-
-    const resetSendForm = () => {
-        setSelectedToken('')
-        setSendAmount('')
-        setRecipient('')
-        setMemo('')
     }
 
     const resetIBCSendForm = () => {
@@ -298,7 +476,6 @@ export const WalletSidebarContent = () => {
 
     const handleCancel = () => {
         // Reset all forms when canceling
-        resetSendForm()
         resetIBCSendForm()
         resetIBCDepositForm()
         setViewState('balances')
@@ -312,8 +489,8 @@ export const WalletSidebarContent = () => {
                     Balances
                 </Text>
                 <VStack gap="2" align="stretch">
-                    {sortedBalances.map((token) => (
-                        <BalanceItem key={token.denom} balance={token} />
+                    {sortedBalances.map((bal) => (
+                        <BalanceItem key={bal.denom} balance={bal} />
                     ))}
                 </VStack>
             </Box>
@@ -371,115 +548,6 @@ export const WalletSidebarContent = () => {
                     Disconnect Wallet
                 </Button>
             </Box>
-        </VStack>
-    )
-
-    const renderSendForm = () => (
-        <VStack gap="4" align="stretch">
-            <HStack justify="space-between" align="center">
-                <Text fontSize="sm" fontWeight="medium">
-                    Send Tokens
-                </Text>
-                <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={handleCancel}
-                >
-                    <LuX size="14" />
-                </Button>
-            </HStack>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Token</Text>
-                <Select.Root
-                    collection={tokenCollection}
-                    size="sm"
-                    value={selectedToken ? [selectedToken] : []}
-                    onValueChange={(details) => setSelectedToken(details.value[0] || '')}
-                >
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                        <Select.Trigger>
-                            <Select.ValueText placeholder="Select token" />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                            <Select.Indicator />
-                        </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Portal>
-                        <Select.Positioner>
-                            <Select.Content>
-                                {tokenCollection.items.map((item) => (
-                                    <Select.Item key={item.value} item={item}>
-                                        <HStack gap="2">
-                                            <Image
-                                                src={item.logo}
-                                                alt={item.value}
-                                                width="16px"
-                                                height="16px"
-                                                borderRadius="full"
-                                            />
-                                            <Text>{item.label}</Text>
-                                        </HStack>
-                                        <Select.ItemIndicator />
-                                    </Select.Item>
-                                ))}
-                            </Select.Content>
-                        </Select.Positioner>
-                    </Portal>
-                </Select.Root>
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Amount</Text>
-                <Input
-                    size="sm"
-                    placeholder="0.00"
-                    value={sendAmount}
-                    onChange={(e) => setSendAmount(e.target.value)}
-                />
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Recipient Address</Text>
-                <Input
-                    size="sm"
-                    placeholder="bze1..."
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                />
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Memo (Optional)</Text>
-                <Textarea
-                    size="sm"
-                    placeholder="Transaction memo"
-                    rows={3}
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                    resize="none"
-                />
-            </Box>
-
-            <HStack gap="2">
-                <Button
-                    size="sm"
-                    flex="1"
-                    onClick={handleSend}
-                    colorPalette="blue"
-                >
-                    Sign
-                </Button>
-                <Button
-                    size="sm"
-                    flex="1"
-                    variant="outline"
-                    onClick={handleCancel}
-                >
-                    Cancel
-                </Button>
-            </HStack>
         </VStack>
     )
 
@@ -812,7 +880,7 @@ export const WalletSidebarContent = () => {
 
             {/* Dynamic Content Based on View State */}
             {status === WalletState.Connected && viewState === 'balances' && renderBalancesView()}
-            {status === WalletState.Connected && viewState === 'send' && renderSendForm()}
+            {status === WalletState.Connected && viewState === 'send' && <SendForm balances={sortedBalances} onClose={handleCancel} />}
             {status === WalletState.Connected && viewState === 'ibcSend' && renderIBCSendForm()}
             {status === WalletState.Connected && viewState === 'ibcDeposit' && renderIBCDepositForm()}
         </VStack>

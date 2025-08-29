@@ -49,3 +49,7 @@ export const getIBCAssetList = () => {
 
     return all.length > 0 ? all[0].assets : []
 }
+
+export const getChainAddressPrefix = () => {
+    return process.env.NEXT_PUBLIC_CHAIN_ADDRESS_PREFIX || 'bze'
+}
