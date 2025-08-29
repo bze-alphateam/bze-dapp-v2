@@ -6,24 +6,29 @@ import {
     Box,
     Button,
     createListCollection,
-    Drawer,
     HStack,
-    IconButton,
     Image,
     Input,
     Portal,
     Select,
-    Separator,
+    Separator, Skeleton,
     Text,
     Textarea,
     VStack,
 } from '@chakra-ui/react'
-import {LuCopy, LuExternalLink, LuWallet, LuX} from 'react-icons/lu'
+import {LuCopy, LuExternalLink, LuX} from 'react-icons/lu'
 import {useMemo, useRef, useState} from 'react'
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
+import {useBalances} from "@/hooks/useBalances";
+import {useAsset} from "@/hooks/useAssets";
+import {isIbcDenom} from "@/utils/denom";
+import {Balance} from "@/types/balance";
+import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {useAssetPrice} from "@/hooks/usePrices";
+import {getChainNativeAssetDenom} from "@/constants/assets";
 
 // Mock token data - replace with real data from your wallet/API
 const mockTokens = [
@@ -84,80 +89,76 @@ const mockIBCChains = [
 
 type ViewState = 'balances' | 'send' | 'ibcSend' | 'ibcDeposit'
 
-// Main Wallet Sidebar Drawer Component
-interface WalletSidebarProps {
-    isOpen: boolean
-    onClose: () => void
+interface BalanceItemProps {
+    balance: Balance;
 }
 
-export const WalletSidebar = ({ isOpen, onClose }: WalletSidebarProps) => {
-    return (
-        <Drawer.Root
-            open={isOpen}
-            onOpenChange={({ open }) => !open && onClose()}
-            placement="end"
-            size={{ base: 'full', md: 'md' }}
-        >
-            <Drawer.Backdrop />
-            <Drawer.Positioner>
-                <Drawer.Content>
-                    {/* Fixed Header */}
-                    <Drawer.Header borderBottomWidth="1px">
-                        <HStack justify="space-between" w="full">
-                            <HStack gap="2">
-                                <LuWallet size="20" />
-                                <Drawer.Title fontSize="lg" fontWeight="semibold">
-                                    Wallet
-                                </Drawer.Title>
-                            </HStack>
-                            <Drawer.CloseTrigger asChild>
-                                <IconButton
-                                    aria-label="Close wallet"
-                                    size="sm"
-                                    variant="ghost"
-                                >
-                                    <LuX size="16" />
-                                </IconButton>
-                            </Drawer.CloseTrigger>
-                        </HStack>
-                    </Drawer.Header>
+const BalanceItem = ({balance}: BalanceItemProps) => {
+    const { asset, isLoading} = useAsset(balance.denom);
+    const { price, isLoading: pricesLoading} = useAssetPrice(balance.denom);
 
-                    {/* Scrollable Body */}
-                    <Drawer.Body
-                        p="0"
-                        display="flex"
-                        flexDirection="column"
-                        minHeight="0"
-                        height="100%"
-                    >
-                        <Box
-                            flex="1"
-                            overflowY="auto"
-                            overflowX="hidden"
-                            p="6"
-                            css={{
-                                '&::-webkit-scrollbar': {
-                                    width: '6px',
-                                },
-                                '&::-webkit-scrollbar-track': {
-                                    background: 'var(--chakra-colors-bg-subtle)',
-                                    borderRadius: '3px',
-                                },
-                                '&::-webkit-scrollbar-thumb': {
-                                    background: 'var(--chakra-colors-border-subtle)',
-                                    borderRadius: '3px',
-                                },
-                                '&::-webkit-scrollbar-thumb:hover': {
-                                    background: 'var(--chakra-colors-border)',
-                                },
-                            }}
-                        >
-                            <WalletSidebarContent />
-                        </Box>
-                    </Drawer.Body>
-                </Drawer.Content>
-            </Drawer.Positioner>
-        </Drawer.Root>
+    const formattedBalanceAmount = useMemo(() => {
+        return prettyAmount(uAmountToBigNumberAmount(balance.amount, asset?.decimals ?? 0))
+    }, [balance.amount, asset])
+
+    const formattedBalanceUSDValue = useMemo(() => {
+        if (!price) return '0.00';
+        if (!asset) return '0.00';
+
+        const value = price.multipliedBy(uAmountToBigNumberAmount(balance.amount, asset.decimals))
+
+        return prettyAmount(value)
+    }, [price, asset, balance.amount])
+
+    if (!asset) return null;
+
+    return (
+        <Box
+            p="3"
+            bg="bg.subtle"
+            borderRadius="md"
+            borderWidth="1px"
+            _hover={{ bg: 'bg.muted' }}
+            cursor="pointer"
+            transition="background-color 0.2s"
+        >
+            <HStack justify="space-between" mb="1">
+                <Skeleton asChild loading={isLoading}>
+                    <HStack gap="2">
+                        <Image
+                            src={asset.logo}
+                            alt={asset.ticker}
+                            width="20px"
+                            height="20px"
+                            borderRadius="full"
+                        />
+                        <Text fontSize="sm" fontWeight="medium">
+                            {asset.ticker}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted">
+                            {asset.name}
+                        </Text>
+                        {isIbcDenom(asset.denom) && (
+                            <Badge size="xs" colorPalette="blue">
+                                IBC
+                            </Badge>
+                        )}
+                    </HStack>
+                </Skeleton>
+            </HStack>
+            <HStack justify="space-between">
+                <Skeleton asChild loading={isLoading}>
+                    <Text fontSize="sm" fontFamily="mono">
+                        {formattedBalanceAmount}
+                    </Text>
+                </Skeleton>
+                <Skeleton asChild loading={pricesLoading}>
+                    <Text fontSize="sm" color="fg.muted">
+                        ${formattedBalanceUSDValue}
+                    </Text>
+                </Skeleton>
+            </HStack>
+        </Box>
     )
 }
 
@@ -169,6 +170,33 @@ export const WalletSidebarContent = () => {
         address,
         openView,
     } = useChain(getChainName());
+
+    const {getAssetsBalances} = useBalances();
+    const nativeDenom = getChainNativeAssetDenom()
+    const sortedBalances = getAssetsBalances().sort((a, b) => {
+        // 1. Native denom always first
+        if (a.denom === nativeDenom) return -1;
+        if (b.denom === nativeDenom) return 1;
+
+        // 2. Verified vs non-verified
+        if (a.verified && !b.verified) return -1;
+        if (!a.verified && b.verified) return 1;
+
+        // 3. Positive balances vs zero balances
+        const aHasBalance = a.amount.gt(0);
+        const bHasBalance = b.amount.gt(0);
+
+        if (aHasBalance && !bHasBalance) return -1;
+        if (!aHasBalance && bHasBalance) return 1;
+
+        // 4. If both have positive balances, sort by amount descending
+        if (aHasBalance && bHasBalance) {
+            return a.amount.gt(b.amount) ? -1 : 1;
+        }
+
+        // 5. For remaining items (both zero balance), maintain stable sort
+        return 0;
+    })
 
     const [viewState, setViewState] = useState<ViewState>('balances')
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
@@ -284,48 +312,8 @@ export const WalletSidebarContent = () => {
                     Balances
                 </Text>
                 <VStack gap="2" align="stretch">
-                    {mockTokens.map((token, index) => (
-                        <Box
-                            key={index}
-                            p="3"
-                            bg="bg.subtle"
-                            borderRadius="md"
-                            borderWidth="1px"
-                            _hover={{ bg: 'bg.muted' }}
-                            cursor="pointer"
-                            transition="background-color 0.2s"
-                        >
-                            <HStack justify="space-between" mb="1">
-                                <HStack gap="2">
-                                    <Image
-                                        src={token.logo}
-                                        alt={token.symbol}
-                                        width="20px"
-                                        height="20px"
-                                        borderRadius="full"
-                                    />
-                                    <Text fontSize="sm" fontWeight="medium">
-                                        {token.symbol}
-                                    </Text>
-                                    <Text fontSize="xs" color="fg.muted">
-                                        {token.name}
-                                    </Text>
-                                    {token.isIBC && (
-                                        <Badge size="xs" colorPalette="blue">
-                                            IBC
-                                        </Badge>
-                                    )}
-                                </HStack>
-                            </HStack>
-                            <HStack justify="space-between">
-                                <Text fontSize="sm" fontFamily="mono">
-                                    {token.balance}
-                                </Text>
-                                <Text fontSize="sm" color="fg.muted">
-                                    {token.value}
-                                </Text>
-                            </HStack>
-                        </Box>
+                    {sortedBalances.map((token) => (
+                        <BalanceItem key={token.denom} balance={token} />
                     ))}
                 </VStack>
             </Box>

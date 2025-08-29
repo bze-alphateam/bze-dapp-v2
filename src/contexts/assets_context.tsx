@@ -12,6 +12,7 @@ import BigNumber from "bignumber.js";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {getAddressBalances} from "@/query/bank";
+import {Balance} from "@/types/balance";
 
 export interface AssetsContextType {
     //assets
@@ -24,7 +25,7 @@ export interface AssetsContextType {
     marketsDataMap: Map<string, MarketData>;
     updateMarketsData: (newMarkets: MarketData[]) => void;
 
-    balancesMap: Map<string, BigNumber>;
+    balancesMap: Map<string, Balance>;
     updateBalances: (newBalances: Coin[]) => void;
 
     //others
@@ -41,7 +42,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const [assetsMap, setAssetsMap] = useState<Map<string, Asset>>(new Map());
     const [marketsMap, setMarketsMap] = useState<Map<string, Market>>(new Map());
     const [marketsDataMap, setMarketsDataMap] = useState<Map<string, MarketData>>(new Map());
-    const [balancesMap, setBalancesMap] = useState<Map<string, BigNumber>>(new Map());
+    const [balancesMap, setBalancesMap] = useState<Map<string, Balance>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
     const {address} = useChain(getChainName());
 
@@ -77,9 +78,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     }
 
     const updateBalances = (newBalances: Coin[]) => {
-        const newMap = new Map<string, BigNumber>();
+        const newMap = new Map<string, Balance>();
         newBalances.forEach(balance => {
-            newMap.set(balance.denom, BigNumber(balance.amount));
+            newMap.set(balance.denom, {denom: balance.denom, amount: new BigNumber(balance.amount)});
         })
 
         setBalancesMap(newMap);

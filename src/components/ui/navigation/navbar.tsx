@@ -9,13 +9,14 @@ import {Sidebar} from "@/components/ui/sidebar/sidebar";
 import {WalletSidebarContent} from "@/components/ui/sidebar/wallet-sidebar";
 import {MobileNavbarLinks} from "@/components/ui/navigation/mobile-navbar-links";
 import {useAssets} from "@/hooks/useAssets";
-import {useBalances} from "@/hooks/useBalances";
+import {useBalance} from "@/hooks/useBalances";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {useMemo} from "react";
 import {shortNumberFormat} from "@/utils/formatter";
 import {uAmountToBigNumberAmount} from "@/utils/amount";
+import {getChainNativeAssetDenom} from "@/constants/assets";
 
 interface TopNavBarProps {
     appLabel?: string;
@@ -23,7 +24,7 @@ interface TopNavBarProps {
 
 export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
     const {nativeAsset} = useAssets()
-    const {getAssetBalance} = useBalances()
+    const {balance} = useBalance(getChainNativeAssetDenom())
     const {status} = useChain(getChainName());
 
     const walletButtonText = useMemo(() => {
@@ -31,10 +32,10 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
             return "";
         }
 
-        const humanBalance = uAmountToBigNumberAmount(getAssetBalance(nativeAsset.denom).amount, nativeAsset.decimals)
+        const humanBalance = uAmountToBigNumberAmount(balance.amount, nativeAsset.decimals)
 
         return `${shortNumberFormat(humanBalance)} ${nativeAsset.ticker}`
-    }, [status, nativeAsset, getAssetBalance])
+    }, [status, nativeAsset, balance])
 
     return (
         <Box borderBottomWidth="1px" bg="bg.panel">
