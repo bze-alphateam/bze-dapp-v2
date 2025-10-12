@@ -13,6 +13,7 @@ import BigNumber from "bignumber.js";
 interface TxOptions {
     fee?: StdFee | null;
     onSuccess?: (res: DeliverTxResponse) => void;
+    memo?: string;
 }
 
 export enum TxStatus {
@@ -67,7 +68,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         return isSigningClientReady
     }
 
-    const simulateFee = async (messages: EncodeObject[], memo?: string | undefined): Promise<StdFee> => {
+    const simulateFee = async (messages: EncodeObject[], memo: string | undefined): Promise<StdFee> => {
         try {
             const gasPrice = 0.02;
             const gasDenom = getChainNativeAssetDenom();
@@ -87,12 +88,12 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
     }
 
-    const getFee = async (messages: EncodeObject[], options?: TxOptions|undefined, memo?: string | undefined): Promise<StdFee> => {
+    const getFee = async (messages: EncodeObject[], options?: TxOptions|undefined): Promise<StdFee> => {
         try {
             if (options?.fee) {
                 return options.fee;
             } else {
-                return await simulateFee(messages, memo);
+                return await simulateFee(messages, options?.memo);
             }
         } catch (e) {
             console.error(e);
@@ -117,7 +118,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         const broadcastToastId = toast.loading(TxStatus.Broadcasting,'Waiting for transaction to be signed and included in block')
         if (signingClient) {
             try {
-                const resp = await signingClient.signAndBroadcast(address, msgs, fee, "app.getbze.com")
+                const resp = await signingClient.signAndBroadcast(address, msgs, fee, options?.memo ?? "dex.getbze.com")
                 if (isDeliverTxSuccess(resp)) {
                     toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? getChainName())}/tx/${resp.transactionHash}`)}, 'View in Explorer');
                 } else {

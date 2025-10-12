@@ -220,7 +220,7 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
             }],
         })
 
-        await tx([msg]);
+        await tx([msg], {memo: memo.length > 0 ? memo : undefined});
 
         // Reset form
         resetSendForm()
