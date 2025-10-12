@@ -7,6 +7,19 @@ import { toaster } from '@/components/ui/toaster';
 export const useToast = () => {
     return {
         toast: {
+            clickableSuccess: useCallback((title: string, actionFn: () => void, actionLabel?: string, description?: string, duration = 5000) => {
+                toaster.create({
+                    title,
+                    description,
+                    type: 'success',
+                    duration,
+                    closable: true,
+                    action: {
+                        label: actionLabel ?? '',
+                        onClick: actionFn,
+                    }
+                });
+            }, []),
             success: useCallback((title: string, description?: string, duration = 5000) => {
                 toaster.create({
                     title,

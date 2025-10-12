@@ -56,8 +56,9 @@ export function Provider({ children, ...props }: ColorModeProviderProps & { chil
             //@ts-expect-error wallets
             wallets={[keplrWallet, leapWallet, walletConnect]}
             signerOptions={{
-                preferredSignType: () => 'amino',
-                signing: () => undefined,
+                preferredSignType: () => {
+                    return 'amino';
+                }
             }}
             chains={getWalletChainsNames()}
             assetLists={getAssetLists()}

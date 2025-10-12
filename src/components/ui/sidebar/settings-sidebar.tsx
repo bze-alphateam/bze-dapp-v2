@@ -1,4 +1,3 @@
-// src/components/ui/sidebar/settings-sidebar.tsx
 'use client'
 
 import {
@@ -11,93 +10,13 @@ import {
     Box,
     Input,
     Alert,
-    Drawer,
-    IconButton,
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
 import { useState, useEffect } from 'react'
 import { useSettings } from '@/hooks/useSettings'
 import {convertToWebSocketUrl, validateEndpoints} from '@/utils/validation'
 import { EndpointValidationResults } from '@/types/settings'
-import { LuSettings, LuX } from 'react-icons/lu'
 import {useToast} from "@/hooks/useToast";
-
-// Main Settings Sidebar Drawer Component
-interface SettingsSidebarProps {
-    isOpen: boolean
-    onClose: () => void
-}
-
-export const SettingsSidebar = ({ isOpen, onClose }: SettingsSidebarProps) => {
-    return (
-        <Drawer.Root
-            open={isOpen}
-            onOpenChange={({ open }) => !open && onClose()}
-            placement="end"
-            size={{ base: 'full', md: 'md' }}
-        >
-            <Drawer.Backdrop />
-            <Drawer.Positioner>
-                <Drawer.Content>
-                    {/* Fixed Header */}
-                    <Drawer.Header borderBottomWidth="1px">
-                        <HStack justify="space-between" w="full">
-                            <HStack gap="2">
-                                <LuSettings size="20" />
-                                <Drawer.Title fontSize="lg" fontWeight="semibold">
-                                    Settings
-                                </Drawer.Title>
-                            </HStack>
-                            <Drawer.CloseTrigger asChild>
-                                <IconButton
-                                    aria-label="Close settings"
-                                    size="sm"
-                                    variant="ghost"
-                                >
-                                    <LuX size="16" />
-                                </IconButton>
-                            </Drawer.CloseTrigger>
-                        </HStack>
-                    </Drawer.Header>
-
-                    {/* Scrollable Body */}
-                    <Drawer.Body
-                        p="0"
-                        display="flex"
-                        flexDirection="column"
-                        minHeight="0"
-                        height="100%"
-                    >
-                        <Box
-                            flex="1"
-                            overflowY="auto"
-                            overflowX="hidden"
-                            p="6"
-                            css={{
-                                '&::-webkit-scrollbar': {
-                                    width: '6px',
-                                },
-                                '&::-webkit-scrollbar-track': {
-                                    background: 'var(--chakra-colors-bg-subtle)',
-                                    borderRadius: '3px',
-                                },
-                                '&::-webkit-scrollbar-thumb': {
-                                    background: 'var(--chakra-colors-border-subtle)',
-                                    borderRadius: '3px',
-                                },
-                                '&::-webkit-scrollbar-thumb:hover': {
-                                    background: 'var(--chakra-colors-border)',
-                                },
-                            }}
-                        >
-                            <SettingsSidebarContent />
-                        </Box>
-                    </Drawer.Body>
-                </Drawer.Content>
-            </Drawer.Positioner>
-        </Drawer.Root>
-    )
-}
 
 // Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
@@ -161,7 +80,7 @@ export const SettingsSidebarContent = () => {
         })
 
         if (success) {
-            toast.success('Settings successfully saved')
+            toast.success('Success!', 'Settings have been saved.')
         }
     }
 

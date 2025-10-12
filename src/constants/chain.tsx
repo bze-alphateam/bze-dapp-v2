@@ -31,7 +31,7 @@ export const getWalletChainsNames = () => {
 
     const split = envChainsNames.split(',')
 
-    return localChains.filter(c => split.includes(c.chainName.toLowerCase()))
+    return localChains.filter(c => split.includes(c.chainName))
 }
 
 export const getAssetLists = () => {
@@ -52,4 +52,8 @@ export const getIBCAssetList = () => {
 
 export const getChainAddressPrefix = () => {
     return process.env.NEXT_PUBLIC_CHAIN_ADDRESS_PREFIX || 'bze'
+}
+
+export const getChainExplorerURL = (chainName: string): string => {
+    return `https://explorer.chaintools.tech/${chainName}/tx/`
 }

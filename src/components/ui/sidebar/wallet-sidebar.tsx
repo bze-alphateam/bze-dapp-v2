@@ -1,24 +1,26 @@
 'use client'
 import "@interchain-kit/react/styles.css"; // Import styles for the wallet modal
-import { InterchainWalletModal, useWalletModal } from "@interchain-kit/react";
+import {InterchainWalletModal, useChain, useWalletModal} from "@interchain-kit/react";
 import {
     Badge,
     Box,
     Button,
-    createListCollection, Field, Group,
+    createListCollection,
+    Field,
+    Group,
     HStack,
     Image,
     Input,
     Portal,
     Select,
-    Separator, Skeleton,
+    Separator,
+    Skeleton,
     Text,
     Textarea,
     VStack,
 } from '@chakra-ui/react'
 import {LuCopy, LuExternalLink, LuX} from 'react-icons/lu'
 import {useMemo, useRef, useState} from 'react'
-import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
@@ -26,12 +28,15 @@ import {AssetBalance, useBalances} from "@/hooks/useBalances";
 import {useAsset} from "@/hooks/useAssets";
 import {isIbcDenom} from "@/utils/denom";
 import {Balance} from "@/types/balance";
-import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {sanitizeNumberInput} from "@/utils/number";
 import {validateBZEBech32Address} from "@/utils/address";
 import BigNumber from "bignumber.js";
+import {useToast} from "@/hooks/useToast";
+import {useSDKTx} from "@/hooks/useTx";
+import {cosmos} from "@bze/bzejs";
 
 // Mock token data - replace with real data from your wallet/API
 const mockTokens = [
@@ -178,6 +183,11 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
     const [memo, setMemo] = useState('')
     const [memoError, setMemoError] = useState('')
 
+    //other hooks
+    const { toast } = useToast()
+    const { status, address } = useChain(getChainName());
+    const {tx} = useSDKTx(getChainName());
+
     // Create collections for selects
     const coinsCollection = createListCollection({
         items: balances.map(item => ({
@@ -187,13 +197,34 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
         }))
     })
 
-    const handleSend = () => {
-        console.log('Sending:', { selectedCoin, sendAmount, recipient, memo })
+    const handleSend = async () => {
+        if (!isValidForm()) {
+            toast.error('Can not send coins!', 'Please check the input data.')
+            return
+        }
+
+        if (status !== WalletState.Connected) {
+            toast.error('Wallet not connected!','Please connect your wallet first.')
+            return
+        }
+
+        const {send} = cosmos.bank.v1beta1.MessageComposer.withTypeUrl;
+
+        const msg = send({
+            fromAddress: address,
+            toAddress: recipient,
+            amount: [{
+                denom: selectedCoin?.denom ?? '',
+                amount: amountToUAmount(sendAmount, selectedCoin?.decimals ?? 0)
+            }],
+        })
+
+        await tx([msg]);
+
         // Reset form
         resetSendForm()
     }
     const handleCancel = () => {
-        // Reset all forms when canceling
         resetSendForm()
         onClose()
     }
@@ -269,6 +300,15 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
         setSendAmount('')
         setRecipient('')
         setMemo('')
+    }
+
+    const isValidForm = () => {
+        return selectedCoin &&
+            memoError === "" &&
+            recipientError === "" &&
+            sendAmountError === "" &&
+            sendAmount !== "" &&
+            recipient !== ""
     }
 
     return (
@@ -387,8 +427,9 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                     flex="1"
                     onClick={handleSend}
                     colorPalette="blue"
+                    disabled={!isValidForm()}
                 >
-                    Sign
+                    Send
                 </Button>
                 <Button
                     size="sm"

@@ -16,7 +16,10 @@ export const BZE_TESTNET_2_SUGGEST_CHAIN = {
         feeTokens: [
             {
                 denom: getChainNativeAssetDenom(),
-                fixedMinGasPrice: 0
+                fixedMinGasPrice: 0.01,
+                lowGasPrice: 0.01,
+                averageGasPrice: 0.025,
+                highGasPrice: 0.04
             }
         ]
     },
