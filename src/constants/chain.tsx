@@ -55,5 +55,9 @@ export const getChainAddressPrefix = () => {
 }
 
 export const getChainExplorerURL = (chainName: string): string => {
-    return `https://explorer.chaintools.tech/${chainName}/tx/`
+    if (process.env.NEXT_PUBLIC_EXPLORER_URL) {
+        return `${process.env.NEXT_PUBLIC_EXPLORER_URL}/${chainName}`
+    }
+
+    return `https://explorer.chaintools.tech/${chainName}`
 }

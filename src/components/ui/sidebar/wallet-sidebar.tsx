@@ -21,7 +21,7 @@ import {
 } from '@chakra-ui/react'
 import {LuCopy, LuExternalLink, LuX} from 'react-icons/lu'
 import {useMemo, useRef, useState} from 'react'
-import {getChainName} from "@/constants/chain";
+import {getChainExplorerURL, getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
 import {AssetBalance, useBalances} from "@/hooks/useBalances";
@@ -37,6 +37,7 @@ import BigNumber from "bignumber.js";
 import {useToast} from "@/hooks/useToast";
 import {useSDKTx} from "@/hooks/useTx";
 import {cosmos} from "@bze/bzejs";
+import {openExternalLink} from "@/utils/functions";
 
 // Mock token data - replace with real data from your wallet/API
 const mockTokens = [
@@ -603,6 +604,7 @@ export const WalletSidebarContent = () => {
                         size="sm"
                         variant="outline"
                         w="full"
+                        onClick={() => openExternalLink(`${getChainExplorerURL(getChainName())}/account/${address}`)}
                     >
                         <LuExternalLink />
                         View on Explorer

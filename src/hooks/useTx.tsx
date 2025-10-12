@@ -119,7 +119,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
             try {
                 const resp = await signingClient.signAndBroadcast(address, msgs, fee, "app.getbze.com")
                 if (isDeliverTxSuccess(resp)) {
-                    toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? getChainName())}/${resp.transactionHash}`)}, 'View in Explorer');
+                    toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? getChainName())}/tx/${resp.transactionHash}`)}, 'View in Explorer');
                 } else {
                     toast.error(TxStatus.Failed, prettyError(resp?.rawLog));
                 }
