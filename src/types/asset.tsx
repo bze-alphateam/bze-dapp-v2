@@ -9,4 +9,21 @@ export interface Asset {
     stable: boolean; //is stablecoin
     verified: boolean; //is verified
     supply: bigint; //total supply on BZE chain
+    IBCData?: IBCData;
+}
+
+export interface IBCData {
+    chain: IBCChainData;
+    counterparty: IBCCounterparty;
+}
+
+interface IBCCounterparty {
+    chainName: string;
+    chainPrettyName: string;
+    channelId: string;
+    baseDenom: string;
+}
+
+interface IBCChainData {
+    channelId: string;
 }

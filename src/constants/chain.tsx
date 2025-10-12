@@ -3,6 +3,7 @@ import { chains as testnetChains } from "chain-registry/testnet";
 import { ibcData } from 'chain-registry';
 import {getAssetLists as ibcAssetsList} from "@chain-registry/utils";
 import {BZE_TESTNET_2_SUGGEST_CHAIN, BZE_TESTNET_NETWORK} from "@/constants/testnet";
+import {Chain} from "@chain-registry/types";
 
 export const getChainId = (): string => {
     return process.env.NEXT_PUBLIC_CHAIN_ID || 'beezee-1'
@@ -31,7 +32,11 @@ export const getWalletChainsNames = () => {
 
     const split = envChainsNames.split(',')
 
-    return localChains.filter(c => split.includes(c.chainName))
+    return appChainFirst(localChains.filter(c => split.includes(c.chainName)))
+}
+
+const appChainFirst = (chains: Chain[]) => {
+    return chains.sort((a, b) => a.chainId === getChainId() ? -1 : b.chainId === getChainId() ? 1 : 0)
 }
 
 export const getAssetLists = () => {
@@ -45,6 +50,9 @@ export const getAssetLists = () => {
 }
 
 export const getIBCAssetList = () => {
+    //TODO: find a better way to get the ibc assets list
+    // this is logging an error (from chain-registry utils package) when an asset has more than 1 trace
+    // it works but we don't like the error :)
     const all = ibcAssetsList(getChainName(), ibcData, getAssetLists())
 
     return all.length > 0 ? all[0].assets : []

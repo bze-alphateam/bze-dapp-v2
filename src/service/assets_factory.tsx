@@ -4,8 +4,9 @@ import {Asset} from "@/types/asset";
 import {getDenomType, isFactoryDenom, isIbcDenom, isLpDenom, isNativeDenom, truncateDenom} from "@/utils/denom";
 import {BZE_CIRCLE_LOGO, TOKEN_LOGO_PLACEHOLDER} from "@/constants/placeholders";
 import {EXCLUDED_ASSETS, STABLE_COINS, VERIFIED_ASSETS} from "@/constants/assets";
-import {getAssetLists, getChainName, getIBCAssetList} from "@/constants/chain";
+import {getAssetLists, getChainName, getIBCAssetList, getWalletChainsNames} from "@/constants/chain";
 import {getExponentByDenomFromAsset} from "@chain-registry/utils";
+import {IbcTransition} from "@chain-registry/types";
 
 
 // returns all assets from the chain except LP tokens
@@ -38,12 +39,34 @@ const populateAssetFromChainRegistry = (asset: Asset): Asset|undefined => {
         const ibcList = getIBCAssetList()
         const ibcData = ibcList.find((item) => item.base === asset.denom)
 
-        if (ibcData) {
+        if (ibcData && ibcData.traces && ibcData.traces.length > 0) {
+            const firstTrace = ibcData.traces[0] as IbcTransition
+            // not the type of trace we are looking for
+            if (firstTrace.type !== "ibc") {
+                return undefined
+            }
+
+            const ibcAssetChain = getWalletChainsNames().find((c) => c.chainName === firstTrace.counterparty.chainName)
+            if (!ibcAssetChain) {
+                return undefined
+            }
+
             asset.name = ibcData.name
             asset.ticker = ibcData.symbol.toUpperCase()
             asset.decimals = getExponentByDenomFromAsset(ibcData, ibcData.display) ?? 0
             asset.logo = ibcData.logoURIs?.svg ?? ibcData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
             asset.verified = true
+            asset.IBCData = {
+                chain: {
+                    channelId: firstTrace.chain.channelId
+                },
+                counterparty: {
+                    chainName: firstTrace.counterparty.chainName,
+                    channelId: firstTrace.counterparty.channelId,
+                    baseDenom: firstTrace.counterparty.baseDenom,
+                    chainPrettyName: ibcAssetChain.prettyName ?? ibcAssetChain.chainName,
+                }
+            }
         }
 
         return asset
