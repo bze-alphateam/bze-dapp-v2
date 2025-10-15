@@ -1,6 +1,6 @@
 'use client'
 import "@interchain-kit/react/styles.css"; // Import styles for the wallet modal
-import {InterchainWalletModal, useChain, useWalletModal} from "@interchain-kit/react";
+import {InterchainWalletModal, useChain, useWalletManager, useWalletModal} from "@interchain-kit/react";
 import {
     Badge,
     Box,
@@ -773,10 +773,13 @@ export const WalletSidebarContent = () => {
         status,
         username,
         address,
-        openView,
+        disconnect,
+        connect,
     } = useChain(getChainName());
-
     const {getAssetsBalances, isLoading: assetsLoading} = useBalances();
+    const walletManager = useWalletManager()
+    const {ibcChains} = useIBCChains()
+
     const nativeDenom = getChainNativeAssetDenom()
     const sortedBalances = getAssetsBalances().sort((a, b) => {
         // 1. Native denom always first
@@ -804,6 +807,7 @@ export const WalletSidebarContent = () => {
     })
 
     const [viewState, setViewState] = useState<ViewState>('balances')
+    const [isDisconnecting, setIsDisconnecting] = useState(false)
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
     const copyButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -811,8 +815,6 @@ export const WalletSidebarContent = () => {
     const [depositChain, setDepositChain] = useState('')
     const [depositToken, setDepositToken] = useState('')
     const [depositAmount, setDepositAmount] = useState('')
-
-    const { open } = useWalletModal();
 
     const walletAddress = stringTruncateFromCenter(address ?? "", 16)
 
@@ -844,6 +846,35 @@ export const WalletSidebarContent = () => {
         // Reset all forms when canceling
         resetIBCDepositForm()
         setViewState('balances')
+    }
+
+    const handleDisconnectAll = async () => {
+        setIsDisconnecting(true)
+        try {
+            const chains = ibcChains.map(data => data.counterparty.chainName).filter(item => item !== "")
+            const currentWallet = walletManager.currentWalletName
+
+            if (!currentWallet) {
+                console.log('No wallet connected')
+                return
+            }
+
+            // Disconnect from each chain
+            for (const chain of chains) {
+                try {
+                    await walletManager.disconnect(currentWallet, chain)
+                } catch (error) {
+                    console.error(`Failed to disconnect from ${chain}:`, error)
+                }
+            }
+
+            console.log('Disconnected from all chains')
+        } catch (error) {
+            console.error('Error disconnecting:', error)
+        } finally {
+            disconnect()
+            setIsDisconnecting(false)
+        }
     }
 
     const renderBalancesView = () => (
@@ -912,7 +943,9 @@ export const WalletSidebarContent = () => {
                     width="full"
                     variant="outline"
                     colorPalette="red"
-                    onClick={openView}
+                    onClick={handleDisconnectAll}
+                    loading={isDisconnecting}
+                    loadingText={"Disconnecting..."}
                 >
                     Disconnect Wallet
                 </Button>
@@ -1097,7 +1130,7 @@ export const WalletSidebarContent = () => {
                         size="sm"
                         variant="solid"
                         w="full"
-                        onClick={open}
+                        onClick={connect}
                     >
                         Connect Wallet
                     </Button>
