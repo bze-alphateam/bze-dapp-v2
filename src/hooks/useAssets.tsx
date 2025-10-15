@@ -45,3 +45,12 @@ export function useAssetsManager() {
         isLoading
     };
 }
+
+export function useIBCChains() {
+    const {ibcChains, isLoading} = useAssetsContext()
+
+    return {
+        ibcChains,
+        isLoading
+    }
+}

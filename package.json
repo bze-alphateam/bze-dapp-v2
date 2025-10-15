@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@bze/bzejs": "^1.8.4",
-    "@chain-registry/utils": "^2.0.47",
+    "@chain-registry/utils": "^2.0.78",
     "@chakra-ui/react": "^3.22.0",
     "@cosmjs/stargate": "^0.35.0",
     "@emotion/react": "^11.14.0",
@@ -20,7 +20,7 @@
     "@interchain-kit/leap-extension": "^0.3.44",
     "@interchain-kit/react": "^0.3.43",
     "bignumber.js": "^9.3.1",
-    "chain-registry": "^2.0.45",
+    "chain-registry": "^2.0.78",
     "minimatch": "^10.0.3",
     "next": "^15.5.4",
     "next-themes": "^0.4.6",

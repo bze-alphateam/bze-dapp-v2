@@ -6,8 +6,9 @@ import {
     ASSET_TYPE_NATIVE,
     getChainNativeAssetDenom
 } from "@/constants/assets";
+import {Asset} from "@/types/asset";
 
-const MAX_DENOM_LEN = 6;
+const MAX_DENOM_LEN = 8;
 
 export const isFactoryDenom = (denom: string) => denom.startsWith("factory/");
 export const isIbcDenom = (denom: string) => denom.startsWith("ibc/");
@@ -19,3 +20,5 @@ export const getDenomType = (denom: string) => isFactoryDenom(denom) ? ASSET_TYP
 export function truncateDenom(denom: string) {
     return stringTruncateFromCenter(denom, MAX_DENOM_LEN);
 }
+
+export const isIbcAsset = (asset: Asset): boolean => asset.type === ASSET_TYPE_IBC;

@@ -1,9 +1,9 @@
-import { chains, assetLists } from "chain-registry/mainnet";
+
 import { chains as testnetChains } from "chain-registry/testnet";
-import { ibcData } from 'chain-registry';
 import {getAssetLists as ibcAssetsList} from "@chain-registry/utils";
 import {BZE_TESTNET_2_SUGGEST_CHAIN, BZE_TESTNET_NETWORK} from "@/constants/testnet";
 import {Chain} from "@chain-registry/types";
+import {assetLists, chains, ibcData} from "@chain-registry/v2";
 
 export const getChainId = (): string => {
     return process.env.NEXT_PUBLIC_CHAIN_ID || 'beezee-1'
@@ -18,12 +18,38 @@ export const isTestnetChain = (): boolean => {
     return isTestnet === 'true' || isTestnet === '1'
 }
 
-export const getWalletChainsNames = () => {
+export const getChains = () => {
     let localChains = chains
     if (isTestnetChain()) {
         //@ts-expect-error - testnet chains are not in the chain-registry package
         localChains = [...testnetChains, BZE_TESTNET_2_SUGGEST_CHAIN]
     }
+
+    return localChains
+}
+
+export const getChainByChainId = (chainId: string) => {
+    let localChains = chains
+    if (isTestnetChain()) {
+        //@ts-expect-error - testnet chains are not in the chain-registry package
+        localChains = [...testnetChains, BZE_TESTNET_2_SUGGEST_CHAIN]
+    }
+
+    return localChains.find(c => c.chainId?.toLowerCase() === chainId.toLowerCase())
+}
+
+export const getChainByName = (name: string) => {
+    let localChains = chains
+    if (isTestnetChain()) {
+        //@ts-expect-error - testnet chains are not in the chain-registry package
+        localChains = [...testnetChains, BZE_TESTNET_2_SUGGEST_CHAIN]
+    }
+
+    return localChains.find(c => c.chainName.toLowerCase() === name.toLowerCase())
+}
+
+export const getWalletChainsNames = () => {
+    const localChains = getChains()
 
     const envChainsNames = process.env.NEXT_PUBLIC_WALLET_CHAINS_NAMES
     if (!envChainsNames) {

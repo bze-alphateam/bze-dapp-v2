@@ -10,7 +10,7 @@ import {
     Group,
     HStack,
     Image,
-    Input,
+    Input, ListCollection,
     Portal,
     Select,
     Separator,
@@ -20,73 +20,26 @@ import {
     VStack,
 } from '@chakra-ui/react'
 import {LuCopy, LuExternalLink, LuX} from 'react-icons/lu'
-import {useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {getChainExplorerURL, getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
 import {AssetBalance, useBalances} from "@/hooks/useBalances";
-import {useAsset} from "@/hooks/useAssets";
-import {isIbcDenom} from "@/utils/denom";
+import {useAsset, useIBCChains} from "@/hooks/useAssets";
+import {isIbcAsset, isIbcDenom} from "@/utils/denom";
 import {Balance} from "@/types/balance";
 import {amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {sanitizeNumberInput} from "@/utils/number";
-import {validateBZEBech32Address} from "@/utils/address";
+import {validateBech32Address, validateBZEBech32Address} from "@/utils/address";
 import BigNumber from "bignumber.js";
 import {useToast} from "@/hooks/useToast";
 import {useSDKTx} from "@/hooks/useTx";
 import {cosmos} from "@bze/bzejs";
 import {openExternalLink} from "@/utils/functions";
-
-// Mock token data - replace with real data from your wallet/API
-const mockTokens = [
-    {
-        symbol: 'BZE',
-        name: 'BeeZee',
-        balance: '1,234.56',
-        value: '$2,469.12',
-        logo: '/images/bze_alternative_512x512.png',
-        isIBC: false,
-        originalChain: 'BeeZee'
-    },
-    {
-        symbol: 'ATOM',
-        name: 'Cosmos',
-        balance: '89.12',
-        value: '$534.72',
-        logo: '/images/bze_alternative_512x512.png', // Placeholder
-        isIBC: true,
-        originalChain: 'Cosmos Hub'
-    },
-    {
-        symbol: 'OSMO',
-        name: 'Osmosis',
-        balance: '456.78',
-        value: '$182.71',
-        logo: '/images/bze_alternative_512x512.png', // Placeholder
-        isIBC: true,
-        originalChain: 'Osmosis'
-    },
-    {
-        symbol: 'JUNO',
-        name: 'Juno',
-        balance: '23.45',
-        value: '$93.80',
-        logo: '/images/bze_alternative_512x512.png', // Placeholder
-        isIBC: true,
-        originalChain: 'Juno'
-    },
-    {
-        symbol: 'SCRT',
-        name: 'Secret',
-        balance: '67.89',
-        value: '$203.67',
-        logo: '/images/bze_alternative_512x512.png', // Placeholder
-        isIBC: true,
-        originalChain: 'Secret Network'
-    },
-]
+import {IBCData} from "@/types/asset";
+import {canDepositFromIBC, canSendToIBC} from "@/utils/ibc";
 
 // Mock IBC chains
 const mockIBCChains = [
@@ -100,6 +53,24 @@ type ViewState = 'balances' | 'send' | 'ibcSend' | 'ibcDeposit'
 
 interface BalanceItemProps {
     balance: Balance;
+}
+
+const validateAmount = (amount: string, coin: AssetBalance|undefined, onError:(msg: string) => void) => {
+    if (!coin) return
+    if (amount === "") return
+
+    const amountNumber = BigNumber(amount)
+    if (amountNumber.isNaN()) {
+        onError('Invalid amount')
+        return
+    }
+
+    const coinBalance = uAmountToBigNumberAmount(coin.amount, coin.decimals)
+    if (coinBalance.isLessThan(amount)) {
+        onError('Insufficient balance')
+    } else {
+        onError('')
+    }
 }
 
 const BalanceItem = ({balance}: BalanceItemProps) => {
@@ -173,6 +144,7 @@ const BalanceItem = ({balance}: BalanceItemProps) => {
 
 const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () => void}) => {
     // Send form state
+    const [isLoading, setIsLoading] = useState(false)
     const [selectedCoin, setSelectedCoin] = useState<AssetBalance|undefined>()
 
     const [sendAmount, setSendAmount] = useState('')
@@ -220,11 +192,15 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
             }],
         })
 
+        setIsLoading(true)
         await tx([msg], {memo: memo.length > 0 ? memo : undefined});
 
         // Reset form
         resetSendForm()
+        setIsLoading(false)
+        onClose()
     }
+
     const handleCancel = () => {
         resetSendForm()
         onClose()
@@ -250,31 +226,13 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
         setSendAmountError('')
     }
 
-    const validateAmount = (amount: string, coin: AssetBalance|undefined) => {
-        if (!coin) return
-        if (amount === "") return
-
-        const amountNumber = BigNumber(amount)
-        if (amountNumber.isNaN()) {
-            setSendAmountError('Invalid amount')
-            return
-        }
-
-        const coinBalance = uAmountToBigNumberAmount(coin.amount, coin.decimals)
-        if (coinBalance.isLessThan(amount)) {
-            setSendAmountError('Insufficient balance')
-        } else {
-            setSendAmountError('')
-        }
-    }
-
     const onCoinSelectChange = (ticker: string) => {
         if (ticker === "") return
 
         const selectedCoin = balances.find(item => item.ticker === ticker)
         if (selectedCoin) {
             setSelectedCoin(selectedCoin)
-            validateAmount(sendAmount, selectedCoin)
+            validateAmount(sendAmount, selectedCoin, setSendAmountError)
         }
     }
 
@@ -282,16 +240,14 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
         if (!selectedCoin) return
         const maxAmount = uAmountToBigNumberAmount(selectedCoin.amount, selectedCoin.decimals)
         onAmountChange(maxAmount.toString())
-        validateAmount(maxAmount.toString(), selectedCoin)
+        validateAmount(maxAmount.toString(), selectedCoin, setSendAmountError)
     }
 
     const onMemoChange = (memo: string) => {
         setMemo(memo)
         if (memo.length > 256) {
-            console.log('Memo is too long')
             setMemoError('Memo must be less than or equal to 256 characters')
         } else {
-            console.log('Memo is valid')
             setMemoError('')
         }
     }
@@ -322,6 +278,7 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                     size="xs"
                     variant="ghost"
                     onClick={handleCancel}
+                    disabled={isLoading}
                 >
                     <LuX size="14" />
                 </Button>
@@ -338,7 +295,7 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                     <Select.HiddenSelect />
                     <Select.Control>
                         <Select.Trigger>
-                            <Select.ValueText placeholder="Select token" />
+                            <Select.ValueText placeholder="Select coin" />
                         </Select.Trigger>
                         <Select.IndicatorGroup>
                             <Select.Indicator />
@@ -377,9 +334,9 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                             placeholder="Amount to send"
                             value={sendAmount}
                             onChange={(e) => onAmountChange(e.target.value)}
-                            onBlur={() => validateAmount(sendAmount, selectedCoin)}
+                            onBlur={() => validateAmount(sendAmount, selectedCoin, setSendAmountError)}
                         />
-                        <Button variant="outline" size="sm" onClick={setMaxAmount}>
+                        <Button variant="outline" size="sm" onClick={setMaxAmount} disabled={isLoading}>
                             Max
                         </Button>
                     </Group>
@@ -428,7 +385,9 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                     flex="1"
                     onClick={handleSend}
                     colorPalette="blue"
-                    disabled={!isValidForm()}
+                    disabled={!isValidForm() || isLoading}
+                    loading={isLoading}
+                    loadingText={"Sending..."}
                 >
                     Send
                 </Button>
@@ -437,6 +396,369 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                     flex="1"
                     variant="outline"
                     onClick={handleCancel}
+                    disabled={isLoading}
+                >
+                    Cancel
+                </Button>
+            </HStack>
+        </VStack>
+    )
+}
+
+const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () => void}) => {
+    const [isLoading, setIsLoading] = useState(false)
+    // IBC Send form state
+    const [ibcToken, setIbcToken] = useState<AssetBalance|undefined>()
+    const [ibcChain, setIbcChain] = useState('')
+    const [ibcAmount, setIbcAmount] = useState('')
+    const [sendAmountError, setSendAmountError] = useState('')
+    const [ibcRecipient, setIbcRecipient] = useState('')
+    const [recipientError, setRecipientError] = useState('')
+    const [ibcMemo, setIbcMemo] = useState('')
+    const [memoError, setMemoError] = useState('')
+
+    const [selectableChains, setSelectableChains] = useState<IBCData[]>([])
+
+    const {ibcChains} = useIBCChains()
+    // Get the main chain connection status to check if wallet is connected
+    const {address} = useChain(getChainName())
+
+    const {
+        chain: counterpartyChain,
+        address: counterpartyAddress,
+        wallet: counterpartyWallet,
+        status: counterpartyStatus,
+    } = useChain(ibcChain !== '' ? ibcChain : getChainName());
+
+    // Auto-trigger wallet connection when chain changes
+    useEffect(() => {
+        const triggerChainConnection = async () => {
+            // Only try to connect if:
+            // 1. A chain is selected (different from main chain)
+            // 2. The status is Disconnected for this specific chain
+            // 3. The wallet is connected to the main chain (user has already connected wallet)
+            if (ibcChain && ibcChain !== getChainName() && counterpartyStatus === 'Disconnected' && address) {
+                try {
+                    const selected = selectableChains.find(data => data.counterparty.chainName === ibcChain)
+                    if (!selected) {
+                        return
+                    }
+                    console.log('Triggering connection for chain:', ibcChain, counterpartyChain.chainId)
+                    await counterpartyWallet.connect(counterpartyChain.chainId)
+                } catch (error) {
+                    console.error('Failed to connect to chain:', error)
+                }
+            }
+        }
+
+        triggerChainConnection()
+    }, [ibcChain, address, counterpartyStatus, counterpartyWallet, selectableChains, counterpartyChain])
+
+    const getIbcTokensList = useCallback((): ListCollection<{
+        label: string;
+        value: string;
+        logo: string;
+    }> => {
+        return createListCollection({
+            items: balances.map(token => ({
+                label: `${token.ticker} - ${token.name}`,
+                value: token.ticker,
+                logo: token.logo
+            }))
+        })
+    }, [balances])
+
+    const getSelectedCoinIbcChains = useCallback((): ListCollection<{
+        label: string;
+        value: string;
+    }> => {
+        return createListCollection({items: selectableChains.map(data => ({
+                label: data.counterparty.chainPrettyName,
+                value: data.counterparty.chainName,
+            }))
+        })
+    }, [selectableChains])
+
+    const handleIBCSend = () => {
+        setIsLoading(true)
+        console.log('IBC Sending:', { ibcToken, ibcChain, ibcAmount, ibcRecipient, ibcMemo })
+        // Handle IBC send logic
+        // Reset form
+        resetIBCSendForm()
+        onClose()
+    }
+
+    const resetIBCSendForm = () => {
+        setIbcToken(undefined)
+        setIbcChain('')
+        setIbcAmount('')
+        setIbcRecipient('')
+        setIbcMemo('')
+    }
+
+    const handleCancel = () => {
+        // Reset all forms when canceling
+        resetIBCSendForm()
+        onClose()
+    }
+
+    const onCoinSelectChange = (ticker: string) => {
+        if (ticker === "") {
+            setIbcToken(undefined)
+            return;
+        }
+
+        const selectedAsset = balances.find(item => item.ticker === ticker)
+        if (!selectedAsset) {
+            setIbcToken(undefined)
+            return;
+        }
+        setIbcToken(selectedAsset)
+
+        if (isIbcAsset(selectedAsset) && selectedAsset.IBCData && canSendToIBC(selectedAsset.IBCData)) {
+            //if it's an IBC asset, allow it to be sent only to it's own chain
+            setSelectableChains([selectedAsset.IBCData])
+        } else {
+            //if it's not an IBC asset (e.g. native token, factory token) allow it to be sent to any chain
+            setSelectableChains(ibcChains.filter(ibc => canSendToIBC(ibc) && canDepositFromIBC(ibc)))
+        }
+    }
+
+    const onAmountChange = (amount: string) => {
+        setIbcAmount(sanitizeNumberInput(amount))
+        setSendAmountError('')
+    }
+
+    const setMaxAmount = () => {
+        if (!ibcToken) return
+        const maxAmount = uAmountToBigNumberAmount(ibcToken.amount, ibcToken.decimals)
+        onAmountChange(maxAmount.toString())
+        validateAmount(maxAmount.toString(), ibcToken, setSendAmountError)
+    }
+
+    const onRecipientChange = (recipient: string) => {
+        setIbcRecipient(recipient)
+        if (recipient.length === 0) {
+            setRecipientError('')
+            return
+        }
+
+        validateRecipient(recipient)
+    }
+
+    const validateRecipient = (recipient: string) => {
+        const validate = validateBech32Address(recipient, counterpartyChain.bech32Prefix ?? "cosmos")
+        // const validate = validateBZEBech32Address(recipient)
+        if (validate.isValid) {
+            setRecipientError('')
+        } else {
+            setRecipientError(validate.message)
+        }
+    }
+
+    const onMemoChange = (memo: string) => {
+        setIbcMemo(memo)
+        if (memo.length > 256) {
+            setMemoError('Memo must be less than or equal to 256 characters')
+        } else {
+            setMemoError('')
+        }
+    }
+
+    const isValidForm = () => {
+        return ibcToken &&
+            memoError === "" &&
+            recipientError === "" &&
+            sendAmountError === "" &&
+            ibcAmount !== "" &&
+            ibcRecipient !== ""
+    }
+
+    const recipientAddressPlaceholder = useMemo(() => {
+        if (counterpartyChain.bech32Prefix) {
+            return counterpartyChain.bech32Prefix + "...2a1b"
+        }
+
+        return "cosmos" + "...2a1b"
+    }, [counterpartyChain] )
+
+    const onChainSelect = (chainName: string) => {
+        setIbcChain(chainName)
+    }
+
+    useEffect(() => {
+        if (ibcRecipient !== "") {
+            validateRecipient(ibcRecipient)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ibcChain])
+
+    return (
+        <VStack gap="4" align="stretch">
+            <HStack justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="medium">
+                    IBC Send
+                </Text>
+                <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={handleCancel}
+                >
+                    <LuX size="14" />
+                </Button>
+            </HStack>
+
+            <Box>
+                <Select.Root
+                    collection={getIbcTokensList()}
+                    size="sm"
+                    value={ibcToken?.ticker ? [ibcToken.ticker] : []}
+                    onValueChange={(details) => onCoinSelectChange(details.value[0] || '')}
+                >
+                    <Select.Label>Coin</Select.Label>
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select IBC coin" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {getIbcTokensList().items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        <HStack gap="2">
+                                            <Image
+                                                src={item.logo}
+                                                alt={item.value}
+                                                width="16px"
+                                                height="16px"
+                                                borderRadius="full"
+                                            />
+                                            <Text>{item.label}</Text>
+                                        </HStack>
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
+
+            <Box>
+                <Select.Root
+                    collection={getSelectedCoinIbcChains()}
+                    size="sm"
+                    value={ibcChain ? [ibcChain] : []}
+                    onValueChange={(details) => onChainSelect(details.value[0] || '')}
+                >
+                    <Select.Label>Destination Chain</Select.Label>
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                        <Select.Trigger>
+                            <Select.ValueText placeholder="Select destination chain" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                            <Select.Indicator />
+                        </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Portal>
+                        <Select.Positioner>
+                            <Select.Content>
+                                {getSelectedCoinIbcChains().items.map((item) => (
+                                    <Select.Item key={item.value} item={item}>
+                                        {item.label}
+                                        <Select.ItemIndicator />
+                                    </Select.Item>
+                                ))}
+                            </Select.Content>
+                        </Select.Positioner>
+                    </Portal>
+                </Select.Root>
+            </Box>
+
+            <Box>
+                <Field.Root invalid={sendAmountError !== ""}>
+                    <Field.Label>Amount</Field.Label>
+                    <Group attached w="full" maxW="sm">
+                        <Input
+                            size="sm"
+                            placeholder="Amount to send"
+                            value={ibcAmount}
+                            onChange={(e) => setIbcAmount(e.target.value)}
+                            onBlur={() => validateAmount(ibcAmount, ibcToken, setSendAmountError)}
+                        />
+                        <Button variant="outline" size="sm" onClick={setMaxAmount} disabled={isLoading}>
+                            Max
+                        </Button>
+                    </Group>
+                    <Field.ErrorText>{sendAmountError}</Field.ErrorText>
+                </Field.Root>
+            </Box>
+
+            <Box>
+                <Field.Root invalid={recipientError !== ""}>
+                    <Field.Label>Recipient Address</Field.Label>
+                    <Group attached w="full" maxW="sm">
+                        <Input
+                            size="sm"
+                            placeholder={recipientAddressPlaceholder}
+                            value={ibcRecipient}
+                            onChange={(e) => onRecipientChange(e.target.value)}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => onRecipientChange(counterpartyAddress)} disabled={isLoading || !counterpartyAddress}>
+                            Me
+                        </Button>
+                    </Group>
+                    <Field.ErrorText>{recipientError}</Field.ErrorText>
+                </Field.Root>
+            </Box>
+
+            <Box>
+                <Field.Root invalid={memoError !== ""}>
+                    <Field.Label>Memo
+                        <Field.RequiredIndicator
+                            fallback={
+                                <Badge size="xs" variant="surface">
+                                    Optional
+                                </Badge>
+                            }
+                        />
+                    </Field.Label>
+                    <Textarea
+                        size="sm"
+                        placeholder="Transaction memo"
+                        rows={3}
+                        value={ibcMemo}
+                        onChange={(e) => onMemoChange(e.target.value)}
+                        resize="none"
+                    />
+                    <Field.ErrorText>{memoError}</Field.ErrorText>
+                </Field.Root>
+            </Box>
+
+            <HStack gap="2">
+                <Button
+                    size="sm"
+                    flex="1"
+                    onClick={handleIBCSend}
+                    colorPalette="blue"
+                    disabled={!isValidForm() || isLoading}
+                    loading={isLoading}
+                    loadingText={"Sending..."}
+                >
+                    Send
+                </Button>
+                <Button
+                    size="sm"
+                    flex="1"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isLoading}
                 >
                     Cancel
                 </Button>
@@ -454,7 +776,7 @@ export const WalletSidebarContent = () => {
         openView,
     } = useChain(getChainName());
 
-    const {getAssetsBalances} = useBalances();
+    const {getAssetsBalances, isLoading: assetsLoading} = useBalances();
     const nativeDenom = getChainNativeAssetDenom()
     const sortedBalances = getAssetsBalances().sort((a, b) => {
         // 1. Native denom always first
@@ -485,13 +807,6 @@ export const WalletSidebarContent = () => {
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
     const copyButtonRef = useRef<HTMLButtonElement>(null)
 
-    // IBC Send form state
-    const [ibcToken, setIbcToken] = useState('')
-    const [ibcChain, setIbcChain] = useState('')
-    const [ibcAmount, setIbcAmount] = useState('')
-    const [ibcRecipient, setIbcRecipient] = useState('')
-    const [ibcMemo, setIbcMemo] = useState('')
-
     // IBC Deposit form state
     const [depositChain, setDepositChain] = useState('')
     const [depositToken, setDepositToken] = useState('')
@@ -500,14 +815,6 @@ export const WalletSidebarContent = () => {
     const { open } = useWalletModal();
 
     const walletAddress = stringTruncateFromCenter(address ?? "", 16)
-
-    const ibcTokenCollection = createListCollection({
-        items: mockTokens.filter(token => token.isIBC).map(token => ({
-            label: `${token.symbol} - ${token.name}`,
-            value: token.symbol,
-            logo: token.logo
-        }))
-    })
 
     const chainCollection = createListCollection({
         items: mockIBCChains
@@ -519,28 +826,12 @@ export const WalletSidebarContent = () => {
         setTimeout(() => setShowCopiedTooltip(false), 2000)
     }
 
-    const handleIBCSend = () => {
-        console.log('IBC Sending:', { ibcToken, ibcChain, ibcAmount, ibcRecipient, ibcMemo })
-        // Handle IBC send logic
-        setViewState('balances')
-        // Reset form
-        resetIBCSendForm()
-    }
-
     const handleIBCDeposit = () => {
         console.log('IBC Deposit:', { depositChain, depositToken, depositAmount })
         // Handle IBC deposit logic
         setViewState('balances')
         // Reset form
         resetIBCDepositForm()
-    }
-
-    const resetIBCSendForm = () => {
-        setIbcToken('')
-        setIbcChain('')
-        setIbcAmount('')
-        setIbcRecipient('')
-        setIbcMemo('')
     }
 
     const resetIBCDepositForm = () => {
@@ -551,7 +842,6 @@ export const WalletSidebarContent = () => {
 
     const handleCancel = () => {
         // Reset all forms when canceling
-        resetIBCSendForm()
         resetIBCDepositForm()
         setViewState('balances')
     }
@@ -581,6 +871,7 @@ export const WalletSidebarContent = () => {
                         variant="outline"
                         onClick={() => setViewState('send')}
                         w="full"
+                        disabled={assetsLoading}
                     >
                         Send
                     </Button>
@@ -589,6 +880,7 @@ export const WalletSidebarContent = () => {
                         variant="outline"
                         onClick={() => setViewState('ibcSend')}
                         w="full"
+                        disabled={assetsLoading}
                     >
                         IBC Send
                     </Button>
@@ -597,6 +889,7 @@ export const WalletSidebarContent = () => {
                         variant="outline"
                         onClick={() => setViewState('ibcDeposit')}
                         w="full"
+                        disabled={assetsLoading}
                     >
                         IBC Deposit
                     </Button>
@@ -624,147 +917,6 @@ export const WalletSidebarContent = () => {
                     Disconnect Wallet
                 </Button>
             </Box>
-        </VStack>
-    )
-
-    const renderIBCSendForm = () => (
-        <VStack gap="4" align="stretch">
-            <HStack justify="space-between" align="center">
-                <Text fontSize="sm" fontWeight="medium">
-                    IBC Send
-                </Text>
-                <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={handleCancel}
-                >
-                    <LuX size="14" />
-                </Button>
-            </HStack>
-
-            <Box>
-                <Text fontSize="sm" mb="2">IBC Token</Text>
-                <Select.Root
-                    collection={ibcTokenCollection}
-                    size="sm"
-                    value={ibcToken ? [ibcToken] : []}
-                    onValueChange={(details) => setIbcToken(details.value[0] || '')}
-                >
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                        <Select.Trigger>
-                            <Select.ValueText placeholder="Select IBC token" />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                            <Select.Indicator />
-                        </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Portal>
-                        <Select.Positioner>
-                            <Select.Content>
-                                {ibcTokenCollection.items.map((item) => (
-                                    <Select.Item key={item.value} item={item}>
-                                        <HStack gap="2">
-                                            <Image
-                                                src={item.logo}
-                                                alt={item.value}
-                                                width="16px"
-                                                height="16px"
-                                                borderRadius="full"
-                                            />
-                                            <Text>{item.label}</Text>
-                                        </HStack>
-                                        <Select.ItemIndicator />
-                                    </Select.Item>
-                                ))}
-                            </Select.Content>
-                        </Select.Positioner>
-                    </Portal>
-                </Select.Root>
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Destination Chain</Text>
-                <Select.Root
-                    collection={chainCollection}
-                    size="sm"
-                    value={ibcChain ? [ibcChain] : []}
-                    onValueChange={(details) => setIbcChain(details.value[0] || '')}
-                >
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                        <Select.Trigger>
-                            <Select.ValueText placeholder="Select chain" />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                            <Select.Indicator />
-                        </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Portal>
-                        <Select.Positioner>
-                            <Select.Content>
-                                {chainCollection.items.map((item) => (
-                                    <Select.Item key={item.value} item={item}>
-                                        {item.label}
-                                        <Select.ItemIndicator />
-                                    </Select.Item>
-                                ))}
-                            </Select.Content>
-                        </Select.Positioner>
-                    </Portal>
-                </Select.Root>
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Amount</Text>
-                <Input
-                    size="sm"
-                    placeholder="0.00"
-                    value={ibcAmount}
-                    onChange={(e) => setIbcAmount(e.target.value)}
-                />
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Recipient Address</Text>
-                <Input
-                    size="sm"
-                    placeholder="cosmos1..."
-                    value={ibcRecipient}
-                    onChange={(e) => setIbcRecipient(e.target.value)}
-                />
-            </Box>
-
-            <Box>
-                <Text fontSize="sm" mb="2">Memo (Optional)</Text>
-                <Textarea
-                    size="sm"
-                    placeholder="Transaction memo"
-                    rows={3}
-                    value={ibcMemo}
-                    onChange={(e) => setIbcMemo(e.target.value)}
-                    resize="none"
-                />
-            </Box>
-
-            <HStack gap="2">
-                <Button
-                    size="sm"
-                    flex="1"
-                    onClick={handleIBCSend}
-                    colorPalette="blue"
-                >
-                    Sign
-                </Button>
-                <Button
-                    size="sm"
-                    flex="1"
-                    variant="outline"
-                    onClick={handleCancel}
-                >
-                    Cancel
-                </Button>
-            </HStack>
         </VStack>
     )
 
@@ -957,7 +1109,7 @@ export const WalletSidebarContent = () => {
             {/* Dynamic Content Based on View State */}
             {status === WalletState.Connected && viewState === 'balances' && renderBalancesView()}
             {status === WalletState.Connected && viewState === 'send' && <SendForm balances={sortedBalances} onClose={handleCancel} />}
-            {status === WalletState.Connected && viewState === 'ibcSend' && renderIBCSendForm()}
+            {status === WalletState.Connected && viewState === 'ibcSend' && <IBCSendForm balances={sortedBalances} onClose={handleCancel} />}
             {status === WalletState.Connected && viewState === 'ibcDeposit' && renderIBCDepositForm()}
         </VStack>
     )

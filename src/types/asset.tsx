@@ -17,7 +17,7 @@ export interface IBCData {
     counterparty: IBCCounterparty;
 }
 
-interface IBCCounterparty {
+export interface IBCCounterparty {
     chainName: string;
     chainPrettyName: string;
     channelId: string;
@@ -26,4 +26,20 @@ interface IBCCounterparty {
 
 interface IBCChainData {
     channelId: string;
+}
+
+// we created a custom interface that we can use to mock the traces of type IbcTransition
+// this is needed because the IbcTransition type from chain-registry/utils is not actually what we get from the chain-registry
+// the IbcTransition type has fields camelCase while the chain-registry returns fields with snake_case
+export interface IbcTransitionMock {
+    type: "ibc";
+    counterparty: {
+        chain_name: string;
+        base_denom: string;
+        channel_id: string;
+    };
+    chain: {
+        channel_id: string;
+        path?: string;
+    };
 }

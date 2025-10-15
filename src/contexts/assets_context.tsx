@@ -1,7 +1,7 @@
 'use client';
 
 import {createContext, useState, ReactNode, useEffect} from 'react';
-import { Asset } from '@/types/asset';
+import {Asset, IBCData} from '@/types/asset';
 import {getChainAssets} from "@/service/assets_factory";
 import {Market, MarketData} from "@/types/market";
 import {createMarketId} from "@/utils/market";
@@ -13,6 +13,7 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {getAddressBalances} from "@/query/bank";
 import {Balance} from "@/types/balance";
+import {isIbcDenom} from "@/utils/denom";
 
 export interface AssetsContextType {
     //assets
@@ -30,6 +31,10 @@ export interface AssetsContextType {
 
     //others
     isLoading: boolean;
+
+    // holds a list of blockchains IBC details. It is populated from assets details.
+    // WARNING: it can hold IBC details that are incomplete (missing chain.channelId or missing chain.counterparty.channelId)
+    ibcChains: IBCData[]
 }
 
 export const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
@@ -44,16 +49,26 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const [marketsDataMap, setMarketsDataMap] = useState<Map<string, MarketData>>(new Map());
     const [balancesMap, setBalancesMap] = useState<Map<string, Balance>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
+    const [ibcChains, setIbcChains] = useState<IBCData[]>([]);
     const {address} = useChain(getChainName());
 
     const updateAssets = (newAssets: Asset[]) => {
         // Create map for efficient lookups
         const newMap = new Map<string, Asset>();
+        const ibc = new Map<string, IBCData>();
         newAssets.forEach(asset => {
             newMap.set(asset.denom, asset);
+            if (!isIbcDenom(asset.denom) || !asset.IBCData) {
+                return
+            }
+
+            // we set ibcChains from these assets.
+            // use a map to avoid duplicates
+            ibc.set(asset.IBCData.chain.channelId, asset.IBCData);
         });
 
         setAssetsMap(newMap);
+        setIbcChains(Array.from(ibc.values()));
         setIsLoading(false);
     };
 
@@ -123,7 +138,8 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             marketsDataMap,
             updateMarketsData,
             balancesMap,
-            updateBalances
+            updateBalances,
+            ibcChains,
         }}>
             {children}
         </AssetsContext.Provider>
