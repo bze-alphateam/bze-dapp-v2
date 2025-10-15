@@ -86,7 +86,7 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
 
         load();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [wallet, chain]);
+    }, [wallet, chain, isIbc, isCosmos]);
 
     return {
         signingClientError,
