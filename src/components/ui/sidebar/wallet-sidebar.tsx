@@ -28,18 +28,20 @@ import {AssetBalance, useBalances} from "@/hooks/useBalances";
 import {useAsset, useIBCChains} from "@/hooks/useAssets";
 import {isIbcAsset, isIbcDenom} from "@/utils/denom";
 import {Balance} from "@/types/balance";
-import {amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {amountToBigNumberUAmount, amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {sanitizeNumberInput} from "@/utils/number";
 import {validateBech32Address, validateBZEBech32Address} from "@/utils/address";
 import BigNumber from "bignumber.js";
 import {useToast} from "@/hooks/useToast";
-import {useSDKTx} from "@/hooks/useTx";
-import {cosmos} from "@bze/bzejs";
+import {useIBCTx, useSDKTx} from "@/hooks/useTx";
+import {cosmos, ibc} from "@bze/bzejs";
 import {openExternalLink} from "@/utils/functions";
 import {IBCData} from "@/types/asset";
-import {canDepositFromIBC, canSendToIBC} from "@/utils/ibc";
+import {canDepositFromIBC, canSendToIBC, getIbcTransferTimeout} from "@/utils/ibc";
+import {coin} from '@cosmjs/stargate';
+import {DEFAULT_TX_MEMO} from "@/constants/placeholders";
 
 // Mock IBC chains
 const mockIBCChains = [
@@ -418,10 +420,11 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
     const [memoError, setMemoError] = useState('')
 
     const [selectableChains, setSelectableChains] = useState<IBCData[]>([])
-
     const {ibcChains} = useIBCChains()
     // Get the main chain connection status to check if wallet is connected
     const {address} = useChain(getChainName())
+    const {toast} = useToast()
+    const {tx: ibcTx} = useIBCTx(getChainName())
 
     const {
         chain: counterpartyChain,
@@ -479,13 +482,67 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
         })
     }, [selectableChains])
 
-    const handleIBCSend = () => {
+    const handleIBCSend = async () => {
+        if (!address || address === '') {
+            toast.error("Please connect your wallet.")
+            return
+        }
+
+        if (!ibcToken) {
+            toast.error("Please select a token to send")
+            return
+        }
+
+        if (!ibcRecipient || ibcRecipient === '') {
+            toast.error("Please enter a recipient address")
+            return
+        }
+
+        if (!ibcChain || ibcChain === '') {
+            toast.error("Please select a destination chain")
+            return
+        }
+
+        const selectedChain = selectableChains.find(data => data.counterparty.chainName === ibcChain)
+        if (!selectedChain || selectedChain.chain.channelId === '') {
+            toast.error("Failed to use the selected chain. Please reload the page and try again.")
+            return
+        }
+
+        const uAmount = amountToBigNumberUAmount(ibcAmount, ibcToken.decimals ?? 0)
+        if (uAmount.isNaN() || !uAmount.isPositive()) {
+            toast.error("Please enter a valid amount to send")
+            return
+        }
+
+        const {transfer} = ibc.applications.transfer.v1.MessageComposer.withTypeUrl;
+        const transferTimeout = getIbcTransferTimeout();
         setIsLoading(true)
-        console.log('IBC Sending:', { ibcToken, ibcChain, ibcAmount, ibcRecipient, ibcMemo })
-        // Handle IBC send logic
-        // Reset form
-        resetIBCSendForm()
-        onClose()
+        const msg = transfer({
+            sourcePort: "transfer",
+            sourceChannel: selectedChain.chain.channelId,
+            sender: address,
+            receiver: ibcRecipient,
+            timeoutTimestamp: BigInt(transferTimeout.toString()),
+            token: coin(uAmount.toString(), ibcToken.denom),
+            //@ts-expect-error it's not a mandatory param - we use timeout timestamp for timeout
+            timeoutHeight: undefined,
+            memo: ibcMemo && ibcMemo.length > 0 ? ibcMemo : DEFAULT_TX_MEMO,
+            encoding: "",
+            useAliasing: false
+        });
+
+        await ibcTx(
+            [msg], {
+                memo: ibcMemo.length > 0 ? ibcMemo : undefined,
+                onSuccess: () => {
+                    resetIBCSendForm()
+                    onClose()
+                }
+            }
+        )
+
+        setIsLoading(false)
     }
 
     const resetIBCSendForm = () => {
@@ -548,7 +605,6 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
 
     const validateRecipient = (recipient: string) => {
         const validate = validateBech32Address(recipient, counterpartyChain.bech32Prefix ?? "cosmos")
-        // const validate = validateBZEBech32Address(recipient)
         if (validate.isValid) {
             setRecipientError('')
         } else {

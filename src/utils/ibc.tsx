@@ -1,5 +1,6 @@
 import {IBCData} from "@/types/asset";
 import {DenomTrace} from "@/types/ibc";
+import BigNumber from "bignumber.js";
 
 export const canDepositFromIBC = (ibcData: IBCData): boolean => {
     return ibcData.counterparty.baseDenom !== "" && ibcData.counterparty.channelId !== "" && ibcData.counterparty.chainName != ""
@@ -48,3 +49,9 @@ export async function denomOnFirstHopChainFromTrace(trace: DenomTrace): Promise<
         return undefined;
     }
 }
+
+export const getIbcTransferTimeout = (): BigNumber => {
+    // now + 10 minutes in nanoseconds
+    return new BigNumber(Date.now() + 600_000).multipliedBy(1_000_000)
+}
+

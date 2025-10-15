@@ -9,6 +9,7 @@ import {EncodeObject, StdFee} from "interchainjs/types";
 import {useSigningClient} from "@/hooks/useSigningClient";
 import {openExternalLink, sleep} from "@/utils/functions";
 import BigNumber from "bignumber.js";
+import {DEFAULT_TX_MEMO} from "@/constants/placeholders";
 
 interface TxOptions {
     fee?: StdFee | null;
@@ -118,7 +119,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         const broadcastToastId = toast.loading(TxStatus.Broadcasting,'Waiting for transaction to be signed and included in block')
         if (signingClient) {
             try {
-                const resp = await signingClient.signAndBroadcast(address, msgs, fee, options?.memo ?? "dex.getbze.com")
+                const resp = await signingClient.signAndBroadcast(address, msgs, fee, options?.memo ?? DEFAULT_TX_MEMO)
                 if (isDeliverTxSuccess(resp)) {
                     toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? getChainName())}/tx/${resp.transactionHash}`)}, 'View in Explorer');
                 } else {
