@@ -1,6 +1,6 @@
 'use client'
 import "@interchain-kit/react/styles.css"; // Import styles for the wallet modal
-import {InterchainWalletModal, useChain, useWalletManager, useWalletModal} from "@interchain-kit/react";
+import {InterchainWalletModal, useChain, useWalletManager} from "@interchain-kit/react";
 import {
     Badge,
     Box,
@@ -461,7 +461,7 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
     }> => {
         return createListCollection({
             items: balances.map(token => ({
-                label: `${token.ticker} - ${token.name}`,
+                label: `${token.ticker} - ${uAmountToBigNumberAmount(token.amount, token?.decimals ?? 0)}`,
                 value: token.ticker,
                 logo: token.logo
             }))
