@@ -253,6 +253,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
             return volumeB - volumeA;
         })
         .slice(0, 5)
+
     const getTypeColor = (type: string) => {
         switch (type) {
             case ASSET_TYPE_NATIVE:
@@ -273,6 +274,28 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
     const formattedSupply = useMemo(() => {
         return shortNumberFormat(uAmountToBigNumberAmount(asset.supply, asset.decimals))
     }, [asset.supply, asset.decimals])
+
+    const renderChangeArrow = () => {
+        if (change > 0) {
+            return  <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
+        }
+        if (change < 0) {
+            return  <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
+        }
+        return null
+    }
+
+    const renderChangeText = () => {
+        if (change > 0) {
+            return <Text fontSize="sm" color="green.500">+{change}%</Text>
+        }
+
+        if (change < 0) {
+            return <Text fontSize="sm" color="red.500">{change}%</Text>
+        }
+
+        return <Text fontSize="sm" color="red.200">{change}%</Text>
+    }
 
     return (
         <Box
@@ -341,17 +364,8 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
                         </Skeleton>
                         <Skeleton asChild loading={priceLoading}>
                             <HStack gap={1} justify="flex-end">
-                                {change > 0 ? (
-                                    <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
-                                ) : (
-                                    <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
-                                )}
-                                <Text
-                                    fontSize="sm"
-                                    color={change> 0 ? 'green.500' : 'red.500'}
-                                >
-                                    {change > 0 ? '+' : ''}{change}%
-                                </Text>
+                                {renderChangeArrow()}
+                                {renderChangeText()}
                             </HStack>
                         </Skeleton>
                     </Box>

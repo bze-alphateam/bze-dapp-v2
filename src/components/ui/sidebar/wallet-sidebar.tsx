@@ -24,11 +24,10 @@ import {getChainExplorerURL, getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
 import {AssetBalance, useBalances} from "@/hooks/useBalances";
-import {useAsset, useIBCChains} from "@/hooks/useAssets";
+import {useIBCChains} from "@/hooks/useAssets";
 import {isIbcAsset, isIbcDenom} from "@/utils/denom";
-import {Balance} from "@/types/balance";
+
 import {amountToBigNumberUAmount, amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
-import {useAssetPrice} from "@/hooks/usePrices";
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {sanitizeNumberInput} from "@/utils/number";
 import {validateBech32Address, validateBZEBech32Address} from "@/utils/address";

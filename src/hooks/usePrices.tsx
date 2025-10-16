@@ -10,13 +10,17 @@ export function useAssetPrice(denom: string) {
     const [price, setPrice] = useState<BigNumber>(BigNumber(0))
     const [change, setChange] = useState<number>(0)
 
-    const {usdPricesMap, marketsDataMap, isLoading: isLoadingContext} = useAssetsContext()
+    const {usdPricesMap, marketsDataMap, isLoadingPrices} = useAssetsContext()
 
     useEffect(() => {
-        console.log('useAssetPrice', denom)
-        console.log('usdPricesMap', usdPricesMap)
+        if (isLoadingPrices) return;
         setLoading(true)
-        if (isLoadingContext) return;
+
+        if (denom === getUSDCDenom()) {
+            setPrice(BigNumber(1))
+            setLoading(false)
+            return
+        }
 
         const assetPrice = usdPricesMap.get(denom)
         if (assetPrice) {
@@ -24,23 +28,25 @@ export function useAssetPrice(denom: string) {
         }
 
         const usdDenom = getUSDCDenom()
-        const bzeDenom = getChainNativeAssetDenom()
         const marketData = marketsDataMap.get(createMarketId(denom, usdDenom))
-        if (marketData && marketData.change > 0) {
+        if (marketData) {
             setChange(marketData.change)
+            setLoading(false)
             return
         }
 
+        const bzeDenom = getChainNativeAssetDenom()
         const marketData2 = marketsDataMap.get(createMarketId(denom, bzeDenom))
-        if (marketData2 && marketData2.change > 0) {
+        if (marketData2) {
             setChange(marketData2.change)
+            setLoading(false)
             return
         }
 
         setLoading(false)
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoadingContext]);
+    }, [isLoadingPrices]);
 
     const totalUsdValue = (amount: BigNumber): BigNumber => {
         return price.multipliedBy(amount)
@@ -50,6 +56,6 @@ export function useAssetPrice(denom: string) {
         price,
         change,
         totalUsdValue,
-        isLoading: isLoading || isLoadingContext,
+        isLoading: isLoading || isLoadingPrices,
     }
 }

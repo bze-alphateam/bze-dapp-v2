@@ -2,6 +2,7 @@ import BigNumber from "bignumber.js";
 import {useAssetsContext} from "@/hooks/useAssets";
 import {Asset} from "@/types/asset";
 import {uAmountToBigNumberAmount} from "@/utils/amount";
+import {getUSDCDenom} from "@/constants/assets";
 
 export interface AssetBalance extends Asset {
     amount: BigNumber;
@@ -24,6 +25,10 @@ export function useBalances() {
             let usdPrice = usdPricesMap.get(bal.denom)
             if (!usdPrice) {
                 usdPrice = BigNumber(0)
+            }
+
+            if (asset.denom === getUSDCDenom()) {
+                usdPrice = BigNumber(1)
             }
 
             result.push({
