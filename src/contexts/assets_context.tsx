@@ -75,6 +75,10 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
             // we set ibcChains from these assets.
             // use a map to avoid duplicates
+            if (asset.IBCData.chain.channelId === "") {
+                return;
+            }
+
             ibc.set(asset.IBCData.chain.channelId, asset.IBCData);
         });
 

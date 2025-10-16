@@ -437,7 +437,8 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
         }
 
         triggerChainConnection()
-    }, [ibcChain, address, counterpartyStatus, counterpartyWallet, selectableChains, counterpartyChain])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [ibcChain, address])
 
     const getIbcTokensList = useCallback((): ListCollection<{
         label: string;
@@ -707,8 +708,8 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
                     <Portal>
                         <Select.Positioner>
                             <Select.Content>
-                                {getSelectedCoinIbcChains().items.map((item) => (
-                                    <Select.Item key={item.value} item={item}>
+                                {getSelectedCoinIbcChains().items.map((item, index) => (
+                                    <Select.Item key={index} item={item}>
                                         {item.label}
                                         <Select.ItemIndicator />
                                     </Select.Item>
