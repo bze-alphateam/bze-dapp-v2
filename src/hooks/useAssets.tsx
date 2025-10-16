@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 import { AssetsContext, AssetsContextType } from '@/contexts/assets_context';
 import {getChainNativeAssetDenom} from "@/constants/assets";
+import {Asset} from "@/types/asset";
 
 // Base hook to access context (private)
 export function useAssetsContext(): AssetsContextType {
@@ -15,7 +16,7 @@ export function useAssetsContext(): AssetsContextType {
 export function useAssets() {
     const { assetsMap, isLoading } = useAssetsContext();
 
-    const nativeAsset = assetsMap.get(getChainNativeAssetDenom())
+    const nativeAsset = assetsMap.get(getChainNativeAssetDenom()) as Asset
     const assets = Array.from(assetsMap.values());
 
     return {

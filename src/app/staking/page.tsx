@@ -29,6 +29,8 @@ import {
     LuLockOpen,
 } from 'react-icons/lu';
 import {ListingTitle} from "@/components/ui/listing/title";
+import {useNativeStakingData} from "@/hooks/useNativeStakingData";
+import {NativeStakingCard} from "@/components/ui/staking/native-staking";
 
 interface StakingOpportunity {
     id: string;
@@ -51,6 +53,8 @@ const StakingPage = () => {
     const [selectedStaking, setSelectedStaking] = useState<StakingOpportunity | null>(null);
     const [modalType, setModalType] = useState('');
     const [stakeAmount, setStakeAmount] = useState('');
+
+    const {stakingData, isLoading} = useNativeStakingData()
 
     // Mock data for staking opportunities
     const stakingOpportunities: StakingOpportunity[] = [
@@ -177,7 +181,7 @@ const StakingPage = () => {
                                                 <Text>{opportunity.verified ? 'Verified' : 'Unverified'}</Text>
                                             </HStack>
                                         </Badge>
-                                        {opportunity.isNative && (
+                                        {opportunity.isNative && !isLoading && (
                                             <Badge colorPalette="purple" variant="subtle">Native</Badge>
                                         )}
                                         {hasUserStake && (
@@ -326,6 +330,7 @@ const StakingPage = () => {
 
                 {/* Staking Cards */}
                 <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="6">
+                    {stakingData && !isLoading && <NativeStakingCard stakingData={stakingData} isLoading={isLoading} />}
                     {filteredOpportunities.map((opportunity) => (
                         <StakingCard key={opportunity.id} opportunity={opportunity} />
                     ))}

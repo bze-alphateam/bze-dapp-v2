@@ -4,6 +4,7 @@ import {createMarketId} from "@/utils/market";
 import BigNumber from "bignumber.js";
 import {useEffect, useState} from "react";
 import {useAssetsContext} from "@/hooks/useAssets";
+import {uAmountToBigNumberAmount} from "@/utils/amount";
 
 export function useAssetPrice(denom: string) {
     const [isLoading, setLoading] = useState(true)
@@ -48,14 +49,20 @@ export function useAssetPrice(denom: string) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoadingPrices]);
 
+    // returns the value in USD of the provided amount. the amount is assumed to be in display denom (not base denom)
     const totalUsdValue = (amount: BigNumber): BigNumber => {
         return price.multipliedBy(amount)
+    }
+
+    const uAmountUsdValue = (amount: BigNumber, decimals: number): BigNumber => {
+        return totalUsdValue(uAmountToBigNumberAmount(amount, decimals))
     }
 
     return {
         price,
         change,
         totalUsdValue,
+        uAmountUsdValue,
         isLoading: isLoading || isLoadingPrices,
     }
 }

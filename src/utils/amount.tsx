@@ -8,12 +8,12 @@ export function toBigNumber(amount: string | number | BigNumber | bigint): BigNu
     return amount;
 }
 
-export function uAmountToAmount(amount: string | number | BigNumber | bigint, noOfDecimals: number): string {
+export function uAmountToAmount(amount: string | number | BigNumber | bigint | undefined, noOfDecimals: number): string {
     return uAmountToBigNumberAmount(amount, noOfDecimals).toString();
 }
 
-export function uAmountToBigNumberAmount(amount: string | number | BigNumber | bigint, noOfDecimals: number): BigNumber {
-    return toBigNumber(amount)
+export function uAmountToBigNumberAmount(amount: string | number | BigNumber | bigint | undefined, noOfDecimals: number): BigNumber {
+    return toBigNumber(amount || 0)
         .shiftedBy((-1) * noOfDecimals)
         .decimalPlaces(noOfDecimals || 6)
 }
