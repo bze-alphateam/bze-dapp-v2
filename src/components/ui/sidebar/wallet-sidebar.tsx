@@ -14,7 +14,6 @@ import {
     Portal,
     Select,
     Separator,
-    Skeleton,
     Text,
     Textarea,
     VStack,
@@ -54,7 +53,7 @@ const mockIBCChains = [
 type ViewState = 'balances' | 'send' | 'ibcSend' | 'ibcDeposit'
 
 interface BalanceItemProps {
-    balance: Balance;
+    asset: AssetBalance;
 }
 
 const validateAmount = (amount: string, coin: AssetBalance|undefined, onError:(msg: string) => void) => {
@@ -75,24 +74,14 @@ const validateAmount = (amount: string, coin: AssetBalance|undefined, onError:(m
     }
 }
 
-const BalanceItem = ({balance}: BalanceItemProps) => {
-    const { asset, isLoading} = useAsset(balance.denom);
-    const { price, isLoading: pricesLoading} = useAssetPrice(balance.denom);
-
+const BalanceItem = ({asset}: BalanceItemProps) => {
     const formattedBalanceAmount = useMemo(() => {
-        return prettyAmount(uAmountToBigNumberAmount(balance.amount, asset?.decimals ?? 0))
-    }, [balance.amount, asset])
+        return prettyAmount(uAmountToBigNumberAmount(asset.amount, asset.decimals ?? 0))
+    }, [asset.amount, asset.decimals])
 
     const formattedBalanceUSDValue = useMemo(() => {
-        if (!price) return '0.00';
-        if (!asset) return '0.00';
-
-        const value = price.multipliedBy(uAmountToBigNumberAmount(balance.amount, asset.decimals))
-
-        return prettyAmount(value)
-    }, [price, asset, balance.amount])
-
-    if (!asset) return null;
+        return prettyAmount(asset.USDValue)
+    }, [asset.USDValue])
 
     return (
         <Box
@@ -105,40 +94,34 @@ const BalanceItem = ({balance}: BalanceItemProps) => {
             transition="background-color 0.2s"
         >
             <HStack justify="space-between" mb="1">
-                <Skeleton asChild loading={isLoading}>
-                    <HStack gap="2">
-                        <Image
-                            src={asset.logo}
-                            alt={asset.ticker}
-                            width="20px"
-                            height="20px"
-                            borderRadius="full"
-                        />
-                        <Text fontSize="sm" fontWeight="medium">
-                            {asset.ticker}
-                        </Text>
-                        <Text fontSize="xs" color="fg.muted">
-                            {asset.name}
-                        </Text>
-                        {isIbcDenom(asset.denom) && (
-                            <Badge size="xs" colorPalette="blue">
-                                IBC
-                            </Badge>
-                        )}
-                    </HStack>
-                </Skeleton>
+                <HStack gap="2">
+                    <Image
+                        src={asset.logo}
+                        alt={asset.ticker}
+                        width="20px"
+                        height="20px"
+                        borderRadius="full"
+                    />
+                    <Text fontSize="sm" fontWeight="medium">
+                        {asset.ticker}
+                    </Text>
+                    <Text fontSize="xs" color="fg.muted">
+                        {asset.name}
+                    </Text>
+                    {isIbcDenom(asset.denom) && (
+                        <Badge size="xs" colorPalette="blue">
+                            IBC
+                        </Badge>
+                    )}
+                </HStack>
             </HStack>
             <HStack justify="space-between">
-                <Skeleton asChild loading={isLoading}>
-                    <Text fontSize="sm" fontFamily="mono">
-                        {formattedBalanceAmount}
-                    </Text>
-                </Skeleton>
-                <Skeleton asChild loading={pricesLoading}>
-                    <Text fontSize="sm" color="fg.muted">
-                        ${formattedBalanceUSDValue}
-                    </Text>
-                </Skeleton>
+                <Text fontSize="sm" fontFamily="mono">
+                    {formattedBalanceAmount}
+                </Text>
+                <Text fontSize="sm" color="fg.muted">
+                    ${formattedBalanceUSDValue}
+                </Text>
             </HStack>
         </Box>
     )
@@ -853,9 +836,9 @@ export const WalletSidebarContent = () => {
         if (aHasBalance && !bHasBalance) return -1;
         if (!aHasBalance && bHasBalance) return 1;
 
-        // 4. If both have positive balances, sort by amount descending
+        // 4. If both have positive balances, sort by USD amount descending
         if (aHasBalance && bHasBalance) {
-            return a.amount.gt(b.amount) ? -1 : 1;
+            return a.USDValue.gt(b.USDValue) ? -1 : 1;
         }
 
         // 5. For remaining items (both zero balance), maintain stable sort
@@ -942,7 +925,7 @@ export const WalletSidebarContent = () => {
                 </Text>
                 <VStack gap="2" align="stretch">
                     {sortedBalances.map((bal) => (
-                        <BalanceItem key={bal.denom} balance={bal} />
+                        <BalanceItem key={bal.denom} asset={bal} />
                     ))}
                 </VStack>
             </Box>

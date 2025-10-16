@@ -6,7 +6,7 @@ const getAllTickersUrl = (): string => {
     return `${getAggregatorHost()}/api/dex/tickers`;
 }
 
-const getAddressHistoryUrl = (): string => {
+const getHistoryUrl = (): string => {
     return `${getAggregatorHost()}/api/dex/history`;
 }
 
@@ -30,7 +30,7 @@ export async function getAllTickers(): Promise<MarketData[]> {
 
 export async function getMarketOrdersHistory(marketId: string, limit: number = 1): Promise<HistoryOrder[]> {
     try {
-        const url = `${getAddressHistoryUrl()}?market_id=${marketId}&limit=${limit}`;
+        const url = `${getHistoryUrl()}?market_id=${marketId}&limit=${limit}`;
         const resp = await fetch(url);
         if (resp.status !== 200) {
             return [];
