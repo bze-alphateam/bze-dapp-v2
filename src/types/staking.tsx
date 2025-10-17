@@ -12,7 +12,12 @@ export interface NativeStakingData {
 export interface UserNativeStakingData {
     staked: Balance;
     unbonding: NativeUnbondingSummary;
-    pendingRewards: Balance;
+    pendingRewards: UserNativeStakingRewards;
+}
+
+export interface UserNativeStakingRewards {
+    total: Balance;
+    validators: string[];
 }
 
 export interface NativeUnbondingSummary {

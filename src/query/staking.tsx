@@ -4,7 +4,7 @@ import BigNumber from "bignumber.js";
 import {Balance} from "@/types/balance";
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {UnbondingDelegationSDKType} from "@bze/bzejs/cosmos/staking/v1beta1/staking";
-import {NativeUnbondingSummary} from "@/types/staking";
+import {NativeUnbondingSummary, UserNativeStakingRewards} from "@/types/staking";
 
 export const getAddressDelegations = async (address: string) => {
     try {
@@ -102,19 +102,36 @@ export const getAddressRewards = async (address: string) => {
     }
 }
 
-export const getAddressNativeTotalRewards = async (address: string): Promise<Balance> => {
+export const getAddressNativeTotalRewards = async (address: string): Promise<UserNativeStakingRewards> => {
     const rewards = await getAddressRewards(address);
     const total = rewards.total.find(r => r.denom === getChainNativeAssetDenom());
     if (!total) {
         return {
-            denom: getChainNativeAssetDenom(),
-            amount: new BigNumber(0)
+            total: {
+                denom: getChainNativeAssetDenom(),
+                amount: new BigNumber(0)
+            },
+            validators: []
         }
     }
 
+    const validators: string[] = [];
+    rewards.rewards.map((r) => {
+        const rewards = new BigNumber(r.reward.find(r => r.denom === getChainNativeAssetDenom())?.amount ?? "0").integerValue()
+        //do not add validators with rewards between 0 and 1
+        if (!rewards.gt(0)) {
+            return
+        }
+
+        validators.push(r.validator_address);
+    });
+
     return {
-        denom: total.denom,
-        amount: new BigNumber(total.amount)
+        total: {
+            denom: getChainNativeAssetDenom(),
+            amount: new BigNumber(total.amount).integerValue(),
+        },
+        validators: validators,
     }
 }
 

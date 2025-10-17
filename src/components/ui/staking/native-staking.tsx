@@ -19,45 +19,58 @@ import {useAssets} from "@/hooks/useAssets";
 import {prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {shortNumberFormat} from "@/utils/formatter";
 import {openExternalLink} from "@/utils/functions";
+import {useToast} from "@/hooks/useToast";
+import {cosmos} from "@bze/bzejs";
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
+import {useSDKTx} from "@/hooks/useTx";
 
 interface NativeStakingCardProps {
-    stakingData: NativeStakingData;
+    stakingData: NativeStakingData|undefined;
     isLoading: boolean;
+    onClaimSuccess?: () => void;
 }
 
-export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardProps) => {
-    const [modalType, setModalType] = useState('');
+const MIN_CLAIM_AMOUNT = 100_000;
 
-    const hasUserStake = !!stakingData.currentStaking?.staked.amount.gt(0);
-    const hasUnbonding = !!stakingData.currentStaking?.unbonding.total.amount.gt(0);
-    const hasRewards = !!stakingData.currentStaking?.pendingRewards.amount.gt(0);
+export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: NativeStakingCardProps) => {
+    const [modalType, setModalType] = useState('');
+    const [pendingClaim, setPendingClaim] = useState(false);
+
+    const hasUserStake = !!stakingData?.currentStaking?.staked.amount.gt(0);
+    const hasUnbonding = !!stakingData?.currentStaking?.unbonding.total.amount.gt(0);
+    const hasRewards = !!stakingData?.currentStaking?.pendingRewards.total.amount.gt(MIN_CLAIM_AMOUNT);
+
     const {nativeAsset} = useAssets()
+    const {toast} = useToast()
+    const {address} = useChain(getChainName())
+    const {tx} = useSDKTx(getChainName())
 
     const yourStake = useMemo(() => {
-        return `${prettyAmount(uAmountToAmount(stakingData.currentStaking?.staked.amount, nativeAsset.decimals))} ${nativeAsset.ticker}`
-    }, [stakingData.currentStaking?.staked.amount, nativeAsset.decimals, nativeAsset.ticker])
+        return `${prettyAmount(uAmountToAmount(stakingData?.currentStaking?.staked.amount, nativeAsset?.decimals || 0))} ${nativeAsset?.ticker}`
+    }, [stakingData?.currentStaking?.staked.amount, nativeAsset])
 
     const pendingRewards = useMemo(() => {
-        return `${prettyAmount(uAmountToAmount(stakingData.currentStaking?.pendingRewards.amount, nativeAsset.decimals))} ${nativeAsset.ticker}`
-    }, [stakingData.currentStaking?.pendingRewards.amount, nativeAsset.decimals, nativeAsset.ticker])
+        return `${prettyAmount(uAmountToAmount(stakingData?.currentStaking?.pendingRewards.total.amount, nativeAsset?.decimals || 0))} ${nativeAsset?.ticker}`
+    }, [stakingData?.currentStaking?.pendingRewards.total.amount, nativeAsset])
 
     const pendingUnlock = useMemo(() => {
-        return `${prettyAmount(uAmountToAmount(stakingData.currentStaking?.unbonding.total.amount, nativeAsset.decimals))} ${nativeAsset.ticker}`
-    }, [stakingData.currentStaking?.unbonding.total.amount, nativeAsset.decimals, nativeAsset.ticker])
+        return `${prettyAmount(uAmountToAmount(stakingData?.currentStaking?.unbonding.total.amount, nativeAsset?.decimals || 0))} ${nativeAsset?.ticker}`
+    }, [stakingData?.currentStaking?.unbonding.total.amount, nativeAsset])
 
     const pendingUnlockAlert = useMemo(() => {
-        const firstUnlockAmount = prettyAmount(uAmountToAmount(stakingData.currentStaking?.unbonding.firstUnlock.amount?.amount, nativeAsset.decimals))
+        const firstUnlockAmount = prettyAmount(uAmountToAmount(stakingData?.currentStaking?.unbonding.firstUnlock.amount?.amount, nativeAsset?.decimals || 0))
 
-        return `${firstUnlockAmount} ${nativeAsset.ticker} will be unlocked on ${stakingData.currentStaking?.unbonding.firstUnlock.unlockTime?.toLocaleDateString()} at ${stakingData.currentStaking?.unbonding.firstUnlock.unlockTime?.toLocaleTimeString()}`
-    }, [stakingData.currentStaking, nativeAsset])
+        return `${firstUnlockAmount} ${nativeAsset?.ticker} will be unlocked on ${stakingData?.currentStaking?.unbonding.firstUnlock.unlockTime?.toLocaleDateString()} at ${stakingData?.currentStaking?.unbonding.firstUnlock.unlockTime?.toLocaleTimeString()}`
+    }, [stakingData?.currentStaking, nativeAsset])
 
     const dailyDistribution = useMemo(() => {
-        return `${shortNumberFormat(uAmountToBigNumberAmount(stakingData.averageDailyDistribution.amount, nativeAsset.decimals))} ${nativeAsset.ticker}`
-    }, [stakingData.averageDailyDistribution.amount, nativeAsset.decimals, nativeAsset.ticker])
+        return `${shortNumberFormat(uAmountToBigNumberAmount(stakingData?.averageDailyDistribution.amount, nativeAsset?.decimals || 0))} ${nativeAsset?.ticker}`
+    }, [stakingData?.averageDailyDistribution.amount, nativeAsset])
 
     const totalStaked = useMemo(() => {
-        return `${shortNumberFormat(uAmountToBigNumberAmount(stakingData.totalStaked.amount, nativeAsset.decimals))} ${nativeAsset.ticker}`
-    }, [stakingData.totalStaked.amount, nativeAsset.decimals, nativeAsset.ticker])
+        return `${shortNumberFormat(uAmountToBigNumberAmount(stakingData?.totalStaked.amount, nativeAsset?.decimals || 0))} ${nativeAsset?.ticker}`
+    }, [stakingData?.totalStaked.amount, nativeAsset])
 
     const openModal = (type: string) => {
         setModalType(type);
@@ -66,6 +79,30 @@ export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardP
     const closeModal = () => {
         setModalType('');
     };
+
+    const onClaimRewards = async () => {
+        if (!hasRewards || !stakingData?.currentStaking?.pendingRewards.validators || !address) {
+            toast.error('Error', `Rewards amount is too low to claim. Minimum amount is ${uAmountToAmount(MIN_CLAIM_AMOUNT, nativeAsset?.decimals || 6)} ${nativeAsset?.ticker}.`)
+            return
+        }
+
+        setPendingClaim(true)
+        const { withdrawDelegatorReward } = cosmos.distribution.v1beta1.MessageComposer.fromPartial;
+        const msgs = stakingData.currentStaking.pendingRewards.validators.map(validator => {
+            return withdrawDelegatorReward({
+                delegatorAddress: address,
+                validatorAddress: validator,
+            })
+        })
+
+        await tx(msgs);
+
+        setPendingClaim(false)
+        closeModal()
+        if (onClaimSuccess) {
+            onClaimSuccess()
+        }
+    }
 
     return (
         <>
@@ -83,7 +120,7 @@ export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardP
                             <HStack>
                                 <Image
                                     src={'/images/bze_alternative_512x512.png'}
-                                    alt={nativeAsset.name}
+                                    alt={nativeAsset?.name}
                                     boxSize="8"
                                     borderRadius="full"
                                 />
@@ -116,7 +153,7 @@ export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardP
                                 APR
                             </Text>
                             <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                                ~{stakingData.averageApr}%
+                                ~{stakingData?.averageApr}%
                             </Text>
                         </HStack>
                     </HStack>
@@ -164,7 +201,7 @@ export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardP
                                     <LuClock size={16} color="var(--chakra-colors-gray-500)" />
                                     <Text fontSize="sm" color="gray.600">Unlock Duration</Text>
                                 </HStack>
-                                <Text fontWeight="medium">{stakingData.unlockDuration} days</Text>
+                                <Text fontWeight="medium">{stakingData?.unlockDuration} days</Text>
                             </VStack>
 
                             <VStack align="start" gap="2">
@@ -198,25 +235,25 @@ export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardP
                             <HStack>
                                 <Image
                                     src={'/images/bze_alternative_512x512.png'}
-                                    alt={nativeAsset.name}
+                                    alt={nativeAsset?.name}
                                     boxSize="8"
                                     borderRadius="full"
                                 />
                                 <VStack align="start" gap="0">
                                     <Text fontSize="sm" color="gray.600">Stake</Text>
-                                    <Text fontWeight="medium">{nativeAsset.ticker}</Text>
+                                    <Text fontWeight="medium">{nativeAsset?.ticker}</Text>
                                 </VStack>
                             </HStack>
                             <HStack>
                                 <Image
                                     src={'/images/bze_alternative_512x512.png'}
-                                    alt={nativeAsset.name}
+                                    alt={nativeAsset?.name}
                                     boxSize="8"
                                     borderRadius="full"
                                 />
                                 <VStack align="start" gap="0">
                                     <Text fontSize="sm" color="gray.600">Earn</Text>
-                                    <Text fontWeight="medium">{nativeAsset.ticker}</Text>
+                                    <Text fontWeight="medium">{nativeAsset?.ticker}</Text>
                                 </VStack>
                             </HStack>
                         </HStack>
@@ -303,7 +340,7 @@ export const NativeStakingCard = ({ stakingData, isLoading }: NativeStakingCardP
                                     <Text fontSize="2xl" fontWeight="bold" color="green.600">
                                         {pendingRewards}
                                     </Text>
-                                    <Button colorPalette="green" width="full">
+                                    <Button colorPalette="green" width="full" loading={pendingClaim} loadingText={"Claiming rewards..."} onClick={onClaimRewards}>
                                         Claim Rewards
                                     </Button>
                                 </VStack>

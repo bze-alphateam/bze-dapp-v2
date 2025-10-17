@@ -54,25 +54,10 @@ const StakingPage = () => {
     const [modalType, setModalType] = useState('');
     const [stakeAmount, setStakeAmount] = useState('');
 
-    const {stakingData, isLoading} = useNativeStakingData()
+    const {stakingData, isLoading, reload} = useNativeStakingData()
 
     // Mock data for staking opportunities
     const stakingOpportunities: StakingOpportunity[] = [
-        {
-            id: 'bze-native',
-            name: 'BZE Native Staking',
-            stakeCoin: { symbol: 'BZE', logo: '/images/bze_alternative_512x512.png', name: 'BeeZee' },
-            earnCoin: { symbol: 'BZE', logo: '/images/bze_alternative_512x512.png', name: 'BeeZee' },
-            lockDuration: 21,
-            dailyDistribution: '50,000 BZE',
-            estimatedAPR: 12.5,
-            minStaking: 1000,
-            verified: true,
-            isNative: true,
-            userStake: { amount: 25000, rewards: 156.78, status: 'active' },
-            totalStaked: '2.5M BZE',
-            description: 'Secure the BeeZee network and earn rewards by staking your BZE tokens.'
-        },
         {
             id: 'usdc-pool',
             name: 'USDC Liquidity Pool',
@@ -330,7 +315,7 @@ const StakingPage = () => {
 
                 {/* Staking Cards */}
                 <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="6">
-                    {stakingData && !isLoading && <NativeStakingCard stakingData={stakingData} isLoading={isLoading} />}
+                    <NativeStakingCard stakingData={stakingData} isLoading={isLoading} onClaimSuccess={() => reload()} />
                     {filteredOpportunities.map((opportunity) => (
                         <StakingCard key={opportunity.id} opportunity={opportunity} />
                     ))}

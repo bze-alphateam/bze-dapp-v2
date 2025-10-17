@@ -1,3 +1,5 @@
+"use client";
+
 import {useEffect, useState} from "react";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
@@ -18,9 +20,13 @@ export function useNativeStakingData() {
     const [isLoading, setIsLoading] = useState(true)
     const [stakingData, setStakingData] = useState<NativeStakingData|undefined>()
     const {address} = useChain(getChainName())
-    const {nativeAsset} = useAssets()
+    const {nativeAsset, isLoading: isLoadingAssets} = useAssets()
 
     const load = async () => {
+        if (isLoadingAssets || !nativeAsset) {
+            return; // Don't proceed if assets aren't loaded
+        }
+
         setIsLoading(true)
         const [
             annualProvisions,
@@ -79,17 +85,12 @@ export function useNativeStakingData() {
     }
 
     useEffect(() => {
-        load();
+        load()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [address])
-
-    useEffect(() => {
-        load();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [isLoadingAssets, address, nativeAsset])
 
     return {
-        isLoading,
+        isLoading: isLoading,
         reload,
         stakingData,
     }

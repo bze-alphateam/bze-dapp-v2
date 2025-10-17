@@ -10,11 +10,13 @@ import {useSigningClient} from "@/hooks/useSigningClient";
 import {openExternalLink, sleep} from "@/utils/functions";
 import BigNumber from "bignumber.js";
 import {DEFAULT_TX_MEMO} from "@/constants/placeholders";
+import {useState} from "react";
 
 interface TxOptions {
     fee?: StdFee | null;
     onSuccess?: (res: DeliverTxResponse) => void;
     memo?: string;
+    progressTrackerTimeout?: number
 }
 
 export enum TxStatus {
@@ -29,26 +31,29 @@ const defaultFee = {
 }
 
 export const useSDKTx = (chainName?: string) => {
-    const {tx} = useTx(chainName ?? getChainName(), true, false);
+    const {tx, progressTrack} = useTx(chainName ?? getChainName(), true, false);
 
     return {
-        tx
+        tx,
+        progressTrack
     }
 }
 
 export const useBZETx = (chainName?: string) => {
-    const {tx} = useTx(chainName ?? getChainName(), false, false);
+    const {tx, progressTrack} = useTx(chainName ?? getChainName(), false, false);
 
     return {
-        tx
+        tx,
+        progressTrack,
     }
 }
 
 export const useIBCTx = (chainName?: string) => {
-    const {tx} = useTx(chainName ?? getChainName(), false, true);
+    const {tx, progressTrack} = useTx(chainName ?? getChainName(), false, true);
 
     return {
-        tx
+        tx,
+        progressTrack
     }
 }
 
@@ -56,6 +61,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
     const {address} = useChain(chainName);
     const {toast} = useToast();
     const {signingClient, isSigningClientReady, signingClientError} = useSigningClient({chainName: chainName, isCosmos: isCosmos, isIbc: isIBC});
+    const [progressTrack, setProgressTrack] = useState("")
 
     const canUseClient = async () => {
         if (!isSigningClientReady) {
@@ -85,6 +91,8 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
 
         } catch (e) {
             console.error("failed to get gas", e);
+            setProgressTrack("Using default fee")
+
             return defaultFee
         }
     }
@@ -94,6 +102,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
             if (options?.fee) {
                 return options.fee;
             } else {
+                setProgressTrack("Simulating transaction")
                 return await simulateFee(messages, options?.memo);
             }
         } catch (e) {
@@ -101,6 +110,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
             // @ts-expect-error - small chances for e to be undefined
             toast.error('Failed to get signing client', e.message ?? 'An unexpected error has occurred')
 
+            setProgressTrack("Using default fee")
             return defaultFee;
         }
     }
@@ -115,14 +125,19 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
             toast.error(TxStatus.Failed, 'Can not find suitable signing client')
             return;
         }
+
+        setProgressTrack("Getting fee")
         const fee = await getFee(msgs, options);
         const broadcastToastId = toast.loading(TxStatus.Broadcasting,'Waiting for transaction to be signed and included in block')
         if (signingClient) {
             try {
+                setProgressTrack("Signing transaction")
                 const resp = await signingClient.signAndBroadcast(address, msgs, fee, options?.memo ?? DEFAULT_TX_MEMO)
                 if (isDeliverTxSuccess(resp)) {
+                    setProgressTrack("Transaction sent")
                     toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? getChainName())}/tx/${resp.transactionHash}`)}, 'View in Explorer');
                 } else {
+                    setProgressTrack("Transaction failed")
                     toast.error(TxStatus.Failed, prettyError(resp?.rawLog));
                 }
             } catch (e) {
@@ -132,7 +147,13 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
             }
         }
         toast.dismiss(broadcastToastId);
+        setTimeout(() => {
+            setProgressTrack("")
+        }, options?.progressTrackerTimeout || 5000)
     };
 
-    return {tx};
+    return {
+        tx,
+        progressTrack
+    };
 };
