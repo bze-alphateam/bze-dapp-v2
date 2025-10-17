@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {NativeStakingData} from "@/types/staking";
@@ -22,76 +22,78 @@ export function useNativeStakingData() {
     const {address} = useChain(getChainName())
     const {nativeAsset, isLoading: isLoadingAssets} = useAssets()
 
-    const load = async () => {
+    const load = useCallback(async () => {
         if (isLoadingAssets || !nativeAsset) {
-            return; // Don't proceed if assets aren't loaded
+            return;
         }
 
-        setIsLoading(true)
-        const [
-            annualProvisions,
-            distrParams,
-            stakingPool,
-            stakingParams,
-        ] = await Promise.all([
-            getAnnualProvisions(),
-            getDistributionParams(),
-            getStakingPool(),
-            getStakingParams(),
-        ])
-
-        const apr = calcNativeStakingApr(stakingPool, distrParams.community_tax, annualProvisions)
-        const data: NativeStakingData = {
-            averageApr: apr,
-            unlockDuration: parseUnbondingDays(stakingParams.unbonding_time as string),
-            totalStaked: {
-                amount: new BigNumber(stakingPool.bonded_tokens),
-                denom: nativeAsset.denom
-            },
-            minAmount: {
-                amount: new BigNumber(0),
-                denom: nativeAsset.denom
-            },
-            averageDailyDistribution: {
-                amount: annualProvisions.dividedBy(365),
-                denom: nativeAsset.denom
-            },
-        }
-
-        if (address) {
+        try {
             const [
-                delegations,
-                totalRewards,
-                unbonding
+                annualProvisions,
+                distrParams,
+                stakingPool,
+                stakingParams,
             ] = await Promise.all([
-                getAddressNativeDelegatedBalance(address),
-                getAddressNativeTotalRewards(address),
-                getAddressUnbondingDelegationsSummary(address)
+                getAnnualProvisions(),
+                getDistributionParams(),
+                getStakingPool(),
+                getStakingParams(),
             ])
 
-            data.currentStaking = {
-                staked: delegations,
-                unbonding: unbonding,
-                pendingRewards: totalRewards,
+            const apr = calcNativeStakingApr(stakingPool, distrParams.community_tax, annualProvisions)
+            const data: NativeStakingData = {
+                averageApr: apr,
+                unlockDuration: parseUnbondingDays(stakingParams.unbonding_time as string),
+                totalStaked: {
+                    amount: new BigNumber(stakingPool.bonded_tokens),
+                    denom: nativeAsset.denom
+                },
+                minAmount: {
+                    amount: new BigNumber(0),
+                    denom: nativeAsset.denom
+                },
+                averageDailyDistribution: {
+                    amount: annualProvisions.dividedBy(365),
+                    denom: nativeAsset.denom
+                },
             }
+
+            if (address) {
+                const [
+                    delegations,
+                    totalRewards,
+                    unbonding
+                ] = await Promise.all([
+                    getAddressNativeDelegatedBalance(address),
+                    getAddressNativeTotalRewards(address),
+                    getAddressUnbondingDelegationsSummary(address)
+                ])
+
+                data.currentStaking = {
+                    staked: delegations,
+                    unbonding: unbonding,
+                    pendingRewards: totalRewards,
+                }
+            }
+
+            setStakingData(data)
+        } catch (error) {
+            console.error("Failed to load staking data:", error)
+        } finally {
+            setIsLoading(false)
         }
+    }, [isLoadingAssets, nativeAsset, address])
 
-        setStakingData(data)
-        setIsLoading(false)
-    }
-
-    const reload = () => {
-        load();
-    }
-
+    // Initial load when assets are ready
     useEffect(() => {
-        load()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoadingAssets, address, nativeAsset])
+        if (!isLoadingAssets && nativeAsset) {
+            load()
+        }
+    }, [isLoadingAssets, nativeAsset, load])
 
     return {
-        isLoading: isLoading,
-        reload,
+        isLoading,
+        reload: load,
         stakingData,
     }
 }

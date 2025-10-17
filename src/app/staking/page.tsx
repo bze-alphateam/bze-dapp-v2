@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Box,
     Container,
@@ -47,6 +47,9 @@ interface StakingOpportunity {
     totalStaked: string;
     description?: string;
 }
+
+//150 seconds
+const STAKING_DATA_RELOAD_INTERVAL = 150_000;
 
 const StakingPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -260,6 +263,16 @@ const StakingPage = () => {
             </Card.Root>
         );
     };
+
+    useEffect(() => {
+        const reloadInterval = setInterval(() => {
+            reload()
+        }, STAKING_DATA_RELOAD_INTERVAL)
+
+        return () => {
+            clearInterval(reloadInterval)
+        }
+    }, [reload])
 
     return (
         <Container maxW="7xl" py={8}>

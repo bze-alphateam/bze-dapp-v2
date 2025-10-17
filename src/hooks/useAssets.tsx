@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import {useContext, useMemo} from 'react';
 import { AssetsContext, AssetsContextType } from '@/contexts/assets_context';
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {Asset} from "@/types/asset";
@@ -16,8 +16,15 @@ export function useAssetsContext(): AssetsContextType {
 export function useAssets() {
     const { assetsMap, isLoading } = useAssetsContext();
 
-    const nativeAsset = assetsMap.get(getChainNativeAssetDenom()) as Asset
-    const assets = Array.from(assetsMap.values());
+    const nativeAsset = useMemo(() =>
+            assetsMap.get(getChainNativeAssetDenom()) as Asset,
+        [assetsMap]
+    );
+
+    const assets = useMemo(() =>
+            Array.from(assetsMap.values()),
+        [assetsMap]
+    );
 
     return {
         assets,
@@ -29,7 +36,10 @@ export function useAssets() {
 export function useAsset(denom: string) {
     const { assetsMap, isLoading } = useAssetsContext();
 
-    const asset = assetsMap.get(denom);
+    const asset = useMemo(() =>
+            assetsMap.get(denom),
+        [assetsMap, denom]
+    );
 
     return {
         asset,
