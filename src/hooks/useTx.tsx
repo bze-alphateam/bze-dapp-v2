@@ -1,4 +1,3 @@
-
 import {coins, DeliverTxResponse, isDeliverTxSuccess} from '@cosmjs/stargate';
 import {useChain} from "@interchain-kit/react";
 import {getChainExplorerURL, getChainName} from "@/constants/chain";
@@ -10,7 +9,7 @@ import {useSigningClient} from "@/hooks/useSigningClient";
 import {openExternalLink, sleep} from "@/utils/functions";
 import BigNumber from "bignumber.js";
 import {DEFAULT_TX_MEMO} from "@/constants/placeholders";
-import {useState} from "react";
+import {useCallback, useMemo, useState} from "react";
 
 interface TxOptions {
     fee?: StdFee | null;
@@ -63,7 +62,9 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
     const {signingClient, isSigningClientReady, signingClientError} = useSigningClient({chainName: chainName, isCosmos: isCosmos, isIbc: isIBC});
     const [progressTrack, setProgressTrack] = useState("")
 
-    const canUseClient = async () => {
+    const defaultChainName = useMemo(() => getChainName(), []);
+
+    const canUseClient = useCallback(async () => {
         if (!isSigningClientReady) {
             //TODO: this is a hack to make sure the signing client is ready. Remove this when we have a better way to
             // do this
@@ -73,9 +74,9 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
 
         return isSigningClientReady
-    }
+    }, [isSigningClientReady, signingClientError]);
 
-    const simulateFee = async (messages: EncodeObject[], memo: string | undefined): Promise<StdFee> => {
+    const simulateFee = useCallback(async (messages: EncodeObject[], memo: string | undefined): Promise<StdFee> => {
         try {
             const gasPrice = 0.02;
             const gasDenom = getChainNativeAssetDenom();
@@ -95,9 +96,9 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
 
             return defaultFee
         }
-    }
+    }, [signingClient, address]);
 
-    const getFee = async (messages: EncodeObject[], options?: TxOptions|undefined): Promise<StdFee> => {
+    const getFee = useCallback(async (messages: EncodeObject[], options?: TxOptions|undefined): Promise<StdFee> => {
         try {
             if (options?.fee) {
                 return options.fee;
@@ -113,9 +114,9 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
             setProgressTrack("Using default fee")
             return defaultFee;
         }
-    }
+    }, [simulateFee, toast]);
 
-    const tx = async (msgs: EncodeObject[], options?: TxOptions|undefined) => {
+    const tx = useCallback(async (msgs: EncodeObject[], options?: TxOptions|undefined) => {
         if (!address) {
             toast.error(TxStatus.Failed, 'Please connect the wallet')
             return;
@@ -135,7 +136,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
                 const resp = await signingClient.signAndBroadcast(address, msgs, fee, options?.memo ?? DEFAULT_TX_MEMO)
                 if (isDeliverTxSuccess(resp)) {
                     setProgressTrack("Transaction sent")
-                    toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? getChainName())}/tx/${resp.transactionHash}`)}, 'View in Explorer');
+                    toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? defaultChainName)}/tx/${resp.transactionHash}`)}, 'View in Explorer');
                 } else {
                     setProgressTrack("Transaction failed")
                     toast.error(TxStatus.Failed, prettyError(resp?.rawLog));
@@ -150,7 +151,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         setTimeout(() => {
             setProgressTrack("")
         }, options?.progressTrackerTimeout || 5000)
-    };
+    }, [address, canUseClient, getFee, toast, signingClient, chainName, defaultChainName]);
 
     return {
         tx,

@@ -1,8 +1,7 @@
-
 import {getChainNativeAssetDenom, getUSDCDenom} from "@/constants/assets";
 import {createMarketId} from "@/utils/market";
 import BigNumber from "bignumber.js";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {useAssetsContext} from "@/hooks/useAssets";
 import {uAmountToBigNumberAmount} from "@/utils/amount";
 
@@ -13,11 +12,14 @@ export function useAssetPrice(denom: string) {
 
     const {usdPricesMap, marketsDataMap, isLoadingPrices} = useAssetsContext()
 
+    const usdDenom = useMemo(() => getUSDCDenom(), []);
+    const bzeDenom = useMemo(() => getChainNativeAssetDenom(), []);
+
     useEffect(() => {
         if (isLoadingPrices) return;
         setLoading(true)
 
-        if (denom === getUSDCDenom()) {
+        if (denom === usdDenom) {
             setPrice(BigNumber(1))
             setLoading(false)
             return
@@ -28,7 +30,6 @@ export function useAssetPrice(denom: string) {
             setPrice(assetPrice)
         }
 
-        const usdDenom = getUSDCDenom()
         const marketData = marketsDataMap.get(createMarketId(denom, usdDenom))
         if (marketData) {
             setChange(marketData.change)
@@ -36,7 +37,6 @@ export function useAssetPrice(denom: string) {
             return
         }
 
-        const bzeDenom = getChainNativeAssetDenom()
         const marketData2 = marketsDataMap.get(createMarketId(denom, bzeDenom))
         if (marketData2) {
             setChange(marketData2.change)
@@ -45,18 +45,16 @@ export function useAssetPrice(denom: string) {
         }
 
         setLoading(false)
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoadingPrices]);
+    }, [isLoadingPrices, denom, usdPricesMap, marketsDataMap, usdDenom, bzeDenom]);
 
     // returns the value in USD of the provided amount. the amount is assumed to be in display denom (not base denom)
-    const totalUsdValue = (amount: BigNumber): BigNumber => {
+    const totalUsdValue = useCallback((amount: BigNumber): BigNumber => {
         return price.multipliedBy(amount)
-    }
+    }, [price]);
 
-    const uAmountUsdValue = (amount: BigNumber, decimals: number): BigNumber => {
+    const uAmountUsdValue = useCallback((amount: BigNumber, decimals: number): BigNumber => {
         return totalUsdValue(uAmountToBigNumberAmount(amount, decimals))
-    }
+    }, [totalUsdValue]);
 
     return {
         price,

@@ -3,6 +3,7 @@ import {useAssetsContext} from "@/hooks/useAssets";
 import {Asset} from "@/types/asset";
 import {uAmountToBigNumberAmount} from "@/utils/amount";
 import {getUSDCDenom} from "@/constants/assets";
+import {useMemo, useCallback} from "react";
 
 export interface AssetBalance extends Asset {
     amount: BigNumber;
@@ -12,9 +13,12 @@ export interface AssetBalance extends Asset {
 export function useBalances() {
     const { balancesMap, isLoading, assetsMap, usdPricesMap } = useAssetsContext()
 
-    const balances = Array.from(balancesMap.values())
+    const balances = useMemo(() =>
+            Array.from(balancesMap.values()),
+        [balancesMap]
+    )
 
-    const getAssetsBalances = () => {
+    const getAssetsBalances = useCallback(() => {
         const result: AssetBalance[] = []
         balances.map(bal => {
             const asset = assetsMap.get(bal.denom)
@@ -39,7 +43,7 @@ export function useBalances() {
         })
 
         return result
-    }
+    }, [balances, assetsMap, usdPricesMap])
 
     return {
         isLoading,
@@ -51,10 +55,13 @@ export function useBalances() {
 export function useBalance(denom: string) {
     const { balancesMap, isLoading } = useAssetsContext()
 
-    const balance = balancesMap.get(denom) || {
-        denom,
-        amount: BigNumber(0)
-    }
+    const balance = useMemo(() =>
+            balancesMap.get(denom) || {
+                denom,
+                amount: BigNumber(0)
+            },
+        [balancesMap, denom]
+    )
 
     return {
         balance,

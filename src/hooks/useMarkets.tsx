@@ -2,19 +2,19 @@ import {Market, MarketData} from "@/types/market";
 import {truncateDenom} from "@/utils/denom";
 import BigNumber from "bignumber.js";
 import {useAssetsContext} from "@/hooks/useAssets";
-import {useMemo} from "react";
+import {useCallback, useMemo} from "react";
 
 // Hook for reading markets data and helpers to check if a market exists and get a market's symbol
 export function useMarkets() {
     const { marketsMap, marketsDataMap, isLoading } = useAssetsContext();
 
-    const markets = Array.from(marketsMap.values())
-    const marketsData = Array.from(marketsDataMap.values())
+    const markets = useMemo(() => Array.from(marketsMap.values()), [marketsMap]);
+    const marketsData = useMemo(() => Array.from(marketsDataMap.values()), [marketsDataMap]);
 
-    const marketExists = (marketId: string): boolean => marketsMap.has(marketId)
+    const marketExists = useCallback((marketId: string): boolean => marketsMap.has(marketId), [marketsMap]);
 
-    const getMarketData = (marketId: string): MarketData | undefined => marketsDataMap.get(marketId)
-    const getMarket = (marketId: string): Market | undefined => marketsMap.get(marketId)
+    const getMarketData = useCallback((marketId: string): MarketData | undefined => marketsDataMap.get(marketId), [marketsDataMap]);
+    const getMarket = useCallback((marketId: string): Market | undefined => marketsMap.get(marketId), [marketsMap]);
 
     return {
         markets,
@@ -29,7 +29,7 @@ export function useMarkets() {
 export function useAssetMarkets(denom: string) {
     const { isLoading, markets, marketsData } = useMarkets();
 
-    const assetMarkets = (): Market[] => {
+    const assetMarkets = useCallback((): Market[] => {
         const baseMatches = []
         const quoteMatches = []
 
@@ -39,9 +39,9 @@ export function useAssetMarkets(denom: string) {
         }
 
         return [...baseMatches, ...quoteMatches]
-    }
+    }, [markets, denom]);
 
-    const assetMarketsData = (): MarketData[] => {
+    const assetMarketsData = useCallback((): MarketData[] => {
         const baseMatches = []
         const quoteMatches = []
 
@@ -51,12 +51,12 @@ export function useAssetMarkets(denom: string) {
         }
 
         return [...baseMatches, ...quoteMatches]
-    }
+    }, [marketsData, denom]);
 
-    const getAsset24hTradedVolume = (): BigNumber => {
-        const assetMarkets = assetMarketsData()
+    const getAsset24hTradedVolume = useCallback((): BigNumber => {
+        const assetMarketsDataResult = assetMarketsData()
 
-        return assetMarkets.reduce((acc, market) => {
+        return assetMarketsDataResult.reduce((acc, market) => {
             // Only sum base_volume if the asset denom matches the market's base
             if (denom === market.base) {
                 return acc.plus(market.base_volume || 0)
@@ -70,7 +70,7 @@ export function useAssetMarkets(denom: string) {
             // If denom doesn't match either base or quote, don't add anything
             return acc
         }, new BigNumber(0))
-    }
+    }, [assetMarketsData, denom]);
 
     return {
         isLoading,
@@ -83,7 +83,7 @@ export function useAssetMarkets(denom: string) {
 export function useMarket(marketId: string) {
     const { marketsMap, marketsDataMap, isLoading, assetsMap } = useAssetsContext();
 
-    const market = marketsMap.get(marketId)
+    const market = useMemo(() => marketsMap.get(marketId), [marketsMap, marketId]);
 
     const marketSymbol = useMemo((): string => {
         if (isLoading) return ""
@@ -100,13 +100,14 @@ export function useMarket(marketId: string) {
         }
 
         return `${base}/${quote}`
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [marketId, isLoading])
+    }, [market, isLoading, assetsMap]);
+
+    const marketData = useMemo(() => marketsDataMap.get(marketId), [marketsDataMap, marketId]);
 
     return {
         isLoading,
         market,
-        marketData: marketsDataMap.get(marketId),
+        marketData,
         marketSymbol
     }
 }

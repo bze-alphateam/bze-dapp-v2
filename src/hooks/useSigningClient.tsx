@@ -3,7 +3,7 @@ import {
     getSigningCosmosClient,
     getSigningIbcClient
 } from "@bze/bzejs";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {
@@ -27,7 +27,9 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
     const [isSigningClientReady, setIsSigningClientReady] = useState(false);
     const {getEndpoints} = useSettings()
 
-    const createSigningClient = async () => {
+    const defaultChainName = useMemo(() => getChainName(), []);
+
+    const createSigningClient = useCallback(async () => {
         const offlineSigner = (await getSigningClient())?.offlineSigner;
         const rpcEndpoint = getEndpoints().rpcEndpoint.replace("wss://", "https://").replace("ws://", "http://")
         if (!offlineSigner) {
@@ -42,7 +44,7 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
         }
 
         switch (chainName) {
-            case getChainName():
+            case defaultChainName:
                 //@ts-expect-error - we know that the chainName is the same as the chainName in the getSigningClient function
                 //TODO: we should support custom rpc endpoints for all chains
                 return clientFn({rpcEndpoint: rpcEndpoint, signer: offlineSigner?.offlineSigner});
@@ -68,7 +70,7 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
                 //@ts-expect-error - we know that the chainName is the same as the chainName in the getSigningClient function
                 return clientFn({rpcEndpoint: rpcEndpoint, signer: offlineSigner?.offlineSigner});
         }
-    }
+    }, [getSigningClient, getEndpoints, isIbc, isCosmos, chainName, defaultChainName]);
 
 
     useEffect(() => {
@@ -85,8 +87,7 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
         }
 
         load();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [wallet, chain, isIbc, isCosmos]);
+    }, [wallet, chain, createSigningClient]);
 
     return {
         signingClientError,
