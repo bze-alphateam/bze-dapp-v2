@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAssetsManager } from './useAssets';
 import {getSettings} from "@/storage/settings";
 
@@ -24,7 +24,7 @@ export function useBlockchainListener() {
     const shouldReconnectRef = useRef(true);
     const maxReconnectAttempts = 10;
 
-    const reconnect = () => {
+    const reconnect = useCallback(() => {
         if (!shouldReconnectRef.current) return;
 
         reconnectAttemptsRef.current++;
@@ -44,13 +44,18 @@ export function useBlockchainListener() {
                 connectWebSocket();
             }
         }, delay);
-    };
-
+    }, []); // No dependencies needed as it only uses refs
 
     // WebSocket connection logic here
-    const connectWebSocket = () => {
+    const connectWebSocket = useCallback(() => {
         const settings = getSettings()
         if (!shouldReconnectRef.current) return;
+
+        // Close existing connection if any
+        if (wsRef.current) {
+            wsRef.current.close(1000, 'Reconnecting');
+            wsRef.current = null;
+        }
 
         wsRef.current = new WebSocket(`${settings.endpoints.rpcEndpoint}/websocket`);
 
@@ -76,6 +81,7 @@ export function useBlockchainListener() {
         wsRef.current.onclose = (event) => {
             console.log('WebSocket disconnected', event.code, event.reason);
 
+
             // Only reconnect if it wasn't a manual close (code 1000)
             if (event.code !== 1000 && shouldReconnectRef.current) {
                 reconnect();
@@ -84,13 +90,10 @@ export function useBlockchainListener() {
 
         wsRef.current.onerror = (error) => {
             console.error('WebSocket error:', error);
-
-            // Attempt to reconnect on error
-            if (shouldReconnectRef.current) {
-                reconnect();
-            }
+            // Close the connection to trigger reconnect via onclose
+            wsRef.current?.close();
         };
-    };
+    }, [reconnect]);
 
     useEffect(() => {
         shouldReconnectRef.current = true;
@@ -102,10 +105,13 @@ export function useBlockchainListener() {
 
             if (reconnectTimeoutRef.current) {
                 clearTimeout(reconnectTimeoutRef.current);
+                reconnectTimeoutRef.current = null;
             }
 
-            wsRef.current?.close(1000, 'Component unmounting');
+            if (wsRef.current) {
+                wsRef.current.close(1000, 'Component unmounting');
+                wsRef.current = null;
+            }
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [updateAssets]);
+    }, [connectWebSocket]);
 }
