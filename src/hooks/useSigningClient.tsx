@@ -3,7 +3,7 @@ import {
     getSigningCosmosClient,
     getSigningIbcClient
 } from "@bze/bzejs";
-import {useCallback, useEffect, useMemo, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {
@@ -25,13 +25,14 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
     const {getSigningClient, signingClientError, wallet, chain} = useChain(chainName ?? getChainName());
     const [signingClient, setSigningClient] = useState<Awaited<ReturnType<typeof getSigningClient>>|null>(null);
     const [isSigningClientReady, setIsSigningClientReady] = useState(false);
-    const {getEndpoints} = useSettings()
+    const {settings} = useSettings()
+    const hasInitialized = useRef(false);
 
     const defaultChainName = useMemo(() => getChainName(), []);
 
     const createSigningClient = useCallback(async () => {
         const offlineSigner = (await getSigningClient())?.offlineSigner;
-        const rpcEndpoint = getEndpoints().rpcEndpoint.replace("wss://", "https://").replace("ws://", "http://")
+        const rpcEndpoint = settings.endpoints.rpcEndpoint.replace("wss://", "https://").replace("ws://", "http://")
         if (!offlineSigner) {
             return;
         }
@@ -70,11 +71,11 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
                 //@ts-expect-error - we know that the chainName is the same as the chainName in the getSigningClient function
                 return clientFn({rpcEndpoint: rpcEndpoint, signer: offlineSigner?.offlineSigner});
         }
-    }, [getSigningClient, getEndpoints, isIbc, isCosmos, chainName, defaultChainName]);
+    }, [getSigningClient, settings.endpoints.rpcEndpoint, isIbc, isCosmos, chainName, defaultChainName]);
 
 
     useEffect(() => {
-        if (!wallet || !chain) {
+        if (!wallet || !chain || hasInitialized.current) {
             return
         }
 
@@ -83,6 +84,7 @@ export const useSigningClient = ({chainName, isIbc, isCosmos}: UseSigningClientP
             if (client) {
                 setSigningClient(client);
                 setIsSigningClientReady(true);
+                hasInitialized.current = true;
             }
         }
 
