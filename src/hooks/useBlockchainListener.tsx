@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useAssetsManager } from './useAssets';
+// import { useAssetsManager } from './useAssets';
 import {getSettings} from "@/storage/settings";
 
 const id = 1;
@@ -17,7 +17,7 @@ const buildSubscribePayload = (id: number, query: string) => {
 }
 
 export function useBlockchainListener() {
-    const { updateAssets } = useAssetsManager();
+    // const { updateAssets } = useAssetsManager();
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectAttemptsRef = useRef(0);
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -44,6 +44,7 @@ export function useBlockchainListener() {
                 connectWebSocket();
             }
         }, delay);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // No dependencies needed as it only uses refs
 
     // WebSocket connection logic here
