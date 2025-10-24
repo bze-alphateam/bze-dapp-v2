@@ -12,3 +12,7 @@ export function stringTruncateFromCenter(str: string, maxLength: number) {
 
     return str.substring(0, left) + midChar + str.substring(right);
 }
+
+export function removeLeadingZeros(str: string): string {
+    return str.replace(/^0+/, '') || '0';
+}

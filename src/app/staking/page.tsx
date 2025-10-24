@@ -4,22 +4,14 @@ import React, {useEffect, useState} from 'react';
 import {
     Box,
     Container,
-    Heading,
     Text,
     Input,
     Card,
-    Button,
     VStack,
-    HStack,
     Grid,
-    Stack,
-    Alert,
 } from '@chakra-ui/react';
 import {
     LuSearch,
-    LuLock,
-    LuGift,
-    LuLockOpen,
 } from 'react-icons/lu';
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useNativeStakingData} from "@/hooks/useNativeStakingData";
@@ -28,34 +20,19 @@ import {RewardsStakingBox} from "@/components/ui/staking/rewards-staking";
 import {useRewardsStakingData} from "@/hooks/useRewardsStakingData";
 import {useAssets} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
-
-interface StakingOpportunity {
-    id: string;
-    name: string;
-    stakeCoin: { symbol: string; logo: string; name: string };
-    earnCoin: { symbol: string; logo: string; name: string };
-    lockDuration: number;
-    dailyDistribution: string;
-    estimatedAPR: number;
-    minStaking: number;
-    verified: boolean;
-    isNative: boolean;
-    userStake?: { amount: number; rewards: number; status: string; unlockDate?: string } | null;
-    totalStaked: string;
-    description?: string;
-}
+import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
+import {RewardsStakingActionModal} from "@/components/ui/staking/rewards-staking-modals";
 
 //150 seconds
 const STAKING_DATA_RELOAD_INTERVAL = 150_000;
 
 const StakingPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedStaking, setSelectedStaking] = useState<StakingOpportunity | null>(null);
-    const [modalType, setModalType] = useState('');
-    const [stakeAmount, setStakeAmount] = useState('');
+    const [selectedStaking, setSelectedStaking] = useState<StakingRewardSDKType | undefined>();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const {stakingData, isLoading, reload} = useNativeStakingData()
-    const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData} = useRewardsStakingData()
+    const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
     const {isVerifiedAsset} = useAssets()
 
     const filteredOpportunities = stakingRewards.filter(
@@ -85,33 +62,27 @@ const StakingPage = () => {
         return 0
     })
 
-    const openModal = (type: string, staking: StakingOpportunity | null = null) => {
-        setModalType(type);
+    const openModal = (staking: StakingRewardSDKType) => {
         setSelectedStaking(staking);
-        setStakeAmount('');
+        setIsModalOpen(true);
     };
 
     const closeModal = () => {
-        setModalType('');
-        setSelectedStaking(null);
-        setStakeAmount('');
+        setIsModalOpen(false);
+        setSelectedStaking(undefined);
     };
 
-    const calculateEstimatedRewards = () => {
-        if (!stakeAmount || !selectedStaking) return 0;
-        const amount = parseFloat(stakeAmount);
-        return (amount * selectedStaking.estimatedAPR / 100 / 365).toFixed(4);
-    }
 
     useEffect(() => {
         const reloadInterval = setInterval(() => {
             reload()
+            reloadRewardsStaking()
         }, STAKING_DATA_RELOAD_INTERVAL)
 
         return () => {
             clearInterval(reloadInterval)
         }
-    }, [reload])
+    }, [reload, reloadRewardsStaking])
 
     return (
         <Container maxW="7xl" py={8}>
@@ -174,151 +145,18 @@ const StakingPage = () => {
                             stakingReward={sr}
                             userStake={addressData?.active.get(sr.reward_id)}
                             userUnlocking={addressData?.unlocking.get(sr.reward_id)}
+                            onClick={() => openModal(sr)}
                         />
                     ))}
                 </Grid>
 
                 {/* Action Modal */}
-                {modalType && (
-                    <Box
-                        position="fixed"
-                        inset="0"
-                        bg="blackAlpha.600"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        zIndex="modal"
-                    >
-                        <Card.Root maxW="md" w="full" mx="4">
-                            <Card.Header>
-                                <HStack justify="space-between" align="center">
-                                    <Heading size="lg">
-                                        {modalType === 'stake' && 'Stake Tokens'}
-                                        {modalType === 'unstake' && 'Unstake Tokens'}
-                                        {modalType === 'claim' && 'Claim Rewards'}
-                                        {modalType === 'actions' && selectedStaking?.name}
-                                    </Heading>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={closeModal}
-                                    >
-                                        ✕
-                                    </Button>
-                                </HStack>
-                            </Card.Header>
-
-                            <Card.Body>
-                                {modalType === 'actions' && selectedStaking && (
-                                    <VStack gap="4">
-                                        <Text color="gray.600">{selectedStaking.description || 'Manage your staking position'}</Text>
-
-                                        <Stack direction={{ base: 'column', sm: 'row' }} width="full" gap="3">
-                                            <Button
-                                                flex="1"
-                                                colorPalette="blue"
-                                                onClick={() => openModal('stake', selectedStaking)}
-                                            >
-                                                <HStack gap="2">
-                                                    <LuLock size={16} />
-                                                    <Text>Stake</Text>
-                                                </HStack>
-                                            </Button>
-
-                                            <Button
-                                                flex="1"
-                                                variant="outline"
-                                                disabled={!selectedStaking.userStake}
-                                                onClick={() => openModal('unstake', selectedStaking)}
-                                            >
-                                                <HStack gap="2">
-                                                    <LuLockOpen size={16} />
-                                                    <Text>Unstake</Text>
-                                                </HStack>
-                                            </Button>
-
-                                            <Button
-                                                flex="1"
-                                                colorPalette="green"
-                                                disabled={!selectedStaking.userStake?.rewards}
-                                                onClick={() => openModal('claim', selectedStaking)}
-                                            >
-                                                <HStack gap="2">
-                                                    <LuGift size={16} />
-                                                    <Text>Claim</Text>
-                                                </HStack>
-                                            </Button>
-                                        </Stack>
-                                    </VStack>
-                                )}
-
-                                {modalType === 'stake' && selectedStaking && (
-                                    <VStack gap="4">
-                                        <Text>Enter the amount you want to stake:</Text>
-                                        <Input
-                                            placeholder={`Min: ${selectedStaking.minStaking} ${selectedStaking.stakeCoin.symbol}`}
-                                            value={stakeAmount}
-                                            onChange={(e) => setStakeAmount(e.target.value)}
-                                            type="number"
-                                        />
-
-                                        {stakeAmount && (
-                                            <Alert.Root status="success" variant="subtle">
-                                                <Alert.Indicator />
-                                                <VStack align="start" gap="2" flex="1">
-                                                    <Alert.Title>Estimated Daily Rewards:</Alert.Title>
-                                                    <Text fontSize="lg" fontWeight="bold" color="green.600">
-                                                        {calculateEstimatedRewards()} {selectedStaking.earnCoin.symbol}
-                                                    </Text>
-                                                    <Text fontSize="sm" color="gray.600">
-                                                        Lock period: {selectedStaking.lockDuration} days
-                                                    </Text>
-                                                </VStack>
-                                            </Alert.Root>
-                                        )}
-
-                                        <Button colorPalette="blue" width="full" disabled={!stakeAmount}>
-                                            Confirm Stake
-                                        </Button>
-                                    </VStack>
-                                )}
-
-                                {modalType === 'unstake' && selectedStaking && selectedStaking.userStake && (
-                                    <VStack gap="4">
-                                        <Alert.Root status="warning" variant="subtle">
-                                            <Alert.Indicator />
-                                            <VStack align="start" gap="1" flex="1">
-                                                <Alert.Title>Unstaking Notice</Alert.Title>
-                                                <Alert.Description>
-                                                    Your funds will be locked for {selectedStaking.lockDuration} days after unstaking.
-                                                </Alert.Description>
-                                            </VStack>
-                                        </Alert.Root>
-
-                                        <Text>Amount to unstake: {selectedStaking.userStake?.amount} {selectedStaking.stakeCoin.symbol}</Text>
-
-                                        <Button colorPalette="red" width="full">
-                                            Confirm Unstake
-                                        </Button>
-                                    </VStack>
-                                )}
-
-                                {modalType === 'claim' && selectedStaking && selectedStaking.userStake && (
-                                    <VStack gap="4">
-                                        <Text>Available rewards to claim:</Text>
-                                        <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                                            {selectedStaking.userStake?.rewards} {selectedStaking.earnCoin.symbol}
-                                        </Text>
-
-                                        <Button colorPalette="green" width="full">
-                                            Claim Rewards
-                                        </Button>
-                                    </VStack>
-                                )}
-                            </Card.Body>
-                        </Card.Root>
-                    </Box>
-                )}
+                {isModalOpen && (
+                    <RewardsStakingActionModal
+                        stakingReward={selectedStaking}
+                        userStake={addressData?.active.get(selectedStaking?.reward_id ?? '')}
+                        onClose={closeModal}
+                    />)}
             </VStack>
         </Container>
     );

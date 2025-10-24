@@ -2,11 +2,22 @@ import {
     StakingRewardParticipantSDKType,
     StakingRewardSDKType
 } from "@bze/bzejs/bze/rewards/store";
-import {Alert, Badge, Card, Grid, Heading, HStack, Separator, Skeleton, Text, VStack} from "@chakra-ui/react";
+import {
+    Alert,
+    Badge,
+    Card,
+    Grid,
+    Heading,
+    HStack,
+    Separator,
+    Skeleton,
+    Text,
+    VStack
+} from "@chakra-ui/react";
 import {LuClock, LuCoins, LuLock, LuShield, LuTrendingUp} from "react-icons/lu";
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useAsset} from "@/hooks/useAssets";
-import {calculateRewardsStakingApr} from "@/utils/staking";
+import {calculateRewardsStakingApr, calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {shortNumberFormat} from "@/utils/formatter";
 import {prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
@@ -14,6 +25,7 @@ import BigNumber from "bignumber.js";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
 import {useEpochs} from "@/hooks/useEpochs";
+import {removeLeadingZeros} from "@/utils/strings";
 
 interface RewardsStakingBoxProps {
     stakingReward?: StakingRewardSDKType;
@@ -90,15 +102,10 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
     }, [userUnlocking, stakingAsset])
 
     const pendingRewards = useMemo(() => {
-        const distr = new BigNumber(stakingReward?.distributed_stake || 0);
-        const joinedAt = new BigNumber(userStake?.joined_at || 0);
-        if (distr.isEqualTo(joinedAt)) {
-            //nothing to claim
+        const rewardsToClaim = calculateRewardsStakingPendingRewards(stakingReward, userStake)
+        if (rewardsToClaim.isZero()) {
             return `0 ${prizeAsset?.ticker}`;
         }
-
-        const deposited = new BigNumber(userStake?.amount || 0);
-        const rewardsToClaim = deposited.multipliedBy(distr.minus(joinedAt)).decimalPlaces(0);
 
         return `${prettyAmount(uAmountToAmount(rewardsToClaim, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
     }, [stakingReward, userStake, prizeAsset])
@@ -127,6 +134,10 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
         return `${unlockAmount} ${stakingAsset?.ticker} unlocking in 1 hour`;
     }, [userUnlocking, getHourEpochInfo, stakingAsset])
 
+    const rewardNumber = useMemo(() => {
+        return removeLeadingZeros(stakingReward?.reward_id ?? '000')
+    }, [stakingReward])
+
     useEffect(() => {
         if (stakingReward && !stakingAssetIsLoading && !prizeAssetIsLoading) {
             setIsLoading(false)
@@ -148,7 +159,7 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                             <HStack>
                                 <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
                                 <VStack align="start" gap="1">
-                                    <Heading size="md">{stakingAsset?.ticker} Staking Reward</Heading>
+                                    <Heading size="md">{stakingAsset?.ticker} Staking Reward #{rewardNumber}</Heading>
                                     <HStack>
                                         <Badge colorPalette={stakingAsset?.verified && prizeAsset?.verified ? 'green' : 'orange'} variant="subtle">
                                             <HStack gap="1">

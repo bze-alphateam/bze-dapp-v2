@@ -293,7 +293,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                         <Card.Body>
                             {modalType === 'actions' && (
                                 <VStack gap="4">
-                                    <Text color="gray.600">{'Secure the BeeZee network and earn rewards by staking your BZE tokens.'}</Text>
+                                    <Text color="gray.600">{'Secure the BeeZee network and earn rewards by staking your BZE coins.'}</Text>
 
                                     <Stack direction={{ base: 'column', sm: 'row' }} width="full" gap="3">
                                         <Button

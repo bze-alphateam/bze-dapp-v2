@@ -1,5 +1,6 @@
 import BigNumber from "bignumber.js";
 import {PoolSDKType} from "@bze/bzejs/cosmos/staking/v1beta1/staking";
+import {StakingRewardParticipantSDKType, StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 
 const DAY_TO_SECONDS = 24 * 60 * 60;
 
@@ -58,4 +59,17 @@ export const calculateRewardsStakingApr = (dailyAmount: string | number | BigNum
     }
 
     return computedApr;
+}
+
+export const calculateRewardsStakingPendingRewards = (stakingReward?: StakingRewardSDKType, userStake?: StakingRewardParticipantSDKType): BigNumber => {
+    const distr = new BigNumber(stakingReward?.distributed_stake || 0);
+    const joinedAt = new BigNumber(userStake?.joined_at || 0);
+    if (distr.isEqualTo(joinedAt)) {
+        //nothing to claim
+        return new BigNumber(0);
+    }
+
+    const deposited = new BigNumber(userStake?.amount || 0);
+
+    return deposited.multipliedBy(distr.minus(joinedAt)).decimalPlaces(0);
 }

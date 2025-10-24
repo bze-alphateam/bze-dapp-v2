@@ -2,6 +2,7 @@ import {useCallback, useContext, useMemo} from 'react';
 import { AssetsContext, AssetsContextType } from '@/contexts/assets_context';
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {Asset} from "@/types/asset";
+import {truncateDenom} from "@/utils/denom";
 
 // Base hook to access context (private)
 export function useAssetsContext(): AssetsContextType {
@@ -35,11 +36,21 @@ export function useAssets() {
         return asset.verified
     }, [assets])
 
+    const denomTicker = useCallback((denom: string) => {
+        const asset = assets.find(a => a.denom === denom)
+        if (!asset) {
+            return truncateDenom(denom)
+        }
+
+        return asset.ticker
+    }, [assets])
+
     return {
         assets,
         isLoading,
         nativeAsset,
         isVerifiedAsset,
+        denomTicker,
     };
 }
 
