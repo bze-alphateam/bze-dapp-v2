@@ -1,12 +1,14 @@
 import {Alert, Box, Button, Card, Heading, HStack, Input, Skeleton, Stack, Text, VStack} from "@chakra-ui/react";
 import {LuGift, LuLock, LuLockOpen} from "react-icons/lu";
-import {useMemo, useState} from "react";
+import React, {useMemo, useState} from "react";
 import {StakingRewardParticipantSDKType, StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {shortNumberFormat} from "@/utils/formatter";
 import {prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {removeLeadingZeros} from "@/utils/strings";
+import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
+import {useBalance} from "@/hooks/useBalances";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
@@ -17,15 +19,17 @@ interface RewardsStakingActionModalProps {
     onClose: () => void;
     stakingReward?: StakingRewardSDKType;
     userStake?: StakingRewardParticipantSDKType;
+    userUnlocking?: ExtendedPendingUnlockParticipantSDKType;
 }
 
-export const RewardsStakingActionModal = ({onClose, stakingReward, userStake}: RewardsStakingActionModalProps) => {
+export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, userUnlocking}: RewardsStakingActionModalProps) => {
     const [modalType, setModalType] = useState(MODAL_TYPE_ACTIONS);
     const [stakeAmount, setStakeAmount] = useState('');
 
     const {asset: stakingAsset, isLoading: stakingAssetIsLoading} = useAsset(stakingReward?.staking_denom ?? '')
     const {asset: prizeAsset, isLoading: prizeAssetIsLoading} = useAsset(stakingReward?.prize_denom ?? '')
     const {denomTicker, isLoading: isLoadingAssets} = useAssets()
+    const {balance: stakingAssetBalance} = useBalance(stakingReward?.staking_denom ?? '')
 
     const actionsModalTitle = useMemo(() => {
         if (!stakingReward) return 'Actions';
@@ -53,6 +57,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake}: R
 
         return rewardsToClaim.gt(0)
     }, [stakingReward, userStake])
+    const hasUnbonding = useMemo(() => !!userUnlocking, [userUnlocking])
 
     const dailyDistribution = useMemo(() => {
         return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.prize_amount, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
@@ -86,6 +91,16 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake}: R
 
         return `Claim your ${denomTicker(stakingReward.prize_denom)} rewards`
     }, [stakingReward, denomTicker])
+
+    const pendingUnlock = useMemo(() => {
+        return `${prettyAmount(uAmountToAmount(userUnlocking?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
+    }, [userUnlocking, stakingAsset])
+
+    const userStakingAssetBalance = useMemo(() => {
+        if (!stakingAssetBalance || !stakingAsset) return '0';
+
+        return `${prettyAmount(uAmountToAmount(stakingAssetBalance?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
+    }, [stakingAssetBalance, stakingAsset])
 
     return (
         <Skeleton asChild loading={stakingAssetIsLoading || prizeAssetIsLoading || isLoadingAssets}>
@@ -122,12 +137,52 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake}: R
                         {modalType === MODAL_TYPE_ACTIONS && stakingReward && (
                             <VStack gap="4">
                                 <Text color="gray.600">{'Stake your tokens and receive daily rewards.'}</Text>
-
+                                <Alert.Root status={"info"} variant="subtle">
+                                    <Alert.Indicator />
+                                    <VStack align="start" gap="2" flex="1">
+                                        {hasUserStake && (
+                                            <HStack justify="space-between" width="full">
+                                                <Text fontWeight="medium">Stake:</Text>
+                                                <VStack gap="0">
+                                                    <Text fontWeight="bold">{yourStake}</Text>
+                                                </VStack>
+                                            </HStack>
+                                        )}
+                                        <HStack justify="space-between" width="full">
+                                            <Text fontWeight="medium">Balance:</Text>
+                                            <VStack gap="0">
+                                                <Text fontWeight="bold">{userStakingAssetBalance}</Text>
+                                            </VStack>
+                                        </HStack>
+                                        {hasUserStake && (
+                                            <HStack justify="space-between" width="full">
+                                                <Text fontWeight="medium">Pending Rewards:</Text>
+                                                <Text fontWeight="bold" color="green.600">
+                                                    {pendingRewards}
+                                                </Text>
+                                            </HStack>
+                                        )}
+                                    </VStack>
+                                </Alert.Root>
+                                {hasUnbonding && (
+                                    <Alert.Root status={"warning"} variant="subtle">
+                                        <Alert.Indicator />
+                                        <VStack align="start" gap="2" flex="1">
+                                            <HStack justify="space-between" width="full">
+                                                <Text fontWeight="medium">Pending Unlock:</Text>
+                                                <Text fontWeight="bold" color="orange.500">
+                                                    {pendingUnlock}
+                                                </Text>
+                                            </HStack>
+                                        </VStack>
+                                    </Alert.Root>
+                                )}
                                 <Stack direction={{ base: 'column', sm: 'row' }} width="full" gap="3">
                                     <Button
                                         flex="1"
                                         colorPalette="blue"
                                         onClick={() => openModal('stake')}
+                                        disabled={stakingAssetBalance.amount.isZero()}
                                     >
                                         <HStack gap="2">
                                             <LuLock size={16} />

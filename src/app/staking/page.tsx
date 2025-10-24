@@ -155,6 +155,7 @@ const StakingPage = () => {
                     <RewardsStakingActionModal
                         stakingReward={selectedStaking}
                         userStake={addressData?.active.get(selectedStaking?.reward_id ?? '')}
+                        userUnlocking={addressData?.unlocking.get(selectedStaking?.reward_id ?? '')}
                         onClose={closeModal}
                     />)}
             </VStack>
