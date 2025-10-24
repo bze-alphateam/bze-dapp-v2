@@ -8,22 +8,15 @@ import {
     Text,
     Input,
     Card,
-    Badge,
     Button,
     VStack,
     HStack,
     Grid,
     Stack,
-    Separator,
     Alert,
-    Image
 } from '@chakra-ui/react';
 import {
     LuSearch,
-    LuShield,
-    LuClock,
-    LuCoins,
-    LuTrendingUp,
     LuLock,
     LuGift,
     LuLockOpen,
@@ -31,6 +24,10 @@ import {
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useNativeStakingData} from "@/hooks/useNativeStakingData";
 import {NativeStakingCard} from "@/components/ui/staking/native-staking";
+import {RewardsStakingBox} from "@/components/ui/staking/rewards-staking";
+import {useRewardsStakingData} from "@/hooks/useRewardsStakingData";
+import {useAssets} from "@/hooks/useAssets";
+import BigNumber from "bignumber.js";
 
 interface StakingOpportunity {
     id: string;
@@ -58,67 +55,35 @@ const StakingPage = () => {
     const [stakeAmount, setStakeAmount] = useState('');
 
     const {stakingData, isLoading, reload} = useNativeStakingData()
+    const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData} = useRewardsStakingData()
+    const {isVerifiedAsset} = useAssets()
 
-    // Mock data for staking opportunities
-    const stakingOpportunities: StakingOpportunity[] = [
-        {
-            id: 'usdc-pool',
-            name: 'USDC Liquidity Pool',
-            stakeCoin: { symbol: 'USDC', logo: '/images/token.svg', name: 'USD Coin' },
-            earnCoin: { symbol: 'BZE', logo: '/images/bze_alternative_512x512.png', name: 'BeeZee' },
-            lockDuration: 30,
-            dailyDistribution: '25,000 BZE',
-            estimatedAPR: 18.2,
-            minStaking: 500,
-            verified: true,
-            isNative: false,
-            userStake: { amount: 5000, rewards: 89.45, status: 'unstaking', unlockDate: '2025-08-15' },
-            totalStaked: '850K USDC'
-        },
-        {
-            id: 'eth-pool',
-            name: 'Ethereum Staking Pool',
-            stakeCoin: { symbol: 'ETH', logo: '/images/logo_320px.png', name: 'Ethereum' },
-            earnCoin: { symbol: 'BZE', logo: '/images/bze_alternative_512x512.png', name: 'BeeZee' },
-            lockDuration: 45,
-            dailyDistribution: '15,000 BZE',
-            estimatedAPR: 22.8,
-            minStaking: 0.5,
-            verified: true,
-            isNative: false,
-            userStake: null,
-            totalStaked: '120 ETH'
-        },
-        {
-            id: 'experimental-pool',
-            name: 'High Yield Experimental',
-            stakeCoin: { symbol: 'BTC', logo: '/images/token.svg', name: 'Bitcoin' },
-            earnCoin: { symbol: 'BZE', logo: '/images/bze_alternative_512x512.png', name: 'BeeZee' },
-            lockDuration: 90,
-            dailyDistribution: '5,000 BZE',
-            estimatedAPR: 45.6,
-            minStaking: 0.01,
-            verified: false,
-            isNative: false,
-            userStake: null,
-            totalStaked: '5.2 BTC'
-        }
-    ];
+    const filteredOpportunities = stakingRewards.filter(
+        sr =>
+            sr.staking_denom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            sr.prize_denom.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort((a, b) => {
+        const aData = addressData?.active.get(a.reward_id)
+        const bData = addressData?.active.get(b.reward_id)
+        if (aData && !bData) return -1;
+        if (!aData && bData) return 1;
 
-    // Sort opportunities: user stakes first, then native, then by APR
-    const sortedOpportunities = [...stakingOpportunities].sort((a, b) => {
-        if (a.userStake && !b.userStake) return -1;
-        if (!a.userStake && b.userStake) return 1;
-        if (a.isNative && !b.isNative) return -1;
-        if (!a.isNative && b.isNative) return 1;
-        return b.estimatedAPR - a.estimatedAPR;
-    });
+        const aPending = addressData?.unlocking.get(a.reward_id)
+        const bPending = addressData?.unlocking.get(b.reward_id)
+        if (aPending && !bPending) return -1;
+        if (!aPending && bPending) return 1;
+        const aVerified = isVerifiedAsset(a.staking_denom) && isVerifiedAsset(a.prize_denom)
+        const bVerified = isVerifiedAsset(b.staking_denom) && isVerifiedAsset(b.prize_denom)
+        if (aVerified && !bVerified) return -1;
+        if (!aVerified && bVerified) return 1;
 
-    const filteredOpportunities = sortedOpportunities.filter(
-        opportunity =>
-            opportunity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            opportunity.stakeCoin.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+        const stakedA = new BigNumber(a.staked_amount || 0)
+        const stakedB = new BigNumber(b.staked_amount || 0)
+        if (stakedA.gt(stakedB)) return -1;
+        if (stakedA.lt(stakedB)) return 1;
+
+        return 0
+    })
 
     const openModal = (type: string, staking: StakingOpportunity | null = null) => {
         setModalType(type);
@@ -136,133 +101,7 @@ const StakingPage = () => {
         if (!stakeAmount || !selectedStaking) return 0;
         const amount = parseFloat(stakeAmount);
         return (amount * selectedStaking.estimatedAPR / 100 / 365).toFixed(4);
-    };
-
-    const StakingCard = ({ opportunity }: { opportunity: StakingOpportunity }) => {
-        const hasUserStake = opportunity.userStake;
-        const isUnstaking = hasUserStake?.status === 'unstaking';
-
-        return (
-            <Card.Root
-                borderWidth={hasUserStake ? "2px" : "1px"}
-                borderColor={hasUserStake ? "blue.500" : (opportunity.isNative ? "purple.500" : "border")}
-                cursor="pointer"
-                _hover={{ bg: "bg.muted" }}
-                onClick={() => openModal('actions', opportunity)}
-            >
-                <Card.Header>
-                    <HStack justify="space-between" align="start">
-                        <VStack align="start" gap="2">
-                            <HStack>
-                                <Image
-                                    src={opportunity.stakeCoin.logo}
-                                    alt={opportunity.stakeCoin.name}
-                                    boxSize="8"
-                                    borderRadius="full"
-                                />
-                                <VStack align="start" gap="1">
-                                    <Heading size="md">{opportunity.name}</Heading>
-                                    <HStack>
-                                        <Badge colorPalette={opportunity.verified ? 'green' : 'orange'} variant="subtle">
-                                            <HStack gap="1">
-                                                <LuShield size={12} />
-                                                <Text>{opportunity.verified ? 'Verified' : 'Unverified'}</Text>
-                                            </HStack>
-                                        </Badge>
-                                        {opportunity.isNative && !isLoading && (
-                                            <Badge colorPalette="purple" variant="subtle">Native</Badge>
-                                        )}
-                                        {hasUserStake && (
-                                            <Badge colorPalette={isUnstaking ? 'orange' : 'blue'} variant="subtle">
-                                                {isUnstaking ? 'Unstaking' : 'Active'}
-                                            </Badge>
-                                        )}
-                                    </HStack>
-                                </VStack>
-                            </HStack>
-                        </VStack>
-                        <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                            {opportunity.estimatedAPR}%
-                        </Text>
-                    </HStack>
-                </Card.Header>
-
-                <Card.Body>
-                    <VStack align="stretch" gap="3">
-                        {opportunity.userStake && (
-                            <Alert.Root status={isUnstaking ? "warning" : "info"} variant="subtle">
-                                <Alert.Indicator />
-                                <VStack align="start" gap="2" flex="1">
-                                    <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Your Stake:</Text>
-                                        <Text fontWeight="bold">{opportunity.userStake.amount.toLocaleString()} {opportunity.stakeCoin.symbol}</Text>
-                                    </HStack>
-                                    <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Pending Rewards:</Text>
-                                        <Text fontWeight="bold" color="green.600">
-                                            {opportunity.userStake.rewards} {opportunity.earnCoin.symbol}
-                                        </Text>
-                                    </HStack>
-                                    {hasUserStake && opportunity.userStake && (
-                                        <Alert.Title fontSize="sm">Unlocks on {opportunity.userStake.unlockDate}</Alert.Title>
-                                    )}
-                                </VStack>
-                            </Alert.Root>
-                        )}
-
-                        <Grid templateColumns="1fr 1fr" gap="4">
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuClock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Lock Duration</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{opportunity.lockDuration} days</Text>
-                            </VStack>
-
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuCoins size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Daily Distribution</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{opportunity.dailyDistribution}</Text>
-                            </VStack>
-
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuTrendingUp size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Min. Staking</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{opportunity.minStaking} {opportunity.stakeCoin.symbol}</Text>
-                            </VStack>
-
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuLock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Total Staked</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{opportunity.totalStaked}</Text>
-                            </VStack>
-                        </Grid>
-
-                        <Separator />
-
-                        <HStack>
-                            <Image
-                                src={opportunity.earnCoin.logo}
-                                alt={opportunity.earnCoin.name}
-                                boxSize="8"
-                                borderRadius="full"
-                            />
-                            <VStack align="start" gap="0">
-                                <Text fontSize="sm" color="gray.600">Earn</Text>
-                                <Text fontWeight="medium">{opportunity.earnCoin.symbol}</Text>
-                            </VStack>
-                        </HStack>
-                    </VStack>
-                </Card.Body>
-            </Card.Root>
-        );
-    };
+    }
 
     useEffect(() => {
         const reloadInterval = setInterval(() => {
@@ -329,8 +168,13 @@ const StakingPage = () => {
                 {/* Staking Cards */}
                 <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="6">
                     <NativeStakingCard stakingData={stakingData} isLoading={isLoading} onClaimSuccess={() => reload()} />
-                    {filteredOpportunities.map((opportunity) => (
-                        <StakingCard key={opportunity.id} opportunity={opportunity} />
+                    {!isLoadingStakingRewards && filteredOpportunities.map((sr) => (
+                        <RewardsStakingBox
+                            key={sr.reward_id}
+                            stakingReward={sr}
+                            userStake={addressData?.active.get(sr.reward_id)}
+                            userUnlocking={addressData?.unlocking.get(sr.reward_id)}
+                        />
                     ))}
                 </Grid>
 

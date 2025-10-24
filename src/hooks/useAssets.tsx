@@ -1,4 +1,4 @@
-import {useContext, useMemo} from 'react';
+import {useCallback, useContext, useMemo} from 'react';
 import { AssetsContext, AssetsContextType } from '@/contexts/assets_context';
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {Asset} from "@/types/asset";
@@ -26,10 +26,20 @@ export function useAssets() {
         [assetsMap]
     );
 
+    const isVerifiedAsset = useCallback((denom: string) => {
+        const asset = assets.find(a => a.denom === denom)
+        if (!asset) {
+            return false
+        }
+
+        return asset.verified
+    }, [assets])
+
     return {
         assets,
         isLoading,
-        nativeAsset
+        nativeAsset,
+        isVerifiedAsset,
     };
 }
 

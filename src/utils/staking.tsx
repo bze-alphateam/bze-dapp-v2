@@ -46,3 +46,16 @@ export const parseUnbondingDays = (unbondingTime: string) => {
         .decimalPlaces(0)
         .toString();
 };
+
+export const calculateRewardsStakingApr = (dailyAmount: string | number | BigNumber, staked: string | number | BigNumber): BigNumber => {
+    const stakedNum = new BigNumber(staked);
+    let computedApr = new BigNumber(dailyAmount).dividedBy(stakedNum).multipliedBy(365).multipliedBy(100);
+
+    if (computedApr.lt(1)) {
+        computedApr = computedApr.decimalPlaces(6);
+    } else {
+        computedApr = computedApr.decimalPlaces(2);
+    }
+
+    return computedApr;
+}

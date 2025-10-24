@@ -16,6 +16,8 @@ export function useAssetPrice(denom: string) {
     const bzeDenom = useMemo(() => getChainNativeAssetDenom(), []);
 
     useEffect(() => {
+        if (denom === '') return;
+
         if (isLoadingPrices) return;
         setLoading(true)
 
@@ -56,11 +58,14 @@ export function useAssetPrice(denom: string) {
         return totalUsdValue(uAmountToBigNumberAmount(amount, decimals))
     }, [totalUsdValue]);
 
+    const hasPrice = useMemo(() => price.gt(0), [price]);
+
     return {
         price,
         change,
         totalUsdValue,
         uAmountUsdValue,
         isLoading: isLoading || isLoadingPrices,
+        hasPrice,
     }
 }
