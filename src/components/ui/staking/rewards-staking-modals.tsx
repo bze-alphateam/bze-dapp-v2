@@ -4,11 +4,13 @@ import React, {useMemo, useState} from "react";
 import {StakingRewardParticipantSDKType, StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {shortNumberFormat} from "@/utils/formatter";
-import {prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {amountToBigNumberUAmount, prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {removeLeadingZeros} from "@/utils/strings";
 import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
 import {useBalance} from "@/hooks/useBalances";
+import {sanitizeNumberInput} from "@/utils/number";
+import BigNumber from "bignumber.js";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
@@ -59,9 +61,17 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     }, [stakingReward, userStake])
     const hasUnbonding = useMemo(() => !!userUnlocking, [userUnlocking])
 
-    const dailyDistribution = useMemo(() => {
-        return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.prize_amount, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
-    }, [stakingReward, prizeAsset])
+    const inputEstimatedRewards = useMemo(() => {
+        if (!stakingReward || !stakeAmount || !stakingAsset) return '0';
+
+        // (daily reward/(total staked + input)) * input
+        //the input the user provides is an AMOUNT, not a UAmount, so we need to convert it to a UAmount
+        const stakedUAmount = amountToBigNumberUAmount(stakeAmount, stakingAsset.decimals)
+        const incomePerStakedCoin = new BigNumber(stakingReward.prize_amount).dividedBy(new BigNumber(stakingReward.staked_amount).plus(stakedUAmount))
+        const dailyReward = incomePerStakedCoin.multipliedBy(stakedUAmount)
+
+        return `${shortNumberFormat(uAmountToBigNumberAmount(dailyReward.integerValue(), prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
+    }, [stakingReward, prizeAsset, stakeAmount, stakingAsset])
 
     const yourStake = useMemo(() => {
         return `${prettyAmount(uAmountToAmount(userStake?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
@@ -223,8 +233,8 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                 <Input
                                     placeholder={`Min: ${prettyMinStake}`}
                                     value={stakeAmount}
-                                    onChange={(e) => setStakeAmount(e.target.value)}
-                                    type="number"
+                                    onChange={(e) => setStakeAmount(sanitizeNumberInput(e.target.value))}
+                                    type="text"
                                 />
 
                                 {stakeAmount && (
@@ -233,7 +243,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         <VStack align="start" gap="2" flex="1">
                                             <Alert.Title>Estimated Daily Rewards:</Alert.Title>
                                             <Text fontSize="lg" fontWeight="bold" color="green.600">
-                                                {dailyDistribution}
+                                                {inputEstimatedRewards}
                                             </Text>
                                             <Text fontSize="sm" color="gray.600">
                                                 Lock period: {stakingReward?.lock || 0} days

@@ -4,7 +4,7 @@ import {
 } from "@bze/bzejs/bze/rewards/store";
 import {
     Alert,
-    Badge,
+    Badge, Box,
     Card,
     Grid,
     Heading,
@@ -178,18 +178,32 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                             </Badge>
                                         )}
                                     </HStack>
+                                    {calculatedApr !== '' &&
+                                        <Box display={{base: 'block', md: 'none'}}>
+                                            <HStack gap="2">
+                                                <Text fontSize="2xs" color="green.500">
+                                                    APR
+                                                </Text>
+                                                <Text fontSize={{sm: 'lg', md: "xl"}} fontWeight="bold" color="green.500">
+                                                    {calculatedApr}
+                                                </Text>
+                                            </HStack>
+                                        </Box>
+                                    }
                                 </VStack>
                             </HStack>
                         </VStack>
                         {calculatedApr !== '' &&
-                            <HStack gap="2">
-                                <Text fontSize="2xs" color="green.500">
-                                    APR
-                                </Text>
-                                <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                                    {calculatedApr}
-                                </Text>
-                            </HStack>
+                            <Box display={{base: 'none', md: 'block'}}>
+                                <HStack gap="2">
+                                    <Text fontSize="2xs" color="green.500">
+                                        APR
+                                    </Text>
+                                    <Text fontSize={{sm: 'lg', md: "xl"}} fontWeight="bold" color="green.500">
+                                        {calculatedApr}
+                                    </Text>
+                                </HStack>
+                            </Box>
                         }
                     </HStack>
                 </Card.Header>

@@ -145,17 +145,29 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                             </Badge>
                                         )}
                                     </HStack>
+                                    <Box display={{ base: 'flex', md: 'none' }}>
+                                        <HStack gap="2">
+                                            <Text fontSize="2xs" color="green.500">
+                                                APR
+                                            </Text>
+                                            <Text fontSize={{sm: 'lg', md: "xl"}}  fontWeight="bold" color="green.500">
+                                                ~{stakingData?.averageApr}%
+                                            </Text>
+                                        </HStack>
+                                    </Box>
                                 </VStack>
                             </HStack>
                         </VStack>
-                        <HStack gap="2">
-                            <Text fontSize="2xs" color="green.500">
-                                APR
-                            </Text>
-                            <Text fontSize="2xl" fontWeight="bold" color="green.500">
-                                ~{stakingData?.averageApr}%
-                            </Text>
-                        </HStack>
+                        <Box display={{ base: 'none', md: 'flex' }}>
+                            <HStack gap="2">
+                                <Text fontSize="2xs" color="green.500">
+                                    APR
+                                </Text>
+                                <Text fontSize="xl" fontWeight="bold" color="green.500">
+                                    ~{stakingData?.averageApr}%
+                                </Text>
+                            </HStack>
+                        </Box>
                     </HStack>
                 </Card.Header>
 
