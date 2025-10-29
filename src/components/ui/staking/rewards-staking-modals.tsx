@@ -29,6 +29,7 @@ import {useBZETx} from "@/hooks/useTx";
 import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
+import {useToast} from "@/hooks/useToast";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
@@ -55,6 +56,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     const {balance: stakingAssetBalance} = useBalance(stakingReward?.staking_denom ?? '')
     const {address} = useChain(getChainName())
     const {tx, progressTrack} = useBZETx()
+    const {toast} = useToast()
 
     const actionsModalTitle = useMemo(() => {
         if (!stakingReward) return 'Actions';
@@ -220,12 +222,12 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
         if (!stakingReward) return;
 
         if (!address) {
-            setFormError('No wallet connected')
+            toast.error('No wallet connected')
             return;
         }
 
         if (!userStake) {
-            setFormError('No stake found')
+            toast.error('No stake found')
             return;
         }
 
@@ -243,7 +245,36 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
         }
 
         setIsSubmitting(false)
-    }, [stakingReward, userStake, address, tx, onActionPerformed])
+    }, [stakingReward, userStake, address, tx, onActionPerformed, toast])
+
+    const handleRewardsClaim = useCallback(async () => {
+        if (!stakingReward) return;
+
+        if (!address) {
+            toast.error('No wallet connected')
+            return
+        }
+
+        if (!hasPendingRewards) {
+            toast.error('No rewards to claim')
+            return;
+        }
+
+        const {claimStakingRewards} = bze.rewards.MessageComposer.withTypeUrl;
+        setIsSubmitting(true)
+        const msg = claimStakingRewards({
+            creator: address,
+            rewardId: stakingReward.reward_id,
+        })
+
+        await tx([msg])
+
+        if (onActionPerformed) {
+            onActionPerformed()
+        }
+
+        setIsSubmitting(false)
+    }, [stakingReward, address, tx, onActionPerformed, hasPendingRewards, toast])
 
     return (
         <Skeleton asChild loading={stakingAssetIsLoading || prizeAssetIsLoading || isLoadingAssets}>
@@ -449,7 +480,14 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                     {pendingRewards}
                                 </Text>
 
-                                <Button colorPalette="green" width="full">
+                                <Button
+                                    colorPalette="green"
+                                    width="full"
+                                    disabled={!userStake || !hasPendingRewards}
+                                    loading={isSubmitting}
+                                    loadingText={progressTrack || 'Claiming rewards...'}
+                                    onClick={handleRewardsClaim}
+                                >
                                     Claim Rewards
                                 </Button>
                             </VStack>
