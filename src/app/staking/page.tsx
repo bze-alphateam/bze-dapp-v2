@@ -33,14 +33,25 @@ const StakingPage = () => {
 
     const {stakingData, isLoading, reload} = useNativeStakingData()
     const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
-    const {isVerifiedAsset} = useAssets()
+    const {isVerifiedAsset, denomTicker} = useAssets()
+
+    const stakingCount = useMemo(() => {
+        let totalCount = 0
+        if (stakingData?.currentStaking?.staked.amount.gt(0)) {
+            totalCount += 1
+        }
+
+        if (!addressData) return totalCount;
+
+        return totalCount + addressData.active.size
+    }, [stakingData, addressData])
 
     // Memoize the filtered and sorted opportunities
     const filteredOpportunities = useMemo(() => {
         return stakingRewards.filter(
             sr =>
-                sr.staking_denom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sr.prize_denom.toLowerCase().includes(searchTerm.toLowerCase())
+                denomTicker(sr.staking_denom).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                denomTicker(sr.prize_denom).toLowerCase().includes(searchTerm.toLowerCase())
         ).sort((a, b) => {
             const aData = addressData?.active.get(a.reward_id)
             const bData = addressData?.active.get(b.reward_id)
@@ -128,7 +139,7 @@ const StakingPage = () => {
                         <Card.Body>
                             <VStack align="start">
                                 <Text color="gray.600">Your Active Stakes</Text>
-                                <Text fontSize="2xl" fontWeight="bold">2</Text>
+                                <Text fontSize="2xl" fontWeight="bold">{stakingCount}</Text>
                                 <Text fontSize="sm" color="blue.500">Earning rewards</Text>
                             </VStack>
                         </Card.Body>
