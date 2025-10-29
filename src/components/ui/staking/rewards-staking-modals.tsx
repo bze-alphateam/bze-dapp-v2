@@ -284,7 +284,10 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                             autoComplete="off"
                                             placeholder={prettyMinStake}
                                             value={stakeAmount}
-                                            onChange={(e) => setStakeAmount(sanitizeNumberInput(e.target.value))}
+                                            onChange={(e) => {
+                                                setFormError('')
+                                                setStakeAmount(sanitizeNumberInput(e.target.value))
+                                            }}
                                             onBlur={validateStakeAmount}
                                             type="text"
                                             size="sm"
