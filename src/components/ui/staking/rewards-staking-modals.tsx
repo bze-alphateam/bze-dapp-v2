@@ -214,7 +214,36 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
         }
 
         setIsSubmitting(false)
-    }, [stakingReward, stakeAmount, address, stakingAsset, userStake, userStakingAssetBalance, tx, minStakeAmount])
+    }, [stakingReward, stakeAmount, address, stakingAsset, userStake, stakingAssetBalance, tx, onActionPerformed, minStakeAmount])
+
+    const handleUnstake = useCallback(async () => {
+        if (!stakingReward) return;
+
+        if (!address) {
+            setFormError('No wallet connected')
+            return;
+        }
+
+        if (!userStake) {
+            setFormError('No stake found')
+            return;
+        }
+
+        setIsSubmitting(true)
+        const {exitStaking} = bze.rewards.MessageComposer.withTypeUrl;
+        const msg = exitStaking({
+            creator: address,
+            rewardId: stakingReward.reward_id,
+        });
+
+        await tx([msg])
+
+        if (onActionPerformed) {
+            onActionPerformed()
+        }
+
+        setIsSubmitting(false)
+    }, [stakingReward, userStake, address, tx, onActionPerformed])
 
     return (
         <Skeleton asChild loading={stakingAssetIsLoading || prizeAssetIsLoading || isLoadingAssets}>
@@ -400,7 +429,14 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
                                 <Text>Amount to unstake: {yourStake}</Text>
 
-                                <Button colorPalette="red" width="full">
+                                <Button
+                                    colorPalette="red"
+                                    width="full"
+                                    disabled={!userStake}
+                                    loading={isSubmitting}
+                                    loadingText={progressTrack || 'Unstaking...'}
+                                    onClick={handleUnstake}
+                                >
                                     Confirm Unstake
                                 </Button>
                             </VStack>

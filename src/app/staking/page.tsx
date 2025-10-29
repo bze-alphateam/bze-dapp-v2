@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
     Box,
     Container,
@@ -35,47 +35,52 @@ const StakingPage = () => {
     const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
     const {isVerifiedAsset} = useAssets()
 
-    const filteredOpportunities = stakingRewards.filter(
-        sr =>
-            sr.staking_denom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            sr.prize_denom.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a, b) => {
-        const aData = addressData?.active.get(a.reward_id)
-        const bData = addressData?.active.get(b.reward_id)
-        if (aData && !bData) return -1;
-        if (!aData && bData) return 1;
+    // Memoize the filtered and sorted opportunities
+    const filteredOpportunities = useMemo(() => {
+        return stakingRewards.filter(
+            sr =>
+                sr.staking_denom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                sr.prize_denom.toLowerCase().includes(searchTerm.toLowerCase())
+        ).sort((a, b) => {
+            const aData = addressData?.active.get(a.reward_id)
+            const bData = addressData?.active.get(b.reward_id)
+            if (aData && !bData) return -1;
+            if (!aData && bData) return 1;
 
-        const aPending = addressData?.unlocking.get(a.reward_id)
-        const bPending = addressData?.unlocking.get(b.reward_id)
-        if (aPending && !bPending) return -1;
-        if (!aPending && bPending) return 1;
-        const aVerified = isVerifiedAsset(a.staking_denom) && isVerifiedAsset(a.prize_denom)
-        const bVerified = isVerifiedAsset(b.staking_denom) && isVerifiedAsset(b.prize_denom)
-        if (aVerified && !bVerified) return -1;
-        if (!aVerified && bVerified) return 1;
+            const aPending = addressData?.unlocking.get(a.reward_id)
+            const bPending = addressData?.unlocking.get(b.reward_id)
+            if (aPending && !bPending) return -1;
+            if (!aPending && bPending) return 1;
 
-        const stakedA = new BigNumber(a.staked_amount || 0)
-        const stakedB = new BigNumber(b.staked_amount || 0)
-        if (stakedA.gt(stakedB)) return -1;
-        if (stakedA.lt(stakedB)) return 1;
+            const aVerified = isVerifiedAsset(a.staking_denom) && isVerifiedAsset(a.prize_denom)
+            const bVerified = isVerifiedAsset(b.staking_denom) && isVerifiedAsset(b.prize_denom)
+            if (aVerified && !bVerified) return -1;
+            if (!aVerified && bVerified) return 1;
 
-        return 0
-    })
+            const stakedA = new BigNumber(a.staked_amount || 0)
+            const stakedB = new BigNumber(b.staked_amount || 0)
+            if (stakedA.gt(stakedB)) return -1;
+            if (stakedA.lt(stakedB)) return 1;
 
-    const openModal = (staking: StakingRewardSDKType) => {
+            return 0
+        })
+    }, [stakingRewards, searchTerm, addressData, isVerifiedAsset]);
+
+    // Memoize modal handlers
+    const openModal = useCallback((staking: StakingRewardSDKType) => {
         setSelectedStaking(staking);
         setIsModalOpen(true);
-    };
+    }, []);
 
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setIsModalOpen(false);
         setSelectedStaking(undefined);
-    };
+    }, []);
 
-    const onModalAction = () => {
+    const onModalAction = useCallback(() => {
         reloadRewardsStaking()
         closeModal()
-    }
+    }, [reloadRewardsStaking, closeModal]);
 
     useEffect(() => {
         const reloadInterval = setInterval(() => {
@@ -142,7 +147,7 @@ const StakingPage = () => {
 
                 {/* Staking Cards */}
                 <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="6">
-                    <NativeStakingCard stakingData={stakingData} isLoading={isLoading} onClaimSuccess={() => reload()} />
+                    <NativeStakingCard stakingData={stakingData} isLoading={isLoading} onClaimSuccess={reload} />
                     {!isLoadingStakingRewards && filteredOpportunities.map((sr) => (
                         <RewardsStakingBox
                             key={sr.reward_id}

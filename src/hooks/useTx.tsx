@@ -14,6 +14,7 @@ import {useCallback, useMemo, useState} from "react";
 interface TxOptions {
     fee?: StdFee | null;
     onSuccess?: (res: DeliverTxResponse) => void;
+    onFailure?: (err: string) => void;
     memo?: string;
     progressTrackerTimeout?: number
 }
@@ -137,14 +138,25 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
                 if (isDeliverTxSuccess(resp)) {
                     setProgressTrack("Transaction sent")
                     toast.clickableSuccess(TxStatus.Successful, () => {openExternalLink(`${getChainExplorerURL(chainName ?? defaultChainName)}/tx/${resp.transactionHash}`)}, 'View in Explorer');
+
+                    if (options?.onSuccess) {
+                        options.onSuccess(resp)
+                    }
                 } else {
                     setProgressTrack("Transaction failed")
                     toast.error(TxStatus.Failed, prettyError(resp?.rawLog));
+                    if (options?.onFailure) {
+                        options.onFailure(prettyError(resp?.rawLog) || "Unknown error")
+                    }
                 }
             } catch (e) {
                 console.error(e);
                 // @ts-expect-error - small chances for e to be undefined
                 toast.error(TxStatus.Failed, prettyError(e?.message));
+                if (options?.onFailure) {
+                    // @ts-expect-error - small chances for e to be undefined
+                    options.onFailure(prettyError(e?.message) || "Unknown error")
+                }
             }
         }
         toast.dismiss(broadcastToastId);
