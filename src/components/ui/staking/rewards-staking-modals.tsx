@@ -25,6 +25,10 @@ import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
 import {useBalance} from "@/hooks/useBalances";
 import {sanitizeNumberInput} from "@/utils/number";
 import BigNumber from "bignumber.js";
+import {useBZETx} from "@/hooks/useTx";
+import {bze} from "@bze/bzejs";
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
@@ -36,17 +40,21 @@ interface RewardsStakingActionModalProps {
     stakingReward?: StakingRewardSDKType;
     userStake?: StakingRewardParticipantSDKType;
     userUnlocking?: ExtendedPendingUnlockParticipantSDKType;
+    onActionPerformed?: () => void;
 }
 
-export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, userUnlocking}: RewardsStakingActionModalProps) => {
+export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, userUnlocking, onActionPerformed}: RewardsStakingActionModalProps) => {
     const [modalType, setModalType] = useState(MODAL_TYPE_ACTIONS);
     const [stakeAmount, setStakeAmount] = useState('');
     const [formError, setFormError] = useState('')
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const {asset: stakingAsset, isLoading: stakingAssetIsLoading} = useAsset(stakingReward?.staking_denom ?? '')
     const {asset: prizeAsset, isLoading: prizeAssetIsLoading} = useAsset(stakingReward?.prize_denom ?? '')
     const {denomTicker, isLoading: isLoadingAssets} = useAssets()
     const {balance: stakingAssetBalance} = useBalance(stakingReward?.staking_denom ?? '')
+    const {address} = useChain(getChainName())
+    const {tx, progressTrack} = useBZETx()
 
     const actionsModalTitle = useMemo(() => {
         if (!stakingReward) return 'Actions';
@@ -65,12 +73,18 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
         setModalType(type);
     };
 
+    const minStakeAmount = useMemo(() => {
+        if (!stakingReward || !stakingAsset) return new BigNumber(0);
+
+        return uAmountToBigNumberAmount(stakingReward?.min_stake, stakingAsset?.decimals || 0)
+    }, [stakingReward, stakingAsset])
+
     const prettyMinStake = useMemo(() => {
         if (!stakingReward || !stakingAsset) return 'Amount to stake';
         if (!!userStake) return 'Amount to stake';
 
-        return `Min: ${prettyAmount(uAmountToBigNumberAmount(stakingReward?.min_stake, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
-    }, [stakingReward, stakingAsset, userStake])
+        return `Min: ${prettyAmount(minStakeAmount)} ${stakingAsset?.ticker}`
+    }, [stakingReward, stakingAsset, userStake, minStakeAmount])
 
     const hasUserStake = useMemo(() => !!userStake, [userStake])
     const hasPendingRewards = useMemo(() => {
@@ -153,13 +167,54 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
             return;
         }
 
-        if (stakeAmountBN.lt(stakingReward.min_stake)) {
-            setFormError(`Min stake is ${prettyAmount(uAmountToAmount(stakingReward.min_stake, stakingAsset?.decimals || 0))}`)
+        if (stakeAmountBN.lt(minStakeAmount)) {
+            setFormError(`Min stake is ${prettyAmount(minStakeAmount)} ${stakingAsset?.ticker}`)
             return;
         }
 
         setFormError('')
-    }, [stakingReward, stakingAsset, stakeAmount, hasUserStake, userStakingAssetBalance])
+    }, [stakingReward, stakingAsset, stakeAmount, hasUserStake, userStakingAssetBalance, minStakeAmount])
+
+    const handleConfirmStake = useCallback(async () => {
+        if (!stakingReward || !stakeAmount) return;
+
+        if (!address) {
+            setFormError('No wallet connected')
+            return;
+        }
+
+        const uStakeAmount = amountToBigNumberUAmount(stakeAmount, stakingAsset?.decimals || 0).integerValue()
+        if (uStakeAmount.isNaN() || uStakeAmount.isZero()) {
+            setFormError('Invalid stake amount provided')
+            return;
+        }
+
+        if (!userStake && uStakeAmount.lt(stakingReward.min_stake)) {
+            setFormError(`Min stake is ${prettyAmount(minStakeAmount)}`)
+            return;
+        }
+
+        if (!stakingAssetBalance || uStakeAmount.gt(stakingAssetBalance.amount)) {
+            setFormError('Insufficient balance')
+            return;
+        }
+
+        setIsSubmitting(true)
+        const {joinStaking} = bze.rewards.MessageComposer.withTypeUrl;
+        const msg = joinStaking({
+            creator: address,
+            rewardId: stakingReward.reward_id,
+            amount: uStakeAmount.toString()
+        })
+
+        await tx([msg])
+
+        if (onActionPerformed) {
+            onActionPerformed()
+        }
+
+        setIsSubmitting(false)
+    }, [stakingReward, stakeAmount, address, stakingAsset, userStake, userStakingAssetBalance, tx, minStakeAmount])
 
     return (
         <Skeleton asChild loading={stakingAssetIsLoading || prizeAssetIsLoading || isLoadingAssets}>
@@ -291,11 +346,12 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                             onBlur={validateStakeAmount}
                                             type="text"
                                             size="sm"
+                                            disabled={isSubmitting}
                                         />
                                         <Button variant="outline"
                                                 size="sm"
                                                 onClick={() => {setStakeAmount(userStakingAssetBalance)}}
-                                                disabled={stakingAssetBalance.amount.isZero()}
+                                                disabled={stakingAssetBalance.amount.isZero() || isSubmitting}
                                         >
                                             Max
                                         </Button>
@@ -317,7 +373,14 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                     </Alert.Root>
                                 )}
 
-                                <Button colorPalette="blue" width="full" disabled={!stakeAmount || stakingAssetBalance.amount.isZero()}>
+                                <Button
+                                    colorPalette="blue"
+                                    width="full"
+                                    disabled={!stakeAmount || stakingAssetBalance.amount.isZero()}
+                                    loading={isSubmitting}
+                                    loadingText={progressTrack}
+                                    onClick={handleConfirmStake}
+                                >
                                     Confirm Stake
                                 </Button>
                             </VStack>

@@ -72,6 +72,10 @@ const StakingPage = () => {
         setSelectedStaking(undefined);
     };
 
+    const onModalAction = () => {
+        reloadRewardsStaking()
+        closeModal()
+    }
 
     useEffect(() => {
         const reloadInterval = setInterval(() => {
@@ -157,6 +161,7 @@ const StakingPage = () => {
                         userStake={addressData?.active.get(selectedStaking?.reward_id ?? '')}
                         userUnlocking={addressData?.unlocking.get(selectedStaking?.reward_id ?? '')}
                         onClose={closeModal}
+                        onActionPerformed={onModalAction}
                     />)}
             </VStack>
         </Container>

@@ -38,8 +38,8 @@ export const useSDKTx = (chainName?: string) => {
     }
 }
 
-export const useBZETx = (chainName?: string) => {
-    const {tx, progressTrack} = useTx(chainName ?? getChainName(), false, false);
+export const useBZETx = () => {
+    const {tx, progressTrack} = useTx(getChainName(), false, false);
 
     return {
         tx,
