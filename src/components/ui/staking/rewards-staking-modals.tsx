@@ -1,6 +1,20 @@
-import {Alert, Box, Button, Card, Heading, HStack, Input, Skeleton, Stack, Text, VStack} from "@chakra-ui/react";
+import {
+    Alert,
+    Box,
+    Button,
+    Card,
+    Field,
+    Group,
+    Heading,
+    HStack,
+    Input,
+    Skeleton,
+    Stack,
+    Text,
+    VStack
+} from "@chakra-ui/react";
 import {LuGift, LuLock, LuLockOpen} from "react-icons/lu";
-import React, {useMemo, useState} from "react";
+import React, {useCallback, useMemo, useState} from "react";
 import {StakingRewardParticipantSDKType, StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {shortNumberFormat} from "@/utils/formatter";
@@ -27,6 +41,7 @@ interface RewardsStakingActionModalProps {
 export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, userUnlocking}: RewardsStakingActionModalProps) => {
     const [modalType, setModalType] = useState(MODAL_TYPE_ACTIONS);
     const [stakeAmount, setStakeAmount] = useState('');
+    const [formError, setFormError] = useState('')
 
     const {asset: stakingAsset, isLoading: stakingAssetIsLoading} = useAsset(stakingReward?.staking_denom ?? '')
     const {asset: prizeAsset, isLoading: prizeAssetIsLoading} = useAsset(stakingReward?.prize_denom ?? '')
@@ -42,6 +57,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     const onCloseClick = () => {
         setModalType(MODAL_TYPE_ACTIONS);
         setStakeAmount('');
+        setFormError('');
         onClose();
     }
 
@@ -50,8 +66,11 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     };
 
     const prettyMinStake = useMemo(() => {
-        return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.min_stake, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
-    }, [stakingReward, stakingAsset])
+        if (!stakingReward || !stakingAsset) return 'Amount to stake';
+        if (!!userStake) return 'Amount to stake';
+
+        return `Min: ${prettyAmount(uAmountToBigNumberAmount(stakingReward?.min_stake, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
+    }, [stakingReward, stakingAsset, userStake])
 
     const hasUserStake = useMemo(() => !!userStake, [userStake])
     const hasPendingRewards = useMemo(() => {
@@ -109,8 +128,38 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     const userStakingAssetBalance = useMemo(() => {
         if (!stakingAssetBalance || !stakingAsset) return '0';
 
-        return `${prettyAmount(uAmountToAmount(stakingAssetBalance?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
+        return uAmountToAmount(stakingAssetBalance?.amount, stakingAsset?.decimals || 0)
     }, [stakingAssetBalance, stakingAsset])
+
+    const userStakingAssetPrettyBalance = useMemo(() => {
+        return `${prettyAmount(userStakingAssetBalance)} ${stakingAsset?.ticker}`
+    }, [userStakingAssetBalance, stakingAsset])
+
+    const validateStakeAmount = useCallback(() => {
+        if (!stakeAmount || !stakingReward) {
+            setFormError('')
+            return;
+        }
+
+        const stakeAmountBN = new BigNumber(stakeAmount)
+        if (stakeAmountBN.gt(userStakingAssetBalance)) {
+            setFormError('Insufficient balance')
+            return;
+        }
+
+        //do not validate MIN staking amount if the user is already staking this asset on this staking reward
+        if (hasUserStake) {
+            setFormError('')
+            return;
+        }
+
+        if (stakeAmountBN.lt(stakingReward.min_stake)) {
+            setFormError(`Min stake is ${prettyAmount(uAmountToAmount(stakingReward.min_stake, stakingAsset?.decimals || 0))}`)
+            return;
+        }
+
+        setFormError('')
+    }, [stakingReward, stakingAsset, stakeAmount, hasUserStake, userStakingAssetBalance])
 
     return (
         <Skeleton asChild loading={stakingAssetIsLoading || prizeAssetIsLoading || isLoadingAssets}>
@@ -161,7 +210,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         <HStack justify="space-between" width="full">
                                             <Text fontWeight="medium">Balance:</Text>
                                             <VStack gap="0">
-                                                <Text fontWeight="bold">{userStakingAssetBalance}</Text>
+                                                <Text fontWeight="bold">{userStakingAssetPrettyBalance}</Text>
                                             </VStack>
                                         </HStack>
                                         {hasUserStake && (
@@ -192,7 +241,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         flex="1"
                                         colorPalette="blue"
                                         onClick={() => openModal('stake')}
-                                        disabled={stakingAssetBalance.amount.isZero()}
                                     >
                                         <HStack gap="2">
                                             <LuLock size={16} />
@@ -230,13 +278,27 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                         {modalType === MODAL_TYPE_STAKE && stakingReward && (
                             <VStack gap="4">
                                 <Text>Enter the amount you want to stake:</Text>
-                                <Input
-                                    placeholder={`Min: ${prettyMinStake}`}
-                                    value={stakeAmount}
-                                    onChange={(e) => setStakeAmount(sanitizeNumberInput(e.target.value))}
-                                    type="text"
-                                />
-
+                                <Field.Root invalid={formError !== ''}>
+                                    <Group attached w="full" maxW="sm">
+                                        <Input
+                                            autoComplete="off"
+                                            placeholder={prettyMinStake}
+                                            value={stakeAmount}
+                                            onChange={(e) => setStakeAmount(sanitizeNumberInput(e.target.value))}
+                                            onBlur={validateStakeAmount}
+                                            type="text"
+                                            size="sm"
+                                        />
+                                        <Button variant="outline"
+                                                size="sm"
+                                                onClick={() => {setStakeAmount(userStakingAssetBalance)}}
+                                                disabled={stakingAssetBalance.amount.isZero()}
+                                        >
+                                            Max
+                                        </Button>
+                                    </Group>
+                                    <Field.ErrorText>{formError}</Field.ErrorText>
+                                </Field.Root>
                                 {stakeAmount && (
                                     <Alert.Root status="success" variant="subtle">
                                         <Alert.Indicator />
@@ -252,7 +314,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                     </Alert.Root>
                                 )}
 
-                                <Button colorPalette="blue" width="full" disabled={!stakeAmount}>
+                                <Button colorPalette="blue" width="full" disabled={!stakeAmount || stakingAssetBalance.amount.isZero()}>
                                     Confirm Stake
                                 </Button>
                             </VStack>
