@@ -45,12 +45,22 @@ export function useAssets() {
         return asset.ticker
     }, [assets])
 
+    const denomDecimals = useCallback((denom: string) => {
+        const asset = assets.find(a => a.denom === denom)
+        if (!asset) {
+            return 0
+        }
+
+        return asset.decimals
+    }, [assets])
+
     return {
         assets,
         isLoading,
         nativeAsset,
         isVerifiedAsset,
         denomTicker,
+        denomDecimals,
     };
 }
 

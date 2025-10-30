@@ -218,6 +218,10 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
                 continue
             }
 
+            // Note: Aggregator has the price already transformed (and the amounts - not that it matters)
+            // TODO: If the price is obtained from the blockchain (the market pair history) we need to make sure that
+            //  price is converted if the two assets in the market pair have different exponent (different decimals)
+
             //we have a USD market and a BZE market -> return the average of the two prices
             pricesMap.set(asset.denom, priceInUsd.plus(priceInUsdFromBze).dividedBy(2))
         }

@@ -22,6 +22,10 @@ import {useAssets} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {RewardsStakingActionModal} from "@/components/ui/staking/rewards-staking-modals";
+import {PrettyBalance} from "@/types/balance";
+import {uAmountToBigNumberAmount} from "@/utils/amount";
+import {useAssetsValue} from "@/hooks/useAssetsValue";
+import {shortNumberFormat} from "@/utils/formatter";
 
 //150 seconds
 const STAKING_DATA_RELOAD_INTERVAL = 150_000;
@@ -33,7 +37,8 @@ const StakingPage = () => {
 
     const {stakingData, isLoading, reload} = useNativeStakingData()
     const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
-    const {isVerifiedAsset, denomTicker} = useAssets()
+    const {isVerifiedAsset, denomTicker, nativeAsset, denomDecimals} = useAssets()
+    const {totalUsdValue} = useAssetsValue()
 
     const stakingCount = useMemo(() => {
         let totalCount = 0
@@ -75,7 +80,7 @@ const StakingPage = () => {
 
             return 0
         })
-    }, [stakingRewards, searchTerm, addressData, isVerifiedAsset]);
+    }, [stakingRewards, searchTerm, addressData, isVerifiedAsset, denomTicker]);
 
     // Memoize modal handlers
     const openModal = useCallback((staking: StakingRewardSDKType) => {
@@ -92,6 +97,32 @@ const StakingPage = () => {
         reloadRewardsStaking()
         closeModal()
     }, [reloadRewardsStaking, closeModal]);
+
+    const stakedUsdValue = useMemo(() => {
+        if (!stakingData || !stakingRewards || !nativeAsset) return new BigNumber(0);
+
+        const result: PrettyBalance[] = []
+        const bzeAmount = uAmountToBigNumberAmount(stakingData.totalStaked.amount, nativeAsset.decimals || 6)
+        if (bzeAmount) {
+            result.push({
+                amount: bzeAmount,
+                denom: nativeAsset.denom
+            })
+        }
+
+        if (!stakingRewards) return totalUsdValue(result);
+
+        stakingRewards.forEach(sr => {
+            const balance = {
+                amount: uAmountToBigNumberAmount(sr.staked_amount || 0, denomDecimals(sr.staking_denom)),
+                denom: sr.staking_denom
+            }
+
+            result.push(balance)
+        })
+
+        return totalUsdValue(result)
+    }, [stakingData, stakingRewards, nativeAsset, denomDecimals, totalUsdValue])
 
     useEffect(() => {
         const reloadInterval = setInterval(() => {
@@ -129,7 +160,7 @@ const StakingPage = () => {
                         <Card.Body>
                             <VStack align="start">
                                 <Text color="gray.600">Total Value Staked</Text>
-                                <Text fontSize="2xl" fontWeight="bold">$2.8M</Text>
+                                <Text fontSize="2xl" fontWeight="bold">~${shortNumberFormat(stakedUsdValue)}</Text>
                                 <Text fontSize="sm" color="green.500">+12.5% this month</Text>
                             </VStack>
                         </Card.Body>
