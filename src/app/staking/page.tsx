@@ -8,7 +8,7 @@ import {
     Input,
     Card,
     VStack,
-    Grid,
+    Grid, Skeleton,
 } from '@chakra-ui/react';
 import {
     LuSearch,
@@ -23,9 +23,10 @@ import BigNumber from "bignumber.js";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {RewardsStakingActionModal} from "@/components/ui/staking/rewards-staking-modals";
 import {PrettyBalance} from "@/types/balance";
-import {uAmountToBigNumberAmount} from "@/utils/amount";
+import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {shortNumberFormat} from "@/utils/formatter";
+import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
 
 //150 seconds
 const STAKING_DATA_RELOAD_INTERVAL = 150_000;
@@ -34,6 +35,16 @@ const StakingPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStaking, setSelectedStaking] = useState<StakingRewardSDKType | undefined>();
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // summary
+    const [summaryLoading, setSummaryLoading] = useState(true);
+    const [stakedUsdValue, setStakedUsdValue] = useState<BigNumber>(new BigNumber(0));
+    //the total amount of BZE pending rewards (from any kind of staking - native or staking reward)
+    const [pendingBzeRedwards, setPendingBzeRewards] = useState<BigNumber>(new BigNumber(0));
+    // the total value of the pending rewards in USDC (BZE + other rewards)
+    const [pendingUsdRewards, setPendingUsdRewards] = useState<BigNumber>(new BigNumber(0));
+    // the number of other unique assets in pending rewards
+    const [pendingOtherRewards, setPendingOtherRewards] = useState<number>(0);
 
     const {stakingData, isLoading, reload} = useNativeStakingData()
     const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
@@ -51,7 +62,6 @@ const StakingPage = () => {
         return totalCount + addressData.active.size
     }, [stakingData, addressData])
 
-    // Memoize the filtered and sorted opportunities
     const filteredOpportunities = useMemo(() => {
         return stakingRewards.filter(
             sr =>
@@ -82,7 +92,6 @@ const StakingPage = () => {
         })
     }, [stakingRewards, searchTerm, addressData, isVerifiedAsset, denomTicker]);
 
-    // Memoize modal handlers
     const openModal = useCallback((staking: StakingRewardSDKType) => {
         setSelectedStaking(staking);
         setIsModalOpen(true);
@@ -93,36 +102,85 @@ const StakingPage = () => {
         setSelectedStaking(undefined);
     }, []);
 
-    const onModalAction = useCallback(() => {
-        reloadRewardsStaking()
-        closeModal()
-    }, [reloadRewardsStaking, closeModal]);
+    const loadSummary = useCallback(() => {
+        if (!stakingData || !stakingRewards || !nativeAsset) return;
 
-    const stakedUsdValue = useMemo(() => {
-        if (!stakingData || !stakingRewards || !nativeAsset) return new BigNumber(0);
-
-        const result: PrettyBalance[] = []
+        const totalStaked: PrettyBalance[] = []
         const bzeAmount = uAmountToBigNumberAmount(stakingData.totalStaked.amount, nativeAsset.decimals || 6)
         if (bzeAmount) {
-            result.push({
+            totalStaked.push({
                 amount: bzeAmount,
                 denom: nativeAsset.denom
             })
         }
 
-        if (!stakingRewards) return totalUsdValue(result);
-
+        // initialize pending rewards in BZE to the native staking pending rewards
+        let pendingBzeAmount = uAmountToBigNumberAmount(stakingData.currentStaking?.pendingRewards.total.amount || new BigNumber(0), nativeAsset.decimals)
+        let pendingRewardsAssetsCount = 0;
+        const totalPending: Map<string, PrettyBalance> = new Map<string, PrettyBalance>();
         stakingRewards.forEach(sr => {
             const balance = {
                 amount: uAmountToBigNumberAmount(sr.staked_amount || 0, denomDecimals(sr.staking_denom)),
                 denom: sr.staking_denom
             }
 
-            result.push(balance)
+            totalStaked.push(balance)
+            const userStake = addressData?.active.get(sr.reward_id)
+            if (!userStake) return;
+
+            const pendingRewards = calculateRewardsStakingPendingRewards(sr, userStake)
+            if (pendingRewards.isNaN() || pendingRewards.isZero()) return;
+
+            let pendingRewardsAmount = uAmountToBigNumberAmount(pendingRewards, denomDecimals(sr.prize_denom))
+            if (sr.prize_denom === nativeAsset.denom) {
+                pendingBzeAmount = pendingBzeAmount.plus(pendingRewardsAmount)
+                return
+            }
+
+            pendingRewardsAssetsCount += 1;
+            if (totalPending.has(sr.prize_denom)) {
+                const existingPending = totalPending.get(sr.prize_denom)
+                if (existingPending) {
+                    pendingRewardsAmount = pendingRewardsAmount.plus(existingPending.amount)
+                }
+            }
+
+            totalPending.set(
+                sr.prize_denom,
+                {
+                    amount: pendingRewardsAmount,
+                    denom: sr.prize_denom
+                }
+            )
         })
 
-        return totalUsdValue(result)
-    }, [stakingData, stakingRewards, nativeAsset, denomDecimals, totalUsdValue])
+        if (pendingBzeAmount.gt(0)) {
+            totalPending.set(
+                nativeAsset.denom,
+                {
+                    amount: pendingBzeAmount,
+                    denom: nativeAsset.denom
+                }
+            )
+        }
+
+        setPendingOtherRewards(pendingRewardsAssetsCount)
+        setPendingBzeRewards(pendingBzeAmount)
+        setStakedUsdValue(totalUsdValue(totalStaked))
+        setPendingUsdRewards(totalUsdValue(Array.from(totalPending.values())))
+
+        setSummaryLoading(false)
+    }, [stakingData, stakingRewards, nativeAsset, denomDecimals, totalUsdValue, addressData])
+
+    const onModalAction = useCallback(() => {
+        reloadRewardsStaking()
+        closeModal()
+        loadSummary()
+    }, [reloadRewardsStaking, closeModal, loadSummary]);
+
+    useEffect(() => {
+        loadSummary()
+    }, [loadSummary])
 
     useEffect(() => {
         const reloadInterval = setInterval(() => {
@@ -160,8 +218,10 @@ const StakingPage = () => {
                         <Card.Body>
                             <VStack align="start">
                                 <Text color="gray.600">Total Value Staked</Text>
-                                <Text fontSize="2xl" fontWeight="bold">~${shortNumberFormat(stakedUsdValue)}</Text>
-                                <Text fontSize="sm" color="green.500">+12.5% this month</Text>
+                                <Skeleton asChild loading={summaryLoading}>
+                                    <Text fontSize="2xl" fontWeight="bold">~${shortNumberFormat(stakedUsdValue)}</Text>
+                                </Skeleton>
+                                {/*<Text fontSize="sm" color="green.500">+12.5% this month</Text>*/}
                             </VStack>
                         </Card.Body>
                     </Card.Root>
@@ -170,7 +230,9 @@ const StakingPage = () => {
                         <Card.Body>
                             <VStack align="start">
                                 <Text color="gray.600">Your Active Stakes</Text>
-                                <Text fontSize="2xl" fontWeight="bold">{stakingCount}</Text>
+                                <Skeleton asChild loading={summaryLoading}>
+                                    <Text fontSize="2xl" fontWeight="bold">{stakingCount}</Text>
+                                </Skeleton>
                                 <Text fontSize="sm" color="blue.500">Earning rewards</Text>
                             </VStack>
                         </Card.Body>
@@ -180,8 +242,15 @@ const StakingPage = () => {
                         <Card.Body>
                             <VStack align="start">
                                 <Text color="gray.600">Unclaimed Rewards</Text>
-                                <Text fontSize="2xl" fontWeight="bold">246.23 BZE</Text>
-                                <Text fontSize="sm" color="green.500">≈ $492.46</Text>
+                                <Skeleton asChild loading={summaryLoading}>
+                                    <Box display="flex" alignItems="baseline" gap="1">
+                                        <Text fontSize="2xl" fontWeight="bold">{prettyAmount(pendingBzeRedwards)} {nativeAsset?.ticker}</Text>
+                                        {pendingOtherRewards > 0 && (<Text fontSize="sm">{` + ${pendingOtherRewards} others`}</Text>)}
+                                    </Box>
+                                </Skeleton>
+                                <Skeleton asChild loading={summaryLoading}>
+                                    <Text fontSize="sm" color="blue.500">≈ ${prettyAmount(pendingUsdRewards)}</Text>
+                                </Skeleton>
                             </VStack>
                         </Card.Body>
                     </Card.Root>
