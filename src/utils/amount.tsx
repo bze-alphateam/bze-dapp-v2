@@ -1,4 +1,8 @@
+"use client";
+
 import BigNumber from 'bignumber.js';
+
+const MAX_PRICE_DECIMALS = 14;
 
 export function toBigNumber(amount: string | number | BigNumber | bigint): BigNumber {
     if (typeof amount === "string" || typeof amount === "number" || typeof amount === "bigint") {
@@ -35,4 +39,24 @@ export function prettyAmount(amount: number | string | BigNumber | bigint): stri
     }
 
     return Intl.NumberFormat('en', {notation: 'standard'}).format(num.toNumber());
+}
+
+export const priceToUPrice = (price: BigNumber, quoteExponent: number, baseExponent: number): string => {
+    return priceToBigNumberUPrice(price, quoteExponent, baseExponent).toFixed(MAX_PRICE_DECIMALS).toString();
+}
+
+export const priceToBigNumberUPrice = (price: BigNumber | number | string, quoteExponent: number, baseExponent: number): BigNumber => {
+    price = toBigNumber(price);
+
+    return price.multipliedBy(Math.pow(10, (quoteExponent - baseExponent)));
+}
+
+export const uPriceToPrice = (price: BigNumber, quoteExponent: number, baseExponent: number): string => {
+    return uPriceToBigNumberPrice(price, quoteExponent, baseExponent).toString()
+}
+
+export const uPriceToBigNumberPrice = (price: BigNumber|number|bigint|string, quoteExponent: number, baseExponent: number): BigNumber => {
+    const converted = toBigNumber(price);
+
+    return converted.multipliedBy(Math.pow(10, (baseExponent - quoteExponent)));
 }

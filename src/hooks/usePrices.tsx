@@ -58,6 +58,7 @@ export function useAssetPrice(denom: string) {
         return totalUsdValue(uAmountToBigNumberAmount(amount, decimals))
     }, [totalUsdValue]);
 
+    const isUSDC = useMemo(() => denom === usdDenom, [denom, usdDenom]);
     const hasPrice = useMemo(() => price.gt(0), [price]);
 
     return {
@@ -67,5 +68,6 @@ export function useAssetPrice(denom: string) {
         uAmountUsdValue,
         isLoading: isLoading || isLoadingPrices,
         hasPrice,
+        isUSDC,
     }
 }

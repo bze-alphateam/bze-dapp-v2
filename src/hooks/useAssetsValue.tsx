@@ -18,8 +18,24 @@ export function useAssetsValue() {
         return usdValue
     }, [usdPricesMap])
 
+    const compareValues = useCallback((a: PrettyBalance, b: PrettyBalance) => {
+        let aValue = BigNumber(0)
+        const aPrice = usdPricesMap.get(a.denom)
+        if (aPrice && aPrice.gt(0)) {
+            aValue = aPrice.multipliedBy(a.amount)
+        }
+        let bValue = BigNumber(0)
+        const bPrice = usdPricesMap.get(b.denom)
+        if (bPrice && bPrice.gt(0)) {
+            bValue = bPrice.multipliedBy(b.amount)
+        }
+
+        return aValue.comparedTo(bValue) ?? 0
+    }, [usdPricesMap])
+
     return {
         isLoading: isLoadingPrices,
         totalUsdValue,
+        compareValues,
     }
 }
