@@ -313,7 +313,7 @@ export default function ExchangePage() {
     const [searchTerm, setSearchTerm] = useState('')
     const router = useRouter();
     const {markets, getMarketData, isLoading: isLoadingMarkets} = useMarkets()
-    const {isVerifiedAsset} = useAssets()
+    const {isVerifiedAsset, denomTicker} = useAssets()
     const {compareValues} = useAssetsValue()
 
     const sortedMarkets = useMemo(() => {
@@ -351,10 +351,10 @@ export default function ExchangePage() {
 
         return sortedMarkets
             .filter(market =>
-                market.base.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                market.quote.toLowerCase().includes(searchTerm.toLowerCase())
+                denomTicker(market.base).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                denomTicker(market.quote).toLowerCase().includes(searchTerm.toLowerCase())
             )
-    }, [sortedMarkets, searchTerm])
+    }, [sortedMarkets, searchTerm, denomTicker])
 
     const handleMarketClick = useCallback((market: MarketSDKType) => {
         router.push(`/exchange/market?market_id=${createMarketId(market.base, market.quote)}`)
