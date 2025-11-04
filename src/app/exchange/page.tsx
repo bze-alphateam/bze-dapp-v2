@@ -15,7 +15,6 @@ import {
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import {useCallback, useMemo, useState} from 'react'
 import NextLink from "next/link";
-import {useRouter} from "next/navigation";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useMarkets} from "@/hooks/useMarkets";
@@ -27,60 +26,9 @@ import {MarketData} from "@/types/market";
 import {prettyAmount, uPriceToBigNumberPrice} from "@/utils/amount";
 import {useAssetPrice} from "@/hooks/usePrices";
 import BigNumber from "bignumber.js";
-
-// Mock data for market pairs
-// const mockMarkets = [
-//     {
-//         id: 1,
-//         baseAsset: { symbol: 'BZE', name: 'BeeZee', logo: '/images/bze_alternative_512x512.png' },
-//         quoteAsset: { symbol: 'USDC', name: 'USD Coin', logo: '/images/bze_alternative_512x512.png' },
-//         verified: true,
-//         price: 0.125,
-//         priceChange24h: 5.67,
-//         volume24h: 245678.90,
-//         volumeUSD: 245678.90,
-//     },
-//     {
-//         id: 2,
-//         baseAsset: { symbol: 'BZE', name: 'BeeZee', logo: '/images/token_placeholder.png' },
-//         quoteAsset: { symbol: 'BTC', name: 'Bitcoin', logo: '/images/bze_alternative_512x512.png' },
-//         verified: true,
-//         price: 0.00000298,
-//         priceChange24h: -2.43,
-//         volume24h: 12.45,
-//         volumeUSD: 1245678.90,
-//     },
-//     {
-//         id: 3,
-//         baseAsset: { symbol: 'ETH', name: 'Ethereum', logo: '/images/logo_320px.png' },
-//         quoteAsset: { symbol: 'USDC', name: 'USD Coin', logo: '/images/token.svg' },
-//         verified: true,
-//         price: 2456.78,
-//         priceChange24h: 3.21,
-//         volume24h: 8765432.10,
-//         volumeUSD: 8765432.10,
-//     },
-//     {
-//         id: 4,
-//         baseAsset: { symbol: 'ATOM', name: 'Cosmos', logo: '/images/token.svg' },
-//         quoteAsset: { symbol: 'USDC', name: 'USD Coin', logo: '/images/bze_alternative_512x512.png' },
-//         verified: false,
-//         price: 8.45,
-//         priceChange24h: -1.23,
-//         volume24h: 567890.12,
-//         volumeUSD: 567890.12,
-//     },
-//     {
-//         id: 5,
-//         baseAsset: { symbol: 'OSMO', name: 'Osmosis', logo: '/images/token.svg' },
-//         quoteAsset: { symbol: 'BZE', name: 'BeeZee', logo: '/images/logo_320px.png' },
-//         verified: true,
-//         price: 15.67,
-//         priceChange24h: 8.91,
-//         volume24h: 234567.89,
-//         volumeUSD: 1567890.23,
-//     },
-// ]
+import {VerifiedBadge} from "@/components/ui/badge/verified";
+import {formatUsdAmount} from "@/utils/formatter";
+import {useNavigation} from "@/hooks/useNavigation";
 
 interface MarketRowProps {
     market: MarketSDKType
@@ -100,6 +48,10 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
     const displayVolume = useMemo(() => {
         return marketData?.quote_volume || 0
     }, [marketData])
+
+    const displayUsdVolume = useMemo(() => {
+        return formatUsdAmount(quoteUsdValue(new BigNumber(displayVolume)))
+    }, [displayVolume, quoteUsdValue])
 
     const isVerifiedMarket = useMemo(() => {
         return !!baseAsset?.verified && !!quoteAsset?.verified;
@@ -160,12 +112,7 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
                             <Text fontWeight="bold" fontSize="md">
                                 {baseAsset?.ticker}/{quoteAsset?.ticker}
                             </Text>
-                            <Badge
-                                variant="subtle" colorPalette={isVerifiedMarket? 'blue' : 'gray'}
-                                fontSize="xs"
-                            >
-                                {isVerifiedMarket ? '✓ Verified' : ''}
-                            </Badge>
+                            {isVerifiedMarket && (<VerifiedBadge />)}
                         </HStack>
                         <Text fontSize="xs" color="fg.muted">
                             {baseAsset?.name} / {quoteAsset?.name}
@@ -201,7 +148,7 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
                     </Text>
                     {!quoteIsUSDC && (
                         <Text fontSize="sm" color="fg.muted">
-                            ${quoteUsdValue(new BigNumber(displayVolume)).toString()}
+                            ${displayUsdVolume}
                         </Text>
                     )}
                 </VStack>
@@ -311,10 +258,10 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
 export default function ExchangePage() {
     const [searchTerm, setSearchTerm] = useState('')
-    const router = useRouter();
     const {markets, getMarketData, isLoading: isLoadingMarkets} = useMarkets()
     const {isVerifiedAsset, denomTicker} = useAssets()
     const {compareValues} = useAssetsValue()
+    const {toMarketPage} = useNavigation()
 
     const sortedMarkets = useMemo(() => {
         if (!markets) return [];
@@ -357,9 +304,8 @@ export default function ExchangePage() {
     }, [sortedMarkets, searchTerm, denomTicker])
 
     const handleMarketClick = useCallback((market: MarketSDKType) => {
-        router.push(`/exchange/market?market_id=${createMarketId(market.base, market.quote)}`)
-
-    }, [router])
+        toMarketPage(market.base, market.quote)
+    }, [toMarketPage])
 
     return (
         <Container maxW="7xl" py={8}>

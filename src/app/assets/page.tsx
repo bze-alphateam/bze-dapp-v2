@@ -22,7 +22,7 @@ import {
     LuInfo,
     LuDroplets,
     LuArrowLeftRight,
-    LuSearch, LuShield
+    LuSearch,
 } from 'react-icons/lu'
 import {ListingTitle} from "@/components/ui/listing/title";
 import {Asset} from "@/types/asset";
@@ -34,6 +34,7 @@ import {useAssetMarkets, useMarket} from "@/hooks/useMarkets";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {formatUsdAmount, shortNumberFormat} from "@/utils/formatter";
 import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {VerifiedBadge} from "@/components/ui/badge/verified";
 
 function AssetItemMarkets({ marketId }: { marketId: string }) {
     const { marketSymbol, marketData, isLoading: marketLoading } = useMarket(marketId)
@@ -206,14 +207,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
                             <Badge colorPalette={getTypeColor(asset.type)} size="sm">
                                 {asset.type.toUpperCase()}
                             </Badge>
-                            {asset.verified &&
-                                <Badge colorPalette={'green'} variant="subtle">
-                                    <HStack gap="1">
-                                        <LuShield size={12} />
-                                        <Text>Verified</Text>
-                                    </HStack>
-                                </Badge>
-                            }
+                            {asset.verified && (<VerifiedBadge/>)}
                         </HStack>
                         <Text color="fg.muted" fontSize="sm">
                             {asset.ticker}

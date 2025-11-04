@@ -1,9 +1,29 @@
 import {getPageRequestWithLimit, getRestClient} from "@/query/client";
-import {QueryAllMarketsRequest} from "@bze/bzejs/bze/tradebin/query";
+import {
+    QueryAllMarketsRequest,
+    QueryMarketAggregatedOrdersRequest,
+    QueryMarketAggregatedOrdersResponseSDKType,
+    QueryMarketHistoryResponseSDKType,
+    QueryMarketHistoryRequest,
+    QueryUserMarketOrdersRequest,
+    QueryUserMarketOrdersResponseSDKType,
+    QueryMarketOrderResponseSDKType,
+    QueryMarketOrderRequest,
+} from "@bze/bzejs/bze/tradebin/query";
+import {ORDER_TYPE_BUY, ORDER_TYPE_SELL} from "@/types/market";
+import {PageRequest} from "@bze/bzejs/cosmos/base/query/v1beta1/pagination";
+import {getFromLocalStorage, setInLocalStorage} from "@/storage/storage";
+import {OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
 
 const {fromPartial: AllMarketsRequest} = QueryAllMarketsRequest;
+const {fromPartial: QueryMarketAggregatedOrdersRequestFromPartyal} = QueryMarketAggregatedOrdersRequest;
+const {fromPartial: QueryMarketHistoryRequestFromPartial} = QueryMarketHistoryRequest;
+const {fromPartial: QueryUserMarketOrdersRequestFromPartial} = QueryUserMarketOrdersRequest;
+const {fromPartial: QueryMarketOrderRequestFromPartial} = QueryMarketOrderRequest;
 
 const DEFAULT_LIMIT = 1000;
+const ALL_MARKETS_KEY = 'markets:list';
+const ALL_MARKETS_CACHE_TTL = 60 * 5; //5 minutes
 
 export const getMarkets = async () => {
     try {
@@ -18,4 +38,108 @@ export const getMarkets = async () => {
     }
 
     return []
+}
+
+export async function getMarketBuyOrders(marketId: string): Promise<QueryMarketAggregatedOrdersResponseSDKType> {
+    return getMarketOrders(marketId, ORDER_TYPE_BUY);
+}
+
+export async function getMarketSellOrders(marketId: string): Promise<QueryMarketAggregatedOrdersResponseSDKType> {
+    return getMarketOrders(marketId, ORDER_TYPE_SELL);
+}
+
+export async function getMarketOrders(marketId: string, orderType: string): Promise<QueryMarketAggregatedOrdersResponseSDKType> {
+    try {
+        const reversed = orderType === ORDER_TYPE_BUY;
+        const client = await getRestClient();
+        return client.bze.tradebin.marketAggregatedOrders(QueryMarketAggregatedOrdersRequestFromPartyal({
+            market: marketId,
+            orderType: orderType,
+            pagination: PageRequest.fromPartial({limit: BigInt(15), reverse: reversed})
+        }));
+
+    } catch (e) {
+        console.error(e);
+
+        return {list: []};
+    }
+}
+
+export async function getMarketHistory(marketId: string): Promise<QueryMarketHistoryResponseSDKType> {
+    try {
+        const client = await getRestClient();
+
+        return client.bze.tradebin.marketHistory(QueryMarketHistoryRequestFromPartial({
+            market: marketId,
+            pagination: PageRequest.fromPartial({limit: BigInt(50), reverse: true})
+        }));
+    } catch (e) {
+        console.error(e);
+
+        return {list: []};
+    }
+}
+
+
+export async function getAddressMarketOrders(marketId: string, address: string): Promise<QueryUserMarketOrdersResponseSDKType> {
+    try {
+        const client = await getRestClient();
+
+        return client.bze.tradebin.userMarketOrders(QueryUserMarketOrdersRequestFromPartial({
+            market: marketId,
+            address: address,
+            pagination: PageRequest.fromPartial({limit: BigInt(100), reverse: true})
+        }));
+    } catch (e) {
+        console.error(e);
+
+        return {list: []};
+    }
+}
+
+export async function getAddressFullMarketOrders(marketId: string, address: string): Promise<OrderSDKType[]> {
+    const addressOrders = await getAddressMarketOrders(marketId, address);
+    console.log("addressOrders", addressOrders);
+    if (addressOrders.list.length === 0) {
+        return [];
+    }
+
+    const promises = [];
+    for (const reference of addressOrders.list) {
+        promises.push(getMarketOrder(reference.market_id, reference.order_type, reference.id))
+    }
+
+    const orders = await Promise.all(promises);
+console.log("orders", orders);
+    return orders.filter((item) => item !== undefined).map(resp => resp.order) as OrderSDKType[];
+}
+
+
+export async function getMarketOrder(marketId: string, orderType: string, orderId: string): Promise<QueryMarketOrderResponseSDKType|undefined> {
+    try {
+        const cacheKey = `${ALL_MARKETS_KEY}${marketId}:${orderType}:${orderId}`;
+        const localData = getFromLocalStorage(cacheKey);
+        if (null !== localData) {
+            const parsed = JSON.parse(localData);
+            if (parsed) {
+
+                return parsed;
+            }
+        }
+
+        const client = await getRestClient();
+        const response = await client.bze.tradebin.marketOrder(QueryMarketOrderRequestFromPartial({
+            market: marketId,
+            orderType: orderType,
+            orderId: orderId
+        }));
+
+        setInLocalStorage(cacheKey, JSON.stringify(response), ALL_MARKETS_CACHE_TTL);
+
+        return response;
+    } catch (e) {
+        console.error(e);
+
+        return undefined;
+    }
 }

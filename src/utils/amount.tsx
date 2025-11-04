@@ -51,8 +51,8 @@ export const priceToBigNumberUPrice = (price: BigNumber | number | string, quote
     return price.multipliedBy(Math.pow(10, (quoteExponent - baseExponent)));
 }
 
-export const uPriceToPrice = (price: BigNumber, quoteExponent: number, baseExponent: number): string => {
-    return uPriceToBigNumberPrice(price, quoteExponent, baseExponent).toString()
+export const uPriceToPrice = (price: BigNumber | string, quoteExponent: number, baseExponent: number): string => {
+    return uPriceToBigNumberPrice(toBigNumber(price), quoteExponent, baseExponent).toString()
 }
 
 export const uPriceToBigNumberPrice = (price: BigNumber|number|bigint|string, quoteExponent: number, baseExponent: number): BigNumber => {

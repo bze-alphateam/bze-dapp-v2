@@ -1,6 +1,6 @@
 import { Link, Stack, type StackProps } from '@chakra-ui/react'
-import {usePathname, useRouter} from 'next/navigation'
 import NextLink from 'next/link'
+import {useNavigation} from "@/hooks/useNavigation";
 
 interface NavbarLinksProps extends StackProps {
     onLinkClick?: () => void
@@ -21,18 +21,17 @@ const navSubitems: { [key: string]: string } = {
 }
 
 export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {
-    const pathname = usePathname()
-    const router = useRouter()
+    const {navigate, currentPathName} = useNavigation()
 
     const handleClick = (path: string) => {
-        router.push(path)
+        navigate(path)
         if (onLinkClick) onLinkClick()
     }
 
     return (
         <Stack direction={{ base: 'column', md: 'row' }} gap={{ base: '6', md: '8' }} {...props}>
             {navItems.map((item) => {
-                const isActive = pathname === item.href || item.href === navSubitems[pathname]
+                const isActive = currentPathName === item.href || item.href === navSubitems[currentPathName]
 
                 return (
                     <Link

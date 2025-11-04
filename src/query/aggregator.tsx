@@ -12,7 +12,7 @@ const getHistoryUrl = (): string => {
 
 export async function getAllTickers(): Promise<MarketData[]> {
     //testing data
-    // return JSON.parse('[{"base":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote":"ubze","market_id":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518/ubze","last_price":190,"base_volume":346.014664,"quote_volume":91079.34488,"bid":185,"ask":245,"high":320,"low":185,"open_price":220,"change":-13.64},{"base":"factory/testbz1972aqfzdg29ugjln74edx0xvcg4ehvyssefa8g/testrtl","quote":"utbz","market_id":"factory/testbz1972aqfzdg29ugjln74edx0xvcg4ehvyssefa8g/testrtl/utbz","last_price":0.0009,"base_volume":3265721.594258,"quote_volume":3000.313867,"bid":0.00089,"ask":0.00092,"high":0.00099,"low":0.00086,"open_price":0.0009,"change":-2.32}]')
+    // return JSON.parse('[{"base":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518","quote":"ubze","market_id":"ibc/ED07A3391A112B175915CD8FAF43A2DA8E4790EDE12566649D0C2F97716B8518/ubze","last_price":190,"base_volume":346.014664,"quote_volume":91079.34488,"bid":185,"ask":245,"high":320,"low":185,"open_price":220,"change":-13.64},{"base":"factory/testbz1972aqfzdg29ugjln74edx0xvcg4ehvyssefa8g/testrtl","quote":"utbz","market_id":"factory/testbz1972aqfzdg29ugjln74edx0xvcg4ehvyssefa8g/testrtl/utbz","last_price":0.0009,"base_volume":3265721.594258,"quote_volume":3000.313867,"bid":0.00089,"ask":0.00092,"high":0.00099,"low":0.00086,"open_price":0.0009,"change":-2.32},{"base":"factory/testbz1z3mkcr2jz424w6m49frgjmy9uhlrx69p4cvrgf/bitcoinz","quote":"utbz","market_id":"factory/testbz1z3mkcr2jz424w6m49frgjmy9uhlrx69p4cvrgf/bitcoinz/utbz","last_price":0.2009,"base_volume":9265721.594258,"quote_volume":6000.313867,"bid":0.00089,"ask":0.00092,"high":0.00099,"low":0.00086,"open_price":0.0009,"change":129.32}]')
 
     try {
         const resp = await fetch(getAllTickersUrl());
@@ -39,6 +39,21 @@ export async function getMarketOrdersHistory(marketId: string, limit: number = 1
         return await resp.json();
     } catch (e) {
         console.error("[AGG] failed to fetch market orders", e);
+        return [];
+    }
+}
+
+export async function getAddressHistory(address: string, market: string): Promise<HistoryOrder[]> {
+    try {
+        const url = `${getHistoryUrl()}?address=${address}&market_id=${market}&limit=100`;
+        const resp = await fetch(url);
+        if (resp.status !== 200) {
+            return [];
+        }
+
+        return await resp.json();
+    } catch (e) {
+        console.error("failed to fetch address orders", e);
         return [];
     }
 }

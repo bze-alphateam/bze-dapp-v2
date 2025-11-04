@@ -67,3 +67,12 @@ export function shortNumberFormat(amount: BigNumber): string {
     // For numbers below 1000, show the entire number with up to 3 decimals
     return amount.toFixed(3).replace(/\.?0+$/, '');
 }
+
+export const intlDateFormat = new Intl.DateTimeFormat("en-US", {
+    year: "2-digit",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: false,
+});

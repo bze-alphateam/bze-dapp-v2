@@ -1,4 +1,7 @@
-import {MarketSDKType} from "@bze/bzejs/bze/tradebin/store";
+import {AggregatedOrderSDKType, MarketSDKType} from "@bze/bzejs/bze/tradebin/store";
+
+export const ORDER_TYPE_BUY = 'buy';
+export const ORDER_TYPE_SELL = 'sell';
 
 export type Market = MarketSDKType
 
@@ -15,4 +18,9 @@ export interface MarketData {
     low: number;
     open_price: number;
     change: number;
+}
+
+export interface ActiveOrders {
+    buyOrders: AggregatedOrderSDKType[];
+    sellOrders: AggregatedOrderSDKType[];
 }

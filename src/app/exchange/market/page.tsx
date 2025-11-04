@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import {Suspense, useCallback, useEffect, useMemo, useState} from 'react';
 import {
     Box,
     Container,
@@ -15,9 +14,34 @@ import {
     Flex,
 } from '@chakra-ui/react';
 import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft } from 'react-icons/lu';
+import {useNavigationWithParams} from "@/hooks/useNavigation";
+import {useMarket} from "@/hooks/useMarkets";
+import {useAsset} from "@/hooks/useAssets";
+import {prettyAmount, uAmountToAmount, uPriceToPrice} from "@/utils/amount";
+import {
+    getAddressFullMarketOrders,
+    getMarketBuyOrders,
+    getMarketHistory,
+    getMarketSellOrders
+} from "@/query/markets";
+import {ActiveOrders, ORDER_TYPE_BUY} from "@/types/market";
+import {HistoryOrder} from "@/types/aggregator";
+import {getAddressHistory} from "@/query/aggregator";
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
+import {HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
+import {intlDateFormat} from "@/utils/formatter";
+
 
 const TradingPage = () => {
-    const router = useRouter();
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TradingPageContent />
+        </Suspense>
+    );
+};
+
+const TradingPageContent = () => {
     const [historyTab, setHistoryTab] = useState('market');
     const [timeframe, setTimeframe] = useState('1D');
 
@@ -29,68 +53,106 @@ const TradingPage = () => {
     const [sellAmount, setSellAmount] = useState('');
     const [sellTotal, setSellTotal] = useState('');
 
-    // Calculate USD approximations
-    const calculateUSDValue = (value: string, type: 'USDC' | 'BZE') => {
-        if (!value || isNaN(Number(value))) return '';
-        const numValue = Number(value);
-        if (type === 'USDC') {
-            return `≈ ${numValue.toFixed(2)}`;
-        } else {
-            // For BZE, multiply by current price to get USD value
-            const usdValue = numValue * Number(marketData.price);
-            return `≈ ${usdValue.toFixed(4)}`;
-        }
-    };
+    const [activeOrders, setActiveOrders] = useState<ActiveOrders>();
+    const [myHistory, setMyHistory] = useState<HistoryOrder[]>([]);
+    const [historyOrders, setHistoryOrders] = useState<HistoryOrderSDKType[]>([]);
+    const [myOrders, setMyOrders] = useState<OrderSDKType[]>([]);
 
-    // Mock data
-    const marketData = {
-        pair: 'BZE/USDC',
-        price: '0.00116',
-        change: '-2.52%',
-        volume24h: '2,213,106.81 BZE',
-        high24h: '0.00123',
-        low24h: '0.00111',
-        isNegative: true
-    };
+    const {marketIdParam, toExchangePage} = useNavigationWithParams();
 
-    const orderBookData = {
-        bids: [
-            { price: '0.00115', amount: '548.93' },
-            { price: '0.00114', amount: '1145.49' },
-            { price: '0.00113', amount: '758.56' },
-            { price: '0.00112', amount: '393.38' },
-            { price: '0.00111', amount: '530.38' },
-        ],
-        asks: [
-            { price: '0.00119', amount: '1368.64' },
-            { price: '0.00118', amount: '509.86' },
-            { price: '0.00117', amount: '976.58' },
-            { price: '0.00116', amount: '836.15' },
-        ]
-    };
-
-    const tradeHistory = [
-        { type: 'sell', price: '0.00116', amount: '235.87', time: '01:58' },
-        { type: 'sell', price: '0.00116', amount: '524.48', time: '01:57' },
-        { type: 'sell', price: '0.00117', amount: '268.43', time: '01:54' },
-        { type: 'buy', price: '0.00117', amount: '572.60', time: '01:54' },
-        { type: 'sell', price: '0.00118', amount: '814.93', time: '01:51' },
-        { type: 'buy', price: '0.00112', amount: '6.85', time: '01:40' },
-    ];
-
-    const myOrders = [
-        { type: 'sell', price: '0.003', amount: '40000' },
-        { type: 'sell', price: '0.002', amount: '10000' },
-        { type: 'buy', price: '0.0009', amount: '246.97' },
-    ];
-
-    const myHistory = [
-        { type: 'sell', price: '0.00116', amount: '235.87', time: '07/17/25 01:58' },
-        { type: 'buy', price: '0.00112', amount: '752.41', time: '07/17/25 01:40' },
-        { type: 'sell', price: '0.00117', amount: '268.43', time: '07/17/25 01:39' },
-    ];
+    const {marketData, market} = useMarket(marketIdParam ?? '')
+    const {asset: baseAsset} = useAsset(market?.base ?? '')
+    const {asset: quoteAsset} = useAsset(market?.quote ?? '')
+    const {address} = useChain(getChainName())
 
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
+
+    const isNegative = useMemo(() => (marketData?.change || 0) < 0, [marketData]);
+
+    const marketTicker = useMemo(() => {
+        if (!baseAsset || !quoteAsset) return '?/?';
+
+        return `${baseAsset?.ticker}/${quoteAsset?.ticker}`
+    }, [baseAsset, quoteAsset]);
+
+    const priceColor = useMemo(() => {
+        if (!marketData || marketData.change === 0) {
+            return 'gray.500';
+        }
+
+        return marketData.change < 0 ? 'red.500' : 'green.500';
+    }, [marketData])
+
+    const orderTypeColor = useCallback((type: string) => {
+        return type === ORDER_TYPE_BUY ? 'red.500' : 'green.500';
+    }, [])
+
+    const formattedDateFromTimestamp = useCallback((timestamp: string) => {
+        return intlDateFormat.format(new Date(parseInt(timestamp) * 1000))
+    }, [])
+
+    const dailyVolume = useMemo(() => {
+        if (!marketData) return '0';
+
+        return prettyAmount(marketData.quote_volume)
+    }, [marketData])
+
+    const fetchActiveOrders = useCallback(async () => {
+        if (!marketData?.market_id) {
+            return;
+        }
+
+        const [buy, sell] = await Promise.all([getMarketBuyOrders(marketData.market_id), getMarketSellOrders(marketData.market_id)]);
+
+        setActiveOrders(
+            {
+                buyOrders: buy.list,
+                sellOrders: sell.list.reverse(),
+            }
+        );
+    }, [marketData])
+
+    const fetchMyHistory = useCallback(async () => {
+        if (!address || !marketData) {
+            return;
+        }
+
+        const data = await getAddressHistory(address, marketData.market_id);
+        setMyHistory(data);
+    }, [address, marketData])
+
+    const fetchMarketHistory = useCallback(async () => {
+        if (!marketData) {
+            return;
+        }
+        const history = await getMarketHistory(marketData.market_id);
+        setHistoryOrders(history.list);
+    }, [marketData])
+
+    const fetchMyOrders = useCallback(async () => {
+        if (!marketData) {
+            return;
+        }
+
+        if (address === undefined) {
+            setMyOrders([]);
+            return;
+        }
+
+        const ord = await getAddressFullMarketOrders(marketData.market_id, address);
+        setMyOrders(ord);
+    }, [marketData, address])
+
+    const onMount = useCallback(async () => {
+        fetchActiveOrders();
+        fetchMyHistory();
+        fetchMarketHistory();
+        fetchMyOrders();
+    }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders])
+
+    useEffect(() => {
+        onMount();
+    }, [onMount]);
 
     return (
         <Container maxW="full" py={4}>
@@ -102,20 +164,20 @@ const TradingPage = () => {
                             <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => router.push('/exchange')}
+                                onClick={() => toExchangePage()}
                             >
                                 <LuArrowLeft />Markets
                             </Button>
                             <Box h="4" w="1px" bg="border" />
                             <VStack align="start" gap={1}>
                                 <HStack>
-                                    <Text fontSize="xl" fontWeight="bold">{marketData.pair}</Text>
-                                    <Badge colorScheme={marketData.isNegative ? 'red' : 'green'} variant="subtle">
-                                        {marketData.change}
+                                    <Text fontSize="xl" fontWeight="bold">{marketTicker}</Text>
+                                    <Badge colorScheme={priceColor} variant="subtle">
+                                        {marketData?.change}%
                                     </Badge>
                                 </HStack>
-                                <Text fontSize="2xl" fontWeight="bold" color={marketData.isNegative ? 'red.500' : 'green.500'}>
-                                    {marketData.price} USDC
+                                <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
+                                    {marketData?.last_price} {quoteAsset?.ticker}
                                 </Text>
                             </VStack>
                         </HStack>
@@ -123,15 +185,15 @@ const TradingPage = () => {
                         <HStack gap={6} display={{ base: 'none', lg: 'flex' }}>
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="fg.muted">24h Volume</Text>
-                                <Text fontSize="sm" fontWeight="medium">{marketData.volume24h}</Text>
+                                <Text fontSize="sm" fontWeight="medium">{dailyVolume} {quoteAsset?.ticker}</Text>
                             </VStack>
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="fg.muted">24h High</Text>
-                                <Text fontSize="sm" fontWeight="medium">{marketData.high24h}</Text>
+                                <Text fontSize="sm" fontWeight="medium">{marketData?.high || 0}</Text>
                             </VStack>
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="fg.muted">24h Low</Text>
-                                <Text fontSize="sm" fontWeight="medium">{marketData.low24h}</Text>
+                                <Text fontSize="sm" fontWeight="medium">{marketData?.low || 0}</Text>
                             </VStack>
                         </HStack>
                     </Flex>
@@ -146,13 +208,13 @@ const TradingPage = () => {
                             {/* Asks */}
                             <Box>
                                 <HStack justify="space-between" mb={2}>
-                                    <Text fontSize="xs" color="fg.muted">Price</Text>
-                                    <Text fontSize="xs" color="fg.muted">Amount</Text>
+                                    <Text fontSize="xs" color="fg.muted">Price ({quoteAsset?.ticker})</Text>
+                                    <Text fontSize="xs" color="fg.muted">Amount ({baseAsset?.ticker})</Text>
                                 </HStack>
-                                {orderBookData.asks.reverse().map((ask, i) => (
+                                {activeOrders?.sellOrders.map((ask, i) => (
                                     <HStack key={i} justify="space-between" fontSize="xs" py={1}>
                                         <Text color="red.500">{ask.price}</Text>
-                                        <Text>{ask.amount}</Text>
+                                        <Text>{uAmountToAmount(ask.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
                             </Box>
@@ -160,10 +222,10 @@ const TradingPage = () => {
                             {/* Current Price */}
                             <Box py={2} bg="bg.muted" borderRadius="sm">
                                 <HStack justify="center">
-                                    <Text fontSize="md" fontWeight="bold" color={marketData.isNegative ? 'red.500' : 'green.500'}>
-                                        {marketData.price}
+                                    <Text fontSize="md" fontWeight="bold" color={priceColor}>
+                                        {marketData?.last_price}
                                     </Text>
-                                    {marketData.isNegative ? (
+                                    {isNegative ? (
                                         <LuTrendingDown color="red" size={16} />
                                     ) : (
                                         <LuTrendingUp color="green" size={16} />
@@ -173,10 +235,10 @@ const TradingPage = () => {
 
                             {/* Bids */}
                             <Box>
-                                {orderBookData.bids.map((bid, i) => (
+                                {activeOrders?.buyOrders.map((bid, i) => (
                                     <HStack key={i} justify="space-between" fontSize="xs" py={1}>
                                         <Text color="green.500">{bid.price}</Text>
-                                        <Text>{bid.amount}</Text>
+                                        <Text>{uAmountToAmount(bid.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
                             </Box>
@@ -243,7 +305,8 @@ const TradingPage = () => {
                                         </Box>
                                         {buyPrice && (
                                             <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {calculateUSDValue(buyPrice, 'USDC')}
+                                                {/*{calculateUSDValue(buyPrice, 'USDC')}*/}
+                                                1.232
                                             </Text>
                                         )}
                                     </Box>
@@ -271,7 +334,8 @@ const TradingPage = () => {
                                         </Box>
                                         {buyAmount && (
                                             <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {calculateUSDValue(buyAmount, 'BZE')}
+                                                {/*{calculateUSDValue(buyAmount, 'BZE')}*/}
+                                                3.21
                                             </Text>
                                         )}
                                     </Box>
@@ -299,7 +363,7 @@ const TradingPage = () => {
                                         </Box>
                                         {buyTotal && (
                                             <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {calculateUSDValue(buyTotal, 'USDC')}
+                                                4.12
                                             </Text>
                                         )}
                                     </Box>
@@ -337,7 +401,7 @@ const TradingPage = () => {
                                         </Box>
                                         {sellPrice && (
                                             <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {calculateUSDValue(sellPrice, 'USDC')}
+                                                4.2
                                             </Text>
                                         )}
                                     </Box>
@@ -365,7 +429,7 @@ const TradingPage = () => {
                                         </Box>
                                         {sellAmount && (
                                             <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {calculateUSDValue(sellAmount, 'BZE')}
+                                                33
                                             </Text>
                                         )}
                                     </Box>
@@ -393,7 +457,7 @@ const TradingPage = () => {
                                         </Box>
                                         {sellTotal && (
                                             <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {calculateUSDValue(sellTotal, 'USDC')}
+                                                32
                                             </Text>
                                         )}
                                     </Box>
@@ -429,8 +493,8 @@ const TradingPage = () => {
                             <VStack gap={0} align="stretch">
                                 {/* Sticky Header */}
                                 <HStack justify="space-between" mb={2} py={1} bg="bg.panel" position="sticky" top={0}>
-                                    <Text fontSize="xs" color="fg.muted">Price</Text>
-                                    <Text fontSize="xs" color="fg.muted">Amount</Text>
+                                    <Text fontSize="xs" color="fg.muted">Price ({quoteAsset?.ticker})</Text>
+                                    <Text fontSize="xs" color="fg.muted">Amount ({baseAsset?.ticker})</Text>
                                     <Text fontSize="xs" color="fg.muted">Time</Text>
                                 </HStack>
 
@@ -447,13 +511,22 @@ const TradingPage = () => {
                                         borderRadius: '24px',
                                     },
                                 }}>
-                                    {(historyTab === 'market' ? tradeHistory.slice(0, 10) : myHistory.slice(0, 10)).map((trade, i) => (
+                                    {historyTab === 'market' && historyOrders.map((trade, i) => (
                                         <HStack key={i} justify="space-between" fontSize="xs" py={2}>
-                                            <Text color={trade.type === 'buy' ? 'green.500' : 'red.500'}>
+                                            <Text color={orderTypeColor(trade.order_type)}>
+                                                {uPriceToPrice(trade.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}
+                                            </Text>
+                                            <Text>{uAmountToAmount(trade.amount, baseAsset?.decimals || 0)}</Text>
+                                            <Text color="fg.muted">{formattedDateFromTimestamp(trade.executed_at.toString())}</Text>
+                                        </HStack>
+                                    ))}
+                                    {historyTab === 'my' && myHistory.map((trade, i) => (
+                                        <HStack key={i} justify="space-between" fontSize="xs" py={2}>
+                                            <Text color={orderTypeColor(trade.order_type)}>
                                                 {trade.price}
                                             </Text>
-                                            <Text>{trade.amount}</Text>
-                                            <Text color="fg.muted">{trade.time}</Text>
+                                            <Text>{trade.base_volume}</Text>
+                                            <Text color="fg.muted">{trade.executed_at}</Text>
                                         </HStack>
                                     ))}
                                 </Box>
@@ -469,18 +542,18 @@ const TradingPage = () => {
                             <VStack gap={2} align="stretch">
                                 {myOrders.map((order, i) => (
                                     <HStack key={i} justify="space-between" p={2} bg="bg.muted" borderRadius="sm">
-                                        <VStack align="start" gap={0}>
-                                            <Badge colorScheme={order.type === 'buy' ? 'green' : 'red'} size="sm">
-                                                {order.type.toUpperCase()}
-                                            </Badge>
-                                            <Text fontSize="xs">{order.amount}</Text>
-                                        </VStack>
-                                        <VStack align="end" gap={0}>
-                                            <Text fontSize="xs" fontWeight="medium">{order.price}</Text>
-                                            <Button size="xs" variant="ghost" colorScheme="red">
-                                                Cancel
-                                            </Button>
-                                        </VStack>
+                                        {/*<VStack align="start" gap={0}>*/}
+                                        <Badge color={orderTypeColor(order.order_type)} size="sm">
+                                            {order.order_type.toUpperCase()}
+                                        </Badge>
+                                        <Text fontSize="xs">{uAmountToAmount(order.amount, baseAsset?.decimals || 0)}</Text>
+                                        {/*</VStack>*/}
+                                        {/*<VStack align="end" gap={0}>*/}
+                                        <Text fontSize="xs" fontWeight="medium">{uPriceToPrice(order.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}</Text>
+                                        <Button size="xs" variant="ghost" colorScheme="red">
+                                            Cancel
+                                        </Button>
+                                        {/*</VStack>*/}
                                     </HStack>
                                 ))}
                             </VStack>
