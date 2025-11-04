@@ -12,8 +12,9 @@ import {
     Badge,
     Input,
     Flex,
+    Table,
 } from '@chakra-ui/react';
-import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft } from 'react-icons/lu';
+import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft, LuX } from 'react-icons/lu';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {useMarket} from "@/hooks/useMarkets";
 import {useAsset} from "@/hooks/useAssets";
@@ -84,7 +85,7 @@ const TradingPageContent = () => {
     }, [marketData])
 
     const orderTypeColor = useCallback((type: string) => {
-        return type === ORDER_TYPE_BUY ? 'red.500' : 'green.500';
+        return type === ORDER_TYPE_BUY ? 'green.500' : 'red.500';
     }, [])
 
     const formattedDateFromTimestamp = useCallback((timestamp: string) => {
@@ -200,7 +201,7 @@ const TradingPageContent = () => {
                 </Box>
 
                 {/* Main Trading Layout */}
-                <Grid templateColumns={{ base: '1fr', lg: '280px 1fr 280px' }} gap={4}>
+                <Grid templateColumns={{ base: '1fr', lg: '280px 1fr 320px' }} gap={4}>
                     {/* Left: Order Book */}
                     <Box p={4} bg="bg.panel" borderRadius="md" borderWidth="1px">
                         <Text fontWeight="bold" mb={3}>Order Book</Text>
@@ -280,10 +281,10 @@ const TradingPageContent = () => {
                         <Grid templateColumns="1fr 1fr" gap={3}>
                             {/* Buy Form */}
                             <Box p={3} bg="bg.panel" borderRadius="md" borderWidth="1px">
-                                <Text fontWeight="bold" mb={3} color="green.500" fontSize="sm">Buy BZE</Text>
+                                <Text fontWeight="bold" mb={3} color="green.500" fontSize="sm">Buy {baseAsset?.ticker}</Text>
                                 <VStack gap={2} align="stretch">
                                     <Box>
-                                        <Text fontSize="xs" mb={1}>Price</Text>
+                                        <Text fontSize="xs" mb={1} color="fg.muted">Price</Text>
                                         <Box position="relative">
                                             <Input
                                                 size="sm"
@@ -300,19 +301,13 @@ const TradingPageContent = () => {
                                                 fontSize="xs"
                                                 color="fg.muted"
                                             >
-                                                USDC
+                                                {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
-                                        {buyPrice && (
-                                            <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {/*{calculateUSDValue(buyPrice, 'USDC')}*/}
-                                                1.232
-                                            </Text>
-                                        )}
                                     </Box>
 
                                     <Box>
-                                        <Text fontSize="xs" mb={1}>Amount</Text>
+                                        <Text fontSize="xs" mb={1} color="fg.muted">Amount</Text>
                                         <Box position="relative">
                                             <Input
                                                 size="sm"
@@ -329,19 +324,13 @@ const TradingPageContent = () => {
                                                 fontSize="xs"
                                                 color="fg.muted"
                                             >
-                                                BZE
+                                                {baseAsset?.ticker}
                                             </Text>
                                         </Box>
-                                        {buyAmount && (
-                                            <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                {/*{calculateUSDValue(buyAmount, 'BZE')}*/}
-                                                3.21
-                                            </Text>
-                                        )}
                                     </Box>
 
                                     <Box>
-                                        <Text fontSize="xs" mb={1}>Total</Text>
+                                        <Text fontSize="xs" mb={1} color="fg.muted">Total</Text>
                                         <Box position="relative">
                                             <Input
                                                 size="sm"
@@ -358,28 +347,23 @@ const TradingPageContent = () => {
                                                 fontSize="xs"
                                                 color="fg.muted"
                                             >
-                                                USDC
+                                                {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
-                                        {buyTotal && (
-                                            <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                4.12
-                                            </Text>
-                                        )}
                                     </Box>
 
                                     <Button colorScheme="green" size="sm" mt={2}>
-                                        Buy BZE
+                                        Buy {baseAsset?.ticker}
                                     </Button>
                                 </VStack>
                             </Box>
 
                             {/* Sell Form */}
                             <Box p={3} bg="bg.panel" borderRadius="md" borderWidth="1px">
-                                <Text fontWeight="bold" mb={3} color="red.500" fontSize="sm">Sell BZE</Text>
+                                <Text fontWeight="bold" mb={3} color="red.500" fontSize="sm">Sell {baseAsset?.ticker}</Text>
                                 <VStack gap={2} align="stretch">
                                     <Box>
-                                        <Text fontSize="xs" mb={1}>Price</Text>
+                                        <Text fontSize="xs" mb={1} color="fg.muted">Price</Text>
                                         <Box position="relative">
                                             <Input
                                                 size="sm"
@@ -396,18 +380,13 @@ const TradingPageContent = () => {
                                                 fontSize="xs"
                                                 color="fg.muted"
                                             >
-                                                USDC
+                                                {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
-                                        {sellPrice && (
-                                            <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                4.2
-                                            </Text>
-                                        )}
                                     </Box>
 
                                     <Box>
-                                        <Text fontSize="xs" mb={1}>Amount</Text>
+                                        <Text fontSize="xs" mb={1} color="fg.muted">Amount</Text>
                                         <Box position="relative">
                                             <Input
                                                 size="sm"
@@ -424,18 +403,13 @@ const TradingPageContent = () => {
                                                 fontSize="xs"
                                                 color="fg.muted"
                                             >
-                                                BZE
+                                                {baseAsset?.ticker}
                                             </Text>
                                         </Box>
-                                        {sellAmount && (
-                                            <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                33
-                                            </Text>
-                                        )}
                                     </Box>
 
                                     <Box>
-                                        <Text fontSize="xs" mb={1}>Total</Text>
+                                        <Text fontSize="xs" mb={1} color="fg.muted">Total</Text>
                                         <Box position="relative">
                                             <Input
                                                 size="sm"
@@ -452,28 +426,24 @@ const TradingPageContent = () => {
                                                 fontSize="xs"
                                                 color="fg.muted"
                                             >
-                                                USDC
+                                                {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
-                                        {sellTotal && (
-                                            <Text fontSize="xs" color="fg.muted" mt={1}>
-                                                32
-                                            </Text>
-                                        )}
                                     </Box>
 
                                     <Button colorScheme="red" size="sm" mt={2}>
-                                        Sell BZE
+                                        Sell {baseAsset?.ticker}
                                     </Button>
                                 </VStack>
                             </Box>
                         </Grid>
                     </VStack>
 
-                    {/* Right: Market History/My History */}
+                    {/* Right: Market History/My History & Active Orders */}
                     <VStack gap={4} align="stretch">
-                        <Box p={4} bg="bg.panel" borderRadius="md" borderWidth="1px">
-                            <HStack mb={3}>
+                        {/* Market History - Improved */}
+                        <Box bg="bg.panel" borderRadius="md" borderWidth="1px" overflow="hidden">
+                            <HStack p={3} borderBottomWidth="1px">
                                 <Button
                                     size="xs"
                                     variant={historyTab === 'market' ? 'solid' : 'ghost'}
@@ -490,73 +460,127 @@ const TradingPageContent = () => {
                                 </Button>
                             </HStack>
 
-                            <VStack gap={0} align="stretch">
-                                {/* Sticky Header */}
-                                <HStack justify="space-between" mb={2} py={1} bg="bg.panel" position="sticky" top={0}>
-                                    <Text fontSize="xs" color="fg.muted">Price ({quoteAsset?.ticker})</Text>
-                                    <Text fontSize="xs" color="fg.muted">Amount ({baseAsset?.ticker})</Text>
-                                    <Text fontSize="xs" color="fg.muted">Time</Text>
-                                </HStack>
-
-                                {/* Scrollable Content */}
-                                <Box maxH="200px" overflowY="auto" css={{
-                                    '&::-webkit-scrollbar': {
-                                        width: '4px',
-                                    },
-                                    '&::-webkit-scrollbar-track': {
-                                        width: '6px',
-                                    },
-                                    '&::-webkit-scrollbar-thumb': {
-                                        background: 'gray',
-                                        borderRadius: '24px',
-                                    },
-                                }}>
-                                    {historyTab === 'market' && historyOrders.map((trade, i) => (
-                                        <HStack key={i} justify="space-between" fontSize="xs" py={2}>
-                                            <Text color={orderTypeColor(trade.order_type)}>
-                                                {uPriceToPrice(trade.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}
-                                            </Text>
-                                            <Text>{uAmountToAmount(trade.amount, baseAsset?.decimals || 0)}</Text>
-                                            <Text color="fg.muted">{formattedDateFromTimestamp(trade.executed_at.toString())}</Text>
-                                        </HStack>
-                                    ))}
-                                    {historyTab === 'my' && myHistory.map((trade, i) => (
-                                        <HStack key={i} justify="space-between" fontSize="xs" py={2}>
-                                            <Text color={orderTypeColor(trade.order_type)}>
-                                                {trade.price}
-                                            </Text>
-                                            <Text>{trade.base_volume}</Text>
-                                            <Text color="fg.muted">{trade.executed_at}</Text>
-                                        </HStack>
-                                    ))}
-                                </Box>
-                            </VStack>
+                            <Box maxH="300px" overflowY="auto">
+                                <Table.Root size="sm" variant="outline">
+                                    <Table.Header position="sticky" top={0} bg="bg.panel" zIndex={1}>
+                                        <Table.Row>
+                                            <Table.ColumnHeader>
+                                                <Text fontSize="xs" color="fg.muted">Price</Text>
+                                            </Table.ColumnHeader>
+                                            <Table.ColumnHeader textAlign="right">
+                                                <Text fontSize="xs" color="fg.muted">Amount</Text>
+                                            </Table.ColumnHeader>
+                                            <Table.ColumnHeader textAlign="right">
+                                                <Text fontSize="xs" color="fg.muted">Time</Text>
+                                            </Table.ColumnHeader>
+                                        </Table.Row>
+                                    </Table.Header>
+                                    <Table.Body>
+                                        {historyTab === 'market' && historyOrders.map((trade, i) => (
+                                            <Table.Row key={i}>
+                                                <Table.Cell>
+                                                    <Text fontSize="xs" color={orderTypeColor(trade.order_type)} fontWeight="medium">
+                                                        {uPriceToPrice(trade.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}
+                                                    </Text>
+                                                </Table.Cell>
+                                                <Table.Cell textAlign="right">
+                                                    <Text fontSize="xs">{uAmountToAmount(trade.amount, baseAsset?.decimals || 0)}</Text>
+                                                </Table.Cell>
+                                                <Table.Cell textAlign="right">
+                                                    <Text fontSize="xs" color="fg.muted">
+                                                        {formattedDateFromTimestamp(trade.executed_at.toString())}
+                                                    </Text>
+                                                </Table.Cell>
+                                            </Table.Row>
+                                        ))}
+                                        {historyTab === 'my' && myHistory.map((trade, i) => (
+                                            <Table.Row key={i}>
+                                                <Table.Cell>
+                                                    <Text fontSize="xs" color={orderTypeColor(trade.order_type)} fontWeight="medium">
+                                                        {trade.price}
+                                                    </Text>
+                                                </Table.Cell>
+                                                <Table.Cell textAlign="right">
+                                                    <Text fontSize="xs">{trade.base_volume}</Text>
+                                                </Table.Cell>
+                                                <Table.Cell textAlign="right">
+                                                    <Text fontSize="xs" color="fg.muted">{trade.executed_at}</Text>
+                                                </Table.Cell>
+                                            </Table.Row>
+                                        ))}
+                                    </Table.Body>
+                                </Table.Root>
+                            </Box>
                         </Box>
 
-                        {/* Active Orders */}
-                        <Box p={4} bg="bg.panel" borderRadius="md" borderWidth="1px">
-                            <HStack justify="space-between" mb={3}>
-                                <Text fontWeight="bold" fontSize="sm">Active Orders</Text>
-                                <Button size="xs" variant="ghost">Cancel All</Button>
+                        {/* Active Orders - Improved */}
+                        <Box bg="bg.panel" borderRadius="md" borderWidth="1px" overflow="hidden">
+                            <HStack justify="space-between" p={3} borderBottomWidth="1px">
+                                <Text fontWeight="bold" fontSize="sm">Your Orders</Text>
+                                {myOrders.length > 0 && (
+                                    <Button size="xs" variant="ghost">
+                                        Cancel All
+                                    </Button>
+                                )}
                             </HStack>
-                            <VStack gap={2} align="stretch">
-                                {myOrders.map((order, i) => (
-                                    <HStack key={i} justify="space-between" p={2} bg="bg.muted" borderRadius="sm">
-                                        {/*<VStack align="start" gap={0}>*/}
-                                        <Badge color={orderTypeColor(order.order_type)} size="sm">
-                                            {order.order_type.toUpperCase()}
-                                        </Badge>
-                                        <Text fontSize="xs">{uAmountToAmount(order.amount, baseAsset?.decimals || 0)}</Text>
-                                        {/*</VStack>*/}
-                                        {/*<VStack align="end" gap={0}>*/}
-                                        <Text fontSize="xs" fontWeight="medium">{uPriceToPrice(order.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}</Text>
-                                        <Button size="xs" variant="ghost" colorScheme="red">
-                                            Cancel
-                                        </Button>
-                                        {/*</VStack>*/}
-                                    </HStack>
-                                ))}
-                            </VStack>
+
+                            {myOrders.length === 0 ? (
+                                <Box p={6} textAlign="center">
+                                    <Text fontSize="sm" color="fg.muted">No active orders</Text>
+                                </Box>
+                            ) : (
+                                <Box maxH="300px" overflowY="auto">
+                                    <Table.Root size="sm" variant="outline">
+                                        <Table.Header position="sticky" top={0} bg="bg.panel" zIndex={1}>
+                                            <Table.Row>
+                                                <Table.ColumnHeader>
+                                                    <Text fontSize="xs" color="fg.muted">Type</Text>
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader textAlign="right">
+                                                    <Text fontSize="xs" color="fg.muted">Price</Text>
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader textAlign="right">
+                                                    <Text fontSize="xs" color="fg.muted">Amount</Text>
+                                                </Table.ColumnHeader>
+                                                <Table.ColumnHeader textAlign="right" />
+                                            </Table.Row>
+                                        </Table.Header>
+                                        <Table.Body>
+                                            {myOrders.map((order, i) => (
+                                                <Table.Row key={i}>
+                                                    <Table.Cell>
+                                                        <Badge
+                                                            size="sm"
+                                                            color={order.order_type === ORDER_TYPE_BUY ? 'green' : 'red'}
+                                                        >
+                                                            {order.order_type === ORDER_TYPE_BUY ? 'BUY' : 'SELL'}
+                                                        </Badge>
+                                                    </Table.Cell>
+                                                    <Table.Cell textAlign="right">
+                                                        <Text fontSize="xs" fontWeight="medium">
+                                                            {uPriceToPrice(order.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}
+                                                        </Text>
+                                                    </Table.Cell>
+                                                    <Table.Cell textAlign="right">
+                                                        <Text fontSize="xs">
+                                                            {uAmountToAmount(order.amount, baseAsset?.decimals || 0)}
+                                                        </Text>
+                                                    </Table.Cell>
+                                                    <Table.Cell textAlign="right">
+                                                        <Button
+                                                            size="xs"
+                                                            variant="ghost"
+                                                            colorScheme="red"
+                                                        >
+                                                            <LuX size={12} />
+                                                        </Button>
+                                                    </Table.Cell>
+                                                </Table.Row>
+                                            ))}
+                                        </Table.Body>
+                                    </Table.Root>
+                                </Box>
+                            )}
                         </Box>
 
                         {/* Balance */}
@@ -564,11 +588,11 @@ const TradingPageContent = () => {
                             <Text fontWeight="bold" mb={3} fontSize="sm">Balance</Text>
                             <VStack align="stretch" gap={2}>
                                 <HStack justify="space-between">
-                                    <Text fontSize="xs">BZE</Text>
+                                    <Text fontSize="xs" color="fg.muted">{baseAsset?.ticker}</Text>
                                     <Text fontSize="xs" fontWeight="medium">260,000.07</Text>
                                 </HStack>
                                 <HStack justify="space-between">
-                                    <Text fontSize="xs">USDC</Text>
+                                    <Text fontSize="xs" color="fg.muted">{quoteAsset?.ticker}</Text>
                                     <Text fontSize="xs" fontWeight="medium">1,234.56</Text>
                                 </HStack>
                             </VStack>
