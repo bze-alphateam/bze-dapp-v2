@@ -450,6 +450,11 @@ const TradingPageContent = () => {
                                                 {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
+                                        {buyPrice && shouldShowUsdValues && (
+                                            <Text fontSize="xs" color="fg.muted" mt={1}>
+                                                ≈ ${quoteUsdValue(buyPrice)}
+                                            </Text>
+                                        )}
                                     </Box>
 
                                     <Box>
@@ -496,6 +501,11 @@ const TradingPageContent = () => {
                                                 {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
+                                        {buyTotal && shouldShowUsdValues && (
+                                            <Text fontSize="xs" color="fg.muted" mt={1}>
+                                                ≈ ${quoteUsdValue(buyTotal)}
+                                            </Text>
+                                        )}
                                     </Box>
 
                                     <Button colorScheme="green" size="sm" mt={2}>
@@ -529,6 +539,11 @@ const TradingPageContent = () => {
                                                 {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
+                                        {sellPrice && shouldShowUsdValues && (
+                                            <Text fontSize="xs" color="fg.muted" mt={1}>
+                                                ≈ ${quoteUsdValue(sellPrice)}
+                                            </Text>
+                                        )}
                                     </Box>
 
                                     <Box>
@@ -575,6 +590,11 @@ const TradingPageContent = () => {
                                                 {quoteAsset?.ticker}
                                             </Text>
                                         </Box>
+                                        {sellTotal && shouldShowUsdValues && (
+                                            <Text fontSize="xs" color="fg.muted" mt={1}>
+                                                ≈ ${quoteUsdValue(sellTotal)}
+                                            </Text>
+                                        )}
                                     </Box>
 
                                     <Button colorScheme="red" size="sm" mt={2}>
