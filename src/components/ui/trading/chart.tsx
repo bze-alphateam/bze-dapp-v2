@@ -245,7 +245,7 @@ export const LightweightChart = (props: ChartProps) => {
                 chart.remove();
             };
         },
-        [priceData, vColor, gridColor, textColor, getPriceFormatOptions, getVolumeFormatOptions, neededIntervals, getBarSpacing]
+        [priceData, vColor, gridColor, textColor, getPriceFormatOptions, getVolumeFormatOptions, neededIntervals, getBarSpacing, bgColor, errorTimeout]
     );
 
     return (
