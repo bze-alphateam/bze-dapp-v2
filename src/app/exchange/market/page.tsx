@@ -14,7 +14,7 @@ import {
     Flex,
     Table, Alert,
 } from '@chakra-ui/react';
-import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft, LuX } from 'react-icons/lu';
+import { LuTrendingUp, LuTrendingDown, LuActivity, LuArrowLeft, LuX } from 'react-icons/lu';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {useMarket} from "@/hooks/useMarkets";
 import {useAsset} from "@/hooks/useAssets";
@@ -33,7 +33,7 @@ import {
 } from "@/query/markets";
 import {ActiveOrders, ORDER_TYPE_BUY, ORDER_TYPE_SELL} from "@/types/market";
 import {HistoryOrder} from "@/types/aggregator";
-import {getAddressHistory} from "@/query/aggregator";
+import {getAddressHistory, getTradingViewIntervals} from "@/query/aggregator";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {AggregatedOrderSDKType, HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
@@ -47,6 +47,9 @@ import BigNumber from "bignumber.js";
 import {sanitizeNumberInput} from "@/utils/number";
 import {calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount, getMinAmount} from "@/utils/market";
 import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
+import {TradeViewChart} from "@/types/charts";
+import {getChartIntervalsLimit, getChartMinutes} from "@/utils/charts";
+import {LightweightChart} from "@/components/ui/trading/chart";
 
 const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
 
@@ -151,6 +154,7 @@ const TradingPageContent = () => {
     const [sellAmount, setSellAmount] = useState('');
     const [sellTotal, setSellTotal] = useState('');
 
+    const [chartData, setChartData] = useState<TradeViewChart[]>();
     const [activeOrders, setActiveOrders] = useState<ActiveOrders>();
     const [myHistory, setMyHistory] = useState<HistoryOrder[]>([]);
     const [historyOrders, setHistoryOrders] = useState<HistoryOrderSDKType[]>([]);
@@ -253,6 +257,17 @@ const TradingPageContent = () => {
         const ord = await getAddressFullMarketOrders(marketId, address);
         setMyOrders(ord);
     }, [marketId, address])
+    const fetchChartData = useCallback(async () => {
+        if (!marketId || marketId === '') return;
+
+        const chart = await getTradingViewIntervals(
+            marketId,
+            getChartMinutes(timeframe),
+            getChartIntervalsLimit(timeframe),
+        );
+
+        setChartData(chart);
+    }, [marketId, timeframe])
 
     //on component mount
     const onMount = useCallback(async () => {
@@ -260,7 +275,8 @@ const TradingPageContent = () => {
         fetchMyHistory();
         fetchMarketHistory();
         fetchMyOrders();
-    }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders])
+        fetchChartData();
+    }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders, fetchChartData])
     // cancel order/s
     const onOrderCancelClick = useCallback(async (orders: OrderSDKType[]) => {
         if (orders.length === 0) return;
@@ -668,7 +684,7 @@ const TradingPageContent = () => {
 
                     {/* Center: Chart */}
                     <VStack gap={3} align="stretch">
-                        <Box p={3} bg="bg.panel" borderRadius="md" borderWidth="1px">
+                        <Box p={3} bg="bg.panel" borderRadius="md" borderWidth="1px" minH="400px">
                             <HStack justify="space-between" mb={3}>
                                 <HStack>
                                     <LuActivity color="gray" size={16} />
@@ -689,12 +705,9 @@ const TradingPageContent = () => {
                             </HStack>
 
                             {/* Smaller Chart */}
-                            <Flex h="200px" align="center" justify="center" bg="bg.muted" borderRadius="md">
-                                <VStack>
-                                    <LuChartBar size={32} color="gray" />
-                                    <Text color="fg.muted" fontSize="sm">Chart placeholder</Text>
-                                </VStack>
-                            </Flex>
+                            <Box h="350px" w="100%" borderRadius="md" overflow="hidden">
+                                <LightweightChart priceData={chartData || []} chartType={timeframe} />
+                            </Box>
                         </Box>
 
                         {/* Buy/Sell Forms */}
