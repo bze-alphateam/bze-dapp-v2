@@ -85,7 +85,7 @@ const TradingPageContent = () => {
     }, [marketData])
 
     const orderTypeColor = useCallback((type: string) => {
-        return type === ORDER_TYPE_BUY ? 'green.500' : 'red.500';
+        return type === ORDER_TYPE_BUY ? 'red.500' : 'green.500';
     }, [])
 
     const formattedDateFromTimestamp = useCallback((timestamp: string) => {
@@ -504,7 +504,7 @@ const TradingPageContent = () => {
                                                     <Text fontSize="xs">{trade.base_volume}</Text>
                                                 </Table.Cell>
                                                 <Table.Cell textAlign="right">
-                                                    <Text fontSize="xs" color="fg.muted">{trade.executed_at}</Text>
+                                                    <Text fontSize="xs" color="fg.muted">{formattedDateFromTimestamp(trade.executed_at.toString())}</Text>
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}
