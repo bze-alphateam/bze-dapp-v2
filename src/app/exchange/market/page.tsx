@@ -18,19 +18,25 @@ import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft, LuX 
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {useMarket} from "@/hooks/useMarkets";
 import {useAsset} from "@/hooks/useAssets";
-import {prettyAmount, toBigNumber, uAmountToAmount, uPriceToPrice} from "@/utils/amount";
+import {
+    amountToBigNumberUAmount,
+    prettyAmount, priceToBigNumberUPrice,
+    toBigNumber,
+    uAmountToAmount,
+    uPriceToPrice
+} from "@/utils/amount";
 import {
     getAddressFullMarketOrders,
     getMarketBuyOrders,
     getMarketHistory,
     getMarketSellOrders
 } from "@/query/markets";
-import {ActiveOrders, ORDER_TYPE_BUY} from "@/types/market";
+import {ActiveOrders, ORDER_TYPE_BUY, ORDER_TYPE_SELL} from "@/types/market";
 import {HistoryOrder} from "@/types/aggregator";
 import {getAddressHistory} from "@/query/aggregator";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
-import {HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
+import {AggregatedOrderSDKType, HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {formatUsdAmount, intlDateFormat} from "@/utils/formatter";
 import {useBalance} from "@/hooks/useBalances";
 import {useBZETx} from "@/hooks/useTx";
@@ -39,7 +45,78 @@ import {bze} from "@bze/bzejs"
 import {useAssetPrice} from "@/hooks/usePrices";
 import BigNumber from "bignumber.js";
 import {sanitizeNumberInput} from "@/utils/number";
-import {calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount} from "@/utils/market";
+import {calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount, getMinAmount} from "@/utils/market";
+import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
+
+const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
+
+function getOrderTxMessages(activeOrders: ActiveOrders, marketId: string, address: string, isBuy: boolean, uAmount: string, uPrice: string) {
+    const orderType = isBuy ? 'buy' : 'sell';
+
+    const uPriceNum = new BigNumber(uPrice);
+    const ordersFilter = (order: AggregatedOrderSDKType) => {
+        const orderuPriceNum = new BigNumber(order.price);
+        if (isBuy) {
+            return uPriceNum.gt(orderuPriceNum);
+        } else {
+            return uPriceNum.lt(orderuPriceNum);
+        }
+    }
+    const ordersToSearch = isBuy ? activeOrders.sellOrders.filter(ordersFilter) : activeOrders.buyOrders.filter(ordersFilter);
+
+    //if we have no opposite orders we can create 1 message
+    if (ordersToSearch.length === 0) {
+        return [
+            createOrder({
+                creator: address,
+                marketId: marketId,
+                orderType: orderType,
+                amount: uAmount,
+                price: uPrice,
+            })
+        ];
+    }
+
+    const msgs = [];
+    let uAmountNum = new BigNumber(uAmount);
+    //check active orders prices and fill them one by one if needed
+    for (let i = 0; i < ordersToSearch.length; i++) {
+        const orderUAmountNum = new BigNumber(ordersToSearch[i].amount);
+        let msgAmount = ordersToSearch[i].amount;
+        if (orderUAmountNum.gt(uAmountNum)) {
+            msgAmount = uAmountNum.toString();
+        }
+
+        msgs.push(
+            createOrder({
+                creator: address,
+                marketId: marketId,
+                orderType: orderType,
+                amount: msgAmount,
+                price: ordersToSearch[i].price,
+            })
+        )
+
+        uAmountNum = uAmountNum.minus(msgAmount);
+        if (uAmountNum.eq(0)) {
+            break;
+        }
+    }
+
+    if (uAmountNum.gt(0)) {
+        msgs.push(
+            createOrder({
+                creator: address,
+                marketId: marketId,
+                orderType: orderType,
+                amount: uAmountNum.toString(),
+                price: uPrice,
+            })
+        )
+    }
+
+    return msgs;
+}
 
 interface EmptyTableRowProps {
     colSpan: number;
@@ -79,15 +156,16 @@ const TradingPageContent = () => {
     const [historyOrders, setHistoryOrders] = useState<HistoryOrderSDKType[]>([]);
     const [myOrders, setMyOrders] = useState<OrderSDKType[]>([]);
     const [submittingCancel, setSubmittingCancel] = useState(false);
+    const [submittingOrder, setSubmittingOrder] = useState(false);
 
     const {marketIdParam, toExchangePage} = useNavigationWithParams();
 
-    const {marketData, market} = useMarket(marketIdParam ?? '')
+    const {marketData, market, marketId} = useMarket(marketIdParam ?? '')
     const {asset: baseAsset} = useAsset(market?.base ?? '')
     const {asset: quoteAsset} = useAsset(market?.quote ?? '')
     const {address} = useChain(getChainName())
-    const {balance: baseBalance} = useBalance(market?.base ?? '')
-    const {balance: quoteBalance} = useBalance(market?.quote ?? '')
+    const {balance: baseBalance, hasAmount: hasBaseAmount} = useBalance(market?.base ?? '')
+    const {balance: quoteBalance, hasAmount: hasQuoteAmount} = useBalance(market?.quote ?? '')
     const {totalUsdValue, hasPrice} = useAssetPrice(market?.quote ?? '')
     const {tx} = useBZETx()
     const {toast} = useToast()
@@ -134,11 +212,11 @@ const TradingPageContent = () => {
     const shouldShowUsdValues = useMemo(() => hasPrice && !quoteAsset?.stable, [hasPrice, quoteAsset])
 
     const fetchActiveOrders = useCallback(async () => {
-        if (!marketData?.market_id) {
+        if (!marketId || marketId === '') {
             return;
         }
 
-        const [buy, sell] = await Promise.all([getMarketBuyOrders(marketData.market_id), getMarketSellOrders(marketData.market_id)]);
+        const [buy, sell] = await Promise.all([getMarketBuyOrders(marketId), getMarketSellOrders(marketId)]);
 
         setActiveOrders(
             {
@@ -146,24 +224,24 @@ const TradingPageContent = () => {
                 sellOrders: sell.list.reverse(),
             }
         );
-    }, [marketData])
+    }, [marketId])
     const fetchMyHistory = useCallback(async () => {
-        if (!address || !marketData) {
+        if (!address || !marketId || marketId === '') {
             return;
         }
 
-        const data = await getAddressHistory(address, marketData.market_id);
+        const data = await getAddressHistory(address, marketId);
         setMyHistory(data);
-    }, [address, marketData])
+    }, [address, marketId])
     const fetchMarketHistory = useCallback(async () => {
-        if (!marketData) {
+        if (!marketId || marketId === '') {
             return;
         }
-        const history = await getMarketHistory(marketData.market_id);
+        const history = await getMarketHistory(marketId);
         setHistoryOrders(history.list);
-    }, [marketData])
+    }, [marketId])
     const fetchMyOrders = useCallback(async () => {
-        if (!marketData) {
+        if (!marketId || marketId === '') {
             return;
         }
 
@@ -172,16 +250,18 @@ const TradingPageContent = () => {
             return;
         }
 
-        const ord = await getAddressFullMarketOrders(marketData.market_id, address);
+        const ord = await getAddressFullMarketOrders(marketId, address);
         setMyOrders(ord);
-    }, [marketData, address])
+    }, [marketId, address])
 
+    //on component mount
     const onMount = useCallback(async () => {
         fetchActiveOrders();
         fetchMyHistory();
         fetchMarketHistory();
         fetchMyOrders();
     }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders])
+    // cancel order/s
     const onOrderCancelClick = useCallback(async (orders: OrderSDKType[]) => {
         if (orders.length === 0) return;
 
@@ -209,6 +289,7 @@ const TradingPageContent = () => {
         setSubmittingCancel(false);
     }, [address, tx, toast, fetchMyOrders])
 
+    //buy form
     const onBuyPriceChange = useCallback((price: string) => {
         setBuyPrice(price);
         const total = calculateTotalAmount(price, buyAmount, quoteAsset?.decimals || 0);
@@ -237,6 +318,7 @@ const TradingPageContent = () => {
         }
     }, [buyPrice, setBuyAmount, buyAmount, quoteAsset, baseAsset])
 
+    //sell form
     const onSellPriceChange = useCallback((price: string) => {
         setSellPrice(price);
         const total = calculateTotalAmount(price, sellAmount, quoteAsset?.decimals || 0);
@@ -264,6 +346,172 @@ const TradingPageContent = () => {
             setSellPrice(calculatePricePerUnit(sellAmount, total, baseAsset?.decimals || 0));
         }
     }, [setSellTotal, setSellAmount, setSellPrice, sellPrice, sellAmount, quoteAsset, baseAsset])
+
+    //order submit functions
+    const getMatchingOrders = useCallback((orderType: string, uPrice: BigNumber, uAmount: BigNumber): AggregatedOrderSDKType[] => {
+        if (!activeOrders) return [];
+
+        if (uPrice.isNaN() || uPrice.lte(0) || uAmount.isNaN() || uAmount.lte(0)) {
+            return [];
+        }
+
+        const isBuy = orderType === ORDER_TYPE_BUY;
+        let toCheck: AggregatedOrderSDKType[];
+        if (isBuy) {
+            //reverse them to check from the lowest price to the highest one
+            //unpack in a new array to avoid reversing the original one
+            toCheck = [...activeOrders.sellOrders].reverse();
+        } else {
+            toCheck = activeOrders.buyOrders;
+        }
+
+        if (toCheck.length <= 1) {
+            return [];
+        }
+
+        //check the provided price with the first order price in the order book
+        const firstOrderPrice = new BigNumber(toCheck[0].price);
+        if ((isBuy && firstOrderPrice.gte(uPrice)) || (!isBuy && firstOrderPrice.lte(uPrice))) {
+            return [];
+        }
+
+        let finishFunc = (p: BigNumber, c: string) => p.gt(c);
+        if (isBuy) {
+            finishFunc = (p: BigNumber, c: string) => p.lt(c);
+        }
+
+        const result = [];
+        for (let i = 0; i < toCheck.length; i++) {
+            if (finishFunc(uPrice, toCheck[i].price)) {
+                break;
+            }
+            if (uAmount.lte(0)) {
+                break;
+            }
+
+            const orderCopy = {...toCheck[i]};
+            if (uAmount.minus(toCheck[i].amount).lt(0)) {
+                orderCopy.amount = uAmount.toString();
+            }
+
+            result.push(orderCopy);
+            uAmount = uAmount.minus(orderCopy.amount);
+        }
+
+        return result;
+    }, [activeOrders])
+    const submitFillOrdersMsg = useCallback(async (toFill: AggregatedOrderSDKType[]) => {
+        if (!marketId || marketId === '' || !address || !tx) {
+            return;
+        }
+
+        setSubmittingOrder(true)
+        const msgOrders: FillOrderItem[] = [];
+        for (let i = 0; i < toFill.length; i++) {
+            msgOrders.push({
+                price: toFill[i].price,
+                amount: toFill[i].amount,
+            })
+        }
+
+        const msg = fillOrders({
+            creator: address,
+            marketId: marketId,
+            orderType: toFill[0].order_type, //use first order to specify what orders we fill
+            orders: msgOrders,
+        })
+
+        await tx([msg]);
+
+        setSubmittingOrder(false);
+    }, [marketId, address, tx])
+    const submitCreateOrderMsg = useCallback(async (orderType: string, uPrice: BigNumber, uAmount: BigNumber) => {
+        if (!address || !tx || !activeOrders || !marketId || marketId === '') {
+            toast.error('Please connect your wallet');
+            return;
+        }
+
+        const isBuy = orderType === ORDER_TYPE_BUY;
+        if (isBuy) {
+            if (activeOrders.sellOrders.length > 0) {
+                const maxPrice = activeOrders.sellOrders[activeOrders.sellOrders.length - 1].price;
+                if (uPrice.gt(maxPrice)) {
+                    toast.error('Price is too high. You can buy at a lower price');
+                    return;
+                }
+            }
+        } else {
+            if (activeOrders.buyOrders.length > 0) {
+                const minPrice = activeOrders.buyOrders[0].price;
+                if (uPrice.lt(minPrice)) {
+                    toast.error('Price is too low. You can sell at a higher price');
+                    return;
+                }
+            }
+        }
+
+        setSubmittingOrder(true);
+        const msgs = getOrderTxMessages(activeOrders, marketId, address, isBuy, uAmount.toString(), uPrice.toString());
+
+        await tx(msgs);
+
+        setSubmittingOrder(false);
+    }, [address, tx, activeOrders, setSubmittingOrder, toast, marketId])
+
+    const onOrderSubmit = useCallback(async (orderType: string) => {
+        if (!address || !tx) {
+            toast.error('Please connect your wallet');
+            return;
+        }
+        if (!quoteAsset || !baseAsset) {
+            toast.error('Market is not tradeable');
+            return;
+        }
+
+        //using only smallest amounts (uAmount, uPrice)
+        let amount = amountToBigNumberUAmount(buyAmount, baseAsset.decimals || 0)
+        let price = priceToBigNumberUPrice(buyPrice, quoteAsset.decimals, baseAsset.decimals)
+        if (orderType === ORDER_TYPE_SELL) {
+            amount = amountToBigNumberUAmount(sellAmount, baseAsset.decimals || 0)
+            price = priceToBigNumberUPrice(sellPrice, quoteAsset.decimals, baseAsset.decimals)
+        }
+
+        if (!amount.isPositive()) {
+            toast.error('Invalid amount');
+            return;
+        }
+        if (!price.isPositive()) {
+            toast.error('Invalid price');
+            return;
+        }
+
+        if (orderType === ORDER_TYPE_BUY && !hasQuoteAmount(amount.multipliedBy(price))) {
+            //he must have enough quote asset balance
+            toast.error(`Insufficient ${quoteAsset.ticker} balance`);
+            return;
+        }
+        if (orderType === ORDER_TYPE_SELL && !hasBaseAmount(amount)) {
+            toast.error(`Insufficient ${baseAsset.ticker} balance`);
+            return;
+        }
+
+        const minAmount = getMinAmount(price, baseAsset.decimals)
+        if (amount.lt(minAmount)) {
+            toast.error(`Minimum amount is ${prettyAmount(uAmountToAmount(minAmount, baseAsset.decimals))} ${baseAsset.ticker}`);
+            return;
+        }
+
+        const toFill = getMatchingOrders(orderType, price, amount);
+        if (toFill.length === 0) {
+            return submitCreateOrderMsg(orderType, price, amount);
+        } else if (toFill.length === 1) {
+            return submitCreateOrderMsg(orderType, toBigNumber(toFill[0].price), amount);
+        }
+
+        return submitFillOrdersMsg(toFill);
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quoteAsset, baseAsset, buyAmount, buyPrice, sellAmount, sellPrice, hasQuoteAmount, hasBaseAmount, getMatchingOrders, submitCreateOrderMsg, submitFillOrdersMsg])
 
     useEffect(() => {
         onMount();
@@ -350,7 +598,7 @@ const TradingPageContent = () => {
                                 </HStack>
                                 {activeOrders?.sellOrders.map((ask, i) => (
                                     <HStack key={i} justify="space-between" fontSize="xs" py={1}>
-                                        <Text color="red.500">{ask.price}</Text>
+                                        <Text color="red.500">{uPriceToPrice(ask.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}</Text>
                                         <Text>{uAmountToAmount(ask.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
@@ -379,7 +627,7 @@ const TradingPageContent = () => {
                             <Box>
                                 {activeOrders?.buyOrders.map((bid, i) => (
                                     <HStack key={i} justify="space-between" fontSize="xs" py={1}>
-                                        <Text color="green.500">{bid.price}</Text>
+                                        <Text color="green.500">{uPriceToPrice(bid.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}</Text>
                                         <Text>{uAmountToAmount(bid.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
@@ -438,6 +686,7 @@ const TradingPageContent = () => {
                                                 value={buyPrice}
                                                 onChange={(e) => onBuyPriceChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
+                                                disabled={submittingOrder}
                                             />
                                             <Text
                                                 position="absolute"
@@ -466,6 +715,7 @@ const TradingPageContent = () => {
                                                 value={buyAmount}
                                                 onChange={(e) => onBuyAmountChange(sanitizeNumberInput(e.target.value))}
                                                 pr="10"
+                                                disabled={submittingOrder}
                                             />
                                             <Text
                                                 position="absolute"
@@ -489,6 +739,7 @@ const TradingPageContent = () => {
                                                 value={buyTotal}
                                                 onChange={(e) => onBuyTotalChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
+                                                disabled={submittingOrder}
                                             />
                                             <Text
                                                 position="absolute"
@@ -508,7 +759,14 @@ const TradingPageContent = () => {
                                         )}
                                     </Box>
 
-                                    <Button colorScheme="green" size="sm" mt={2}>
+                                    <Button
+                                        colorPalette="green"
+                                        size="sm"
+                                        mt={2}
+                                        disabled={submittingOrder}
+                                        variant={'outline'}
+                                        onClick={() => onOrderSubmit(ORDER_TYPE_BUY)}
+                                    >
                                         Buy {baseAsset?.ticker}
                                     </Button>
                                 </VStack>
@@ -527,6 +785,7 @@ const TradingPageContent = () => {
                                                 value={sellPrice}
                                                 onChange={(e) => onSellPriceChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
+                                                disabled={submittingOrder}
                                             />
                                             <Text
                                                 position="absolute"
@@ -555,6 +814,7 @@ const TradingPageContent = () => {
                                                 value={sellAmount}
                                                 onChange={(e) => onSellAmountChange(sanitizeNumberInput(e.target.value))}
                                                 pr="10"
+                                                disabled={submittingOrder}
                                             />
                                             <Text
                                                 position="absolute"
@@ -578,6 +838,7 @@ const TradingPageContent = () => {
                                                 value={sellTotal}
                                                 onChange={(e) => onSellTotalChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
+                                                disabled={submittingOrder}
                                             />
                                             <Text
                                                 position="absolute"
@@ -597,7 +858,14 @@ const TradingPageContent = () => {
                                         )}
                                     </Box>
 
-                                    <Button colorScheme="red" size="sm" mt={2}>
+                                    <Button
+                                        colorPalette="red"
+                                        size="sm"
+                                        mt={2}
+                                        disabled={submittingOrder}
+                                        variant={'outline'}
+                                        onClick={() => onOrderSubmit(ORDER_TYPE_SELL)}
+                                    >
                                         Sell {baseAsset?.ticker}
                                     </Button>
                                 </VStack>

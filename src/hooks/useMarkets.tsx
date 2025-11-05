@@ -108,7 +108,8 @@ export function useMarket(marketId: string) {
         isLoading,
         market,
         marketData,
-        marketSymbol
+        marketSymbol,
+        marketId,
     }
 }
 

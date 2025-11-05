@@ -63,8 +63,13 @@ export function useBalance(denom: string) {
         [balancesMap, denom]
     )
 
+    const hasAmount = useCallback((amount: BigNumber|string): boolean => {
+        return balance.amount.gt(amount)
+    }, [balance])
+
     return {
         balance,
         isLoading,
+        hasAmount,
     }
 }
