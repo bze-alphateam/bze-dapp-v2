@@ -251,7 +251,7 @@ const TradingPageContent = () => {
                                     </Text>
                                     {shouldShowUsdValues && (
                                         <Text fontSize="xs" color={priceColor}>
-                                            {quoteUsdValue(marketData?.last_price)} USD
+                                            ${quoteUsdValue(marketData?.last_price)}
                                         </Text>
                                     )}
                                 </VStack>
@@ -264,7 +264,7 @@ const TradingPageContent = () => {
                                 <Text fontSize="sm" fontWeight="medium">{dailyVolume} {quoteAsset?.ticker}</Text>
                                 {shouldShowUsdValues && (
                                     <Text fontSize="xs" color="fg.muted">
-                                        {quoteUsdValue(marketData?.quote_volume)} USD
+                                        ${quoteUsdValue(marketData?.quote_volume)}
                                     </Text>
                                 )}
                             </VStack>
@@ -273,7 +273,7 @@ const TradingPageContent = () => {
                                 <Text fontSize="sm" fontWeight="medium">{marketData?.high || 0}</Text>
                                 {shouldShowUsdValues && (
                                     <Text fontSize="xs" color="fg.muted">
-                                        {quoteUsdValue(marketData?.high)} USD
+                                        ${quoteUsdValue(marketData?.high)}
                                     </Text>
                                 )}
                             </VStack>
@@ -282,7 +282,7 @@ const TradingPageContent = () => {
                                 <Text fontSize="sm" fontWeight="medium">{marketData?.low || 0}</Text>
                                 {shouldShowUsdValues && (
                                     <Text fontSize="xs" color="fg.muted">
-                                        {quoteUsdValue(marketData?.low)} USD
+                                        ${quoteUsdValue(marketData?.low)}
                                     </Text>
                                 )}
                             </VStack>
