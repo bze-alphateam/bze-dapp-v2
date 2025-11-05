@@ -563,8 +563,9 @@ const TradingPageContent = () => {
                                                 <Table.Row key={i}>
                                                     <Table.Cell>
                                                         <Badge
-                                                            size="sm"
-                                                            color={order.order_type === ORDER_TYPE_BUY ? 'green' : 'red'}
+                                                            size="xs"
+                                                            colorPalette={order.order_type === ORDER_TYPE_BUY ? 'green' : 'red'}
+
                                                         >
                                                             {order.order_type === ORDER_TYPE_BUY ? 'BUY' : 'SELL'}
                                                         </Badge>
