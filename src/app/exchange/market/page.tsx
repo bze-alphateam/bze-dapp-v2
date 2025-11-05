@@ -12,7 +12,7 @@ import {
     Badge,
     Input,
     Flex,
-    Table,
+    Table, Alert,
 } from '@chakra-ui/react';
 import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft, LuX } from 'react-icons/lu';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
@@ -513,6 +513,32 @@ const TradingPageContent = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [quoteAsset, baseAsset, buyAmount, buyPrice, sellAmount, sellPrice, hasQuoteAmount, hasBaseAmount, getMatchingOrders, submitCreateOrderMsg, submitFillOrdersMsg])
 
+    const multipleOrdersFillMessage = useCallback((orderType: string, price: string, amount: string) => {
+        if (!activeOrders) return undefined;
+        const toFill = getMatchingOrders(
+            orderType,
+            priceToBigNumberUPrice(price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0),
+            amountToBigNumberUAmount(amount, baseAsset?.decimals || 0)
+        );
+
+        const toFillCount = toFill.length;
+        if (toFillCount > 1) {
+            return `Match orders with price from ${uPriceToPrice(toFill[0].price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)} to ${uPriceToPrice(toFill[toFillCount - 1].price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}`
+        }
+
+        return undefined;
+
+    }, [activeOrders, baseAsset, getMatchingOrders, quoteAsset])
+    const buyFillMessage = useMemo(() => {
+        if (buyPrice === '' || buyAmount === '') return undefined;
+
+        return multipleOrdersFillMessage(ORDER_TYPE_BUY, buyPrice, buyAmount);
+    }, [buyPrice, buyAmount, multipleOrdersFillMessage])
+    const sellFillMessage = useMemo(() => {
+        if (sellPrice === '' || sellAmount === '') return undefined;
+        return multipleOrdersFillMessage(ORDER_TYPE_SELL, sellPrice, sellAmount);
+    }, [sellPrice, sellAmount, multipleOrdersFillMessage])
+
     useEffect(() => {
         onMount();
     }, [onMount]);
@@ -758,7 +784,14 @@ const TradingPageContent = () => {
                                             </Text>
                                         )}
                                     </Box>
-
+                                    {buyFillMessage && (
+                                        <Alert.Root status={'neutral'} variant='subtle'>
+                                            <Alert.Indicator />
+                                            <VStack align="start" gap="2" flex="1">
+                                                <Text fontSize="xs" color="fg.muted" mt={1}>{buyFillMessage}</Text>
+                                            </VStack>
+                                        </Alert.Root>
+                                    )}
                                     <Button
                                         colorPalette="green"
                                         size="sm"
@@ -857,7 +890,14 @@ const TradingPageContent = () => {
                                             </Text>
                                         )}
                                     </Box>
-
+                                    {sellFillMessage && (
+                                        <Alert.Root status={'neutral'} variant='subtle'>
+                                            <Alert.Indicator />
+                                            <VStack align="start" gap="2" flex="1">
+                                                <Text fontSize="xs" color="fg.muted" mt={1}>{sellFillMessage}</Text>
+                                            </VStack>
+                                        </Alert.Root>
+                                    )}
                                     <Button
                                         colorPalette="red"
                                         size="sm"
