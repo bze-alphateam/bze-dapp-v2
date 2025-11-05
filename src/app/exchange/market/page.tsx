@@ -18,7 +18,7 @@ import { LuTrendingUp, LuTrendingDown, LuActivity, LuChartBar, LuArrowLeft, LuX 
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {useMarket} from "@/hooks/useMarkets";
 import {useAsset} from "@/hooks/useAssets";
-import {prettyAmount, uAmountToAmount, uPriceToPrice} from "@/utils/amount";
+import {prettyAmount, toBigNumber, uAmountToAmount, uPriceToPrice} from "@/utils/amount";
 import {
     getAddressFullMarketOrders,
     getMarketBuyOrders,
@@ -31,11 +31,13 @@ import {getAddressHistory} from "@/query/aggregator";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {intlDateFormat} from "@/utils/formatter";
+import {formatUsdAmount, intlDateFormat} from "@/utils/formatter";
 import {useBalance} from "@/hooks/useBalances";
 import {useBZETx} from "@/hooks/useTx";
 import {useToast} from "@/hooks/useToast";
 import {bze} from "@bze/bzejs"
+import {useAssetPrice} from "@/hooks/usePrices";
+import BigNumber from "bignumber.js";
 
 
 const TradingPage = () => {
@@ -72,6 +74,7 @@ const TradingPageContent = () => {
     const {address} = useChain(getChainName())
     const {balance: baseBalance} = useBalance(market?.base ?? '')
     const {balance: quoteBalance} = useBalance(market?.quote ?? '')
+    const {totalUsdValue, hasPrice} = useAssetPrice(market?.quote ?? '')
     const {tx} = useBZETx()
     const {toast} = useToast()
 
@@ -97,8 +100,8 @@ const TradingPageContent = () => {
         return type === ORDER_TYPE_BUY ? 'red.500' : 'green.500';
     }, [])
 
-    const formattedDateFromTimestamp = useCallback((timestamp: string) => {
-        return intlDateFormat.format(new Date(parseInt(timestamp) * 1000))
+    const formattedDateFromTimestamp = useCallback((timestamp: BigNumber|bigint|string, ms?: boolean) => {
+        return intlDateFormat.format(new Date(toBigNumber(timestamp).multipliedBy(ms ? 1000 : 1).toNumber()))
     }, [])
 
     const dailyVolume = useMemo(() => {
@@ -116,6 +119,13 @@ const TradingPageContent = () => {
         if (!quoteBalance) return '0';
         return prettyAmount(uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals || 0))
     }, [quoteBalance, quoteAsset])
+
+    const quoteUsdValue = useCallback((value: number|bigint|BigNumber|string|undefined) => {
+        if (!value) return '0';
+        return formatUsdAmount(totalUsdValue(toBigNumber(value)))
+    }, [totalUsdValue])
+
+    const shouldShowUsdValues = useMemo(() => hasPrice && !quoteAsset?.stable, [hasPrice, quoteAsset])
 
     const fetchActiveOrders = useCallback(async () => {
         if (!marketData?.market_id) {
@@ -223,9 +233,16 @@ const TradingPageContent = () => {
                                         {marketData?.change}%
                                     </Badge>
                                 </HStack>
-                                <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
-                                    {marketData?.last_price} {quoteAsset?.ticker}
-                                </Text>
+                                <VStack align="start" gap={-1}>
+                                    <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
+                                        {marketData?.last_price} {quoteAsset?.ticker}
+                                    </Text>
+                                    {shouldShowUsdValues && (
+                                        <Text fontSize="xs" color={priceColor}>
+                                            {quoteUsdValue(marketData?.last_price)} USD
+                                        </Text>
+                                    )}
+                                </VStack>
                             </VStack>
                         </HStack>
 
@@ -233,14 +250,29 @@ const TradingPageContent = () => {
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="fg.muted">24h Volume</Text>
                                 <Text fontSize="sm" fontWeight="medium">{dailyVolume} {quoteAsset?.ticker}</Text>
+                                {shouldShowUsdValues && (
+                                    <Text fontSize="xs" color="fg.muted">
+                                        {quoteUsdValue(marketData?.quote_volume)} USD
+                                    </Text>
+                                )}
                             </VStack>
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="fg.muted">24h High</Text>
                                 <Text fontSize="sm" fontWeight="medium">{marketData?.high || 0}</Text>
+                                {shouldShowUsdValues && (
+                                    <Text fontSize="xs" color="fg.muted">
+                                        {quoteUsdValue(marketData?.high)} USD
+                                    </Text>
+                                )}
                             </VStack>
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="fg.muted">24h Low</Text>
                                 <Text fontSize="sm" fontWeight="medium">{marketData?.low || 0}</Text>
+                                {shouldShowUsdValues && (
+                                    <Text fontSize="xs" color="fg.muted">
+                                        {quoteUsdValue(marketData?.low)} USD
+                                    </Text>
+                                )}
                             </VStack>
                         </HStack>
                     </Flex>
@@ -264,6 +296,11 @@ const TradingPageContent = () => {
                                         <Text>{uAmountToAmount(ask.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
+                                {activeOrders?.sellOrders.length === 0 && (
+                                    <Box p={6} textAlign="center">
+                                        <Text fontSize="sm" color="fg.muted">No sell orders</Text>
+                                    </Box>
+                                )}
                             </Box>
 
                             {/* Current Price */}
@@ -288,6 +325,11 @@ const TradingPageContent = () => {
                                         <Text>{uAmountToAmount(bid.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
+                                {activeOrders?.buyOrders.length === 0 && (
+                                    <Box p={6} textAlign="center">
+                                        <Text fontSize="sm" color="fg.muted">No buy orders</Text>
+                                    </Box>
+                                )}
                             </Box>
                         </VStack>
                     </Box>
@@ -534,7 +576,7 @@ const TradingPageContent = () => {
                                                 </Table.Cell>
                                                 <Table.Cell textAlign="right">
                                                     <Text fontSize="xs" color="fg.muted">
-                                                        {formattedDateFromTimestamp(trade.executed_at.toString())}
+                                                        {formattedDateFromTimestamp(trade.executed_at, true)}
                                                     </Text>
                                                 </Table.Cell>
                                             </Table.Row>
@@ -550,7 +592,7 @@ const TradingPageContent = () => {
                                                     <Text fontSize="xs">{trade.base_volume}</Text>
                                                 </Table.Cell>
                                                 <Table.Cell textAlign="right">
-                                                    <Text fontSize="xs" color="fg.muted">{formattedDateFromTimestamp(trade.executed_at.toString())}</Text>
+                                                    <Text fontSize="xs" color="fg.muted">{formattedDateFromTimestamp(trade.executed_at)}</Text>
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}
