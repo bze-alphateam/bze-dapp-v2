@@ -32,6 +32,7 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {intlDateFormat} from "@/utils/formatter";
+import {useBalance} from "@/hooks/useBalances";
 
 
 const TradingPage = () => {
@@ -65,6 +66,8 @@ const TradingPageContent = () => {
     const {asset: baseAsset} = useAsset(market?.base ?? '')
     const {asset: quoteAsset} = useAsset(market?.quote ?? '')
     const {address} = useChain(getChainName())
+    const {balance: baseBalance} = useBalance(market?.base ?? '')
+    const {balance: quoteBalance} = useBalance(market?.quote ?? '')
 
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
 
@@ -97,6 +100,16 @@ const TradingPageContent = () => {
 
         return prettyAmount(marketData.quote_volume)
     }, [marketData])
+
+    const displayBaseBalance = useMemo(() => {
+        if (!baseBalance) return '0';
+        return prettyAmount(uAmountToAmount(baseBalance.amount, baseAsset?.decimals || 0))
+    }, [baseBalance, baseAsset])
+
+    const displayQuoteBalance = useMemo(() => {
+        if (!quoteBalance) return '0';
+        return prettyAmount(uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals || 0))
+    }, [quoteBalance, quoteAsset])
 
     const fetchActiveOrders = useCallback(async () => {
         if (!marketData?.market_id) {
@@ -589,11 +602,11 @@ const TradingPageContent = () => {
                             <VStack align="stretch" gap={2}>
                                 <HStack justify="space-between">
                                     <Text fontSize="xs" color="fg.muted">{baseAsset?.ticker}</Text>
-                                    <Text fontSize="xs" fontWeight="medium">260,000.07</Text>
+                                    <Text fontSize="xs" fontWeight="medium">{displayBaseBalance}</Text>
                                 </HStack>
                                 <HStack justify="space-between">
                                     <Text fontSize="xs" color="fg.muted">{quoteAsset?.ticker}</Text>
-                                    <Text fontSize="xs" fontWeight="medium">1,234.56</Text>
+                                    <Text fontSize="xs" fontWeight="medium">{displayQuoteBalance}</Text>
                                 </HStack>
                             </VStack>
                         </Box>
