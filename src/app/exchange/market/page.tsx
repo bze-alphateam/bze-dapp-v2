@@ -39,6 +39,18 @@ import {bze} from "@bze/bzejs"
 import {useAssetPrice} from "@/hooks/usePrices";
 import BigNumber from "bignumber.js";
 
+interface EmptyTableRowProps {
+    colSpan: number;
+    message: string;
+}
+
+const EmptyTableRow = ({ colSpan, message }: EmptyTableRowProps) => (
+    <Table.Row>
+        <Table.Cell colSpan={colSpan} textAlign="center" py={8}>
+            <Text fontSize="sm" color="fg.muted">{message}</Text>
+        </Table.Cell>
+    </Table.Row>
+);
 
 const TradingPage = () => {
     return (
@@ -230,12 +242,12 @@ const TradingPageContent = () => {
                                 <HStack>
                                     <Text fontSize="xl" fontWeight="bold">{marketTicker}</Text>
                                     <Badge colorScheme={priceColor} variant="subtle">
-                                        {marketData?.change}%
+                                        {marketData?.change || 0}%
                                     </Badge>
                                 </HStack>
                                 <VStack align="start" gap={-1}>
                                     <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
-                                        {marketData?.last_price} {quoteAsset?.ticker}
+                                        {marketData?.last_price || 0} {quoteAsset?.ticker}
                                     </Text>
                                     {shouldShowUsdValues && (
                                         <Text fontSize="xs" color={priceColor}>
@@ -296,7 +308,7 @@ const TradingPageContent = () => {
                                         <Text>{uAmountToAmount(ask.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
-                                {activeOrders?.sellOrders.length === 0 && (
+                                {(!activeOrders || activeOrders.sellOrders.length === 0) && (
                                     <Box p={6} textAlign="center">
                                         <Text fontSize="sm" color="fg.muted">No sell orders</Text>
                                     </Box>
@@ -307,7 +319,7 @@ const TradingPageContent = () => {
                             <Box py={2} bg="bg.muted" borderRadius="sm">
                                 <HStack justify="center">
                                     <Text fontSize="md" fontWeight="bold" color={priceColor}>
-                                        {marketData?.last_price}
+                                        {marketData?.last_price || 0}
                                     </Text>
                                     {isNegative ? (
                                         <LuTrendingDown color="red" size={16} />
@@ -325,7 +337,7 @@ const TradingPageContent = () => {
                                         <Text>{uAmountToAmount(bid.amount, baseAsset?.decimals || 0)}</Text>
                                     </HStack>
                                 ))}
-                                {activeOrders?.buyOrders.length === 0 && (
+                                {(!activeOrders || activeOrders?.buyOrders.length === 0 ) && (
                                     <Box p={6} textAlign="center">
                                         <Text fontSize="sm" color="fg.muted">No buy orders</Text>
                                     </Box>
@@ -581,6 +593,9 @@ const TradingPageContent = () => {
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}
+                                        {historyTab === 'market' && historyOrders.length === 0 && (
+                                            <EmptyTableRow colSpan={3} message={'No market history'} />
+                                        )}
                                         {historyTab === 'my' && myHistory.map((trade, i) => (
                                             <Table.Row key={i}>
                                                 <Table.Cell>
@@ -596,6 +611,9 @@ const TradingPageContent = () => {
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}
+                                        {historyTab === 'my' && myHistory.length === 0 && (
+                                            <EmptyTableRow colSpan={3} message={'No history'}/>
+                                        )}
                                     </Table.Body>
                                 </Table.Root>
                             </Box>
