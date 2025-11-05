@@ -99,7 +99,6 @@ export async function getAddressMarketOrders(marketId: string, address: string):
 
 export async function getAddressFullMarketOrders(marketId: string, address: string): Promise<OrderSDKType[]> {
     const addressOrders = await getAddressMarketOrders(marketId, address);
-    console.log("addressOrders", addressOrders);
     if (addressOrders.list.length === 0) {
         return [];
     }
@@ -110,7 +109,7 @@ export async function getAddressFullMarketOrders(marketId: string, address: stri
     }
 
     const orders = await Promise.all(promises);
-console.log("orders", orders);
+
     return orders.filter((item) => item !== undefined).map(resp => resp.order) as OrderSDKType[];
 }
 

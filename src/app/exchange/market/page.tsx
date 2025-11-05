@@ -33,6 +33,9 @@ import {getChainName} from "@/constants/chain";
 import {HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {intlDateFormat} from "@/utils/formatter";
 import {useBalance} from "@/hooks/useBalances";
+import {useBZETx} from "@/hooks/useTx";
+import {useToast} from "@/hooks/useToast";
+import {bze} from "@bze/bzejs"
 
 
 const TradingPage = () => {
@@ -59,6 +62,7 @@ const TradingPageContent = () => {
     const [myHistory, setMyHistory] = useState<HistoryOrder[]>([]);
     const [historyOrders, setHistoryOrders] = useState<HistoryOrderSDKType[]>([]);
     const [myOrders, setMyOrders] = useState<OrderSDKType[]>([]);
+    const [submittingCancel, setSubmittingCancel] = useState(false);
 
     const {marketIdParam, toExchangePage} = useNavigationWithParams();
 
@@ -68,6 +72,8 @@ const TradingPageContent = () => {
     const {address} = useChain(getChainName())
     const {balance: baseBalance} = useBalance(market?.base ?? '')
     const {balance: quoteBalance} = useBalance(market?.quote ?? '')
+    const {tx} = useBZETx()
+    const {toast} = useToast()
 
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
 
@@ -163,6 +169,33 @@ const TradingPageContent = () => {
         fetchMarketHistory();
         fetchMyOrders();
     }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders])
+
+    const onOrderCancelClick = useCallback(async (orders: OrderSDKType[]) => {
+        if (orders.length === 0) return;
+
+        const {cancelOrder} = bze.tradebin.MessageComposer.withTypeUrl;
+        if (!address || !tx) {
+            toast.error('Please connect your wallet');
+            return;
+        }
+
+        setSubmittingCancel(true)
+        const msgs = [];
+        for (const order of orders) {
+            const msg = cancelOrder({
+                creator: address,
+                marketId: order.market_id,
+                orderId: order.id,
+                orderType: order.order_type,
+            });
+            msgs.push(msg);
+        }
+
+        await tx(msgs);
+
+        fetchMyOrders()
+        setSubmittingCancel(false);
+    }, [address, tx, toast, fetchMyOrders])
 
     useEffect(() => {
         onMount();
@@ -531,7 +564,12 @@ const TradingPageContent = () => {
                             <HStack justify="space-between" p={3} borderBottomWidth="1px">
                                 <Text fontWeight="bold" fontSize="sm">Your Orders</Text>
                                 {myOrders.length > 0 && (
-                                    <Button size="xs" variant="ghost">
+                                    <Button
+                                        size="xs"
+                                        variant="ghost"
+                                        onClick={() => onOrderCancelClick(myOrders)}
+                                        loading={submittingCancel}
+                                    >
                                         Cancel All
                                     </Button>
                                 )}
@@ -585,6 +623,8 @@ const TradingPageContent = () => {
                                                             size="xs"
                                                             variant="ghost"
                                                             colorScheme="red"
+                                                            onClick={() => onOrderCancelClick([order])}
+                                                            loading={submittingCancel}
                                                         >
                                                             <LuX size={12} />
                                                         </Button>
