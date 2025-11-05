@@ -38,6 +38,8 @@ import {useToast} from "@/hooks/useToast";
 import {bze} from "@bze/bzejs"
 import {useAssetPrice} from "@/hooks/usePrices";
 import BigNumber from "bignumber.js";
+import {sanitizeNumberInput} from "@/utils/number";
+import {calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount} from "@/utils/market";
 
 interface EmptyTableRowProps {
     colSpan: number;
@@ -93,13 +95,11 @@ const TradingPageContent = () => {
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
 
     const isNegative = useMemo(() => (marketData?.change || 0) < 0, [marketData]);
-
     const marketTicker = useMemo(() => {
         if (!baseAsset || !quoteAsset) return '?/?';
 
         return `${baseAsset?.ticker}/${quoteAsset?.ticker}`
     }, [baseAsset, quoteAsset]);
-
     const priceColor = useMemo(() => {
         if (!marketData || marketData.change === 0) {
             return 'gray.500';
@@ -107,11 +107,9 @@ const TradingPageContent = () => {
 
         return marketData.change < 0 ? 'red.500' : 'green.500';
     }, [marketData])
-
     const orderTypeColor = useCallback((type: string) => {
         return type === ORDER_TYPE_BUY ? 'red.500' : 'green.500';
     }, [])
-
     const formattedDateFromTimestamp = useCallback((timestamp: BigNumber|bigint|string, ms?: boolean) => {
         return intlDateFormat.format(new Date(toBigNumber(timestamp).multipliedBy(ms ? 1000 : 1).toNumber()))
     }, [])
@@ -121,22 +119,18 @@ const TradingPageContent = () => {
 
         return prettyAmount(marketData.quote_volume)
     }, [marketData])
-
     const displayBaseBalance = useMemo(() => {
         if (!baseBalance) return '0';
         return prettyAmount(uAmountToAmount(baseBalance.amount, baseAsset?.decimals || 0))
     }, [baseBalance, baseAsset])
-
     const displayQuoteBalance = useMemo(() => {
         if (!quoteBalance) return '0';
         return prettyAmount(uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals || 0))
     }, [quoteBalance, quoteAsset])
-
     const quoteUsdValue = useCallback((value: number|bigint|BigNumber|string|undefined) => {
         if (!value) return '0';
         return formatUsdAmount(totalUsdValue(toBigNumber(value)))
     }, [totalUsdValue])
-
     const shouldShowUsdValues = useMemo(() => hasPrice && !quoteAsset?.stable, [hasPrice, quoteAsset])
 
     const fetchActiveOrders = useCallback(async () => {
@@ -153,7 +147,6 @@ const TradingPageContent = () => {
             }
         );
     }, [marketData])
-
     const fetchMyHistory = useCallback(async () => {
         if (!address || !marketData) {
             return;
@@ -162,7 +155,6 @@ const TradingPageContent = () => {
         const data = await getAddressHistory(address, marketData.market_id);
         setMyHistory(data);
     }, [address, marketData])
-
     const fetchMarketHistory = useCallback(async () => {
         if (!marketData) {
             return;
@@ -170,7 +162,6 @@ const TradingPageContent = () => {
         const history = await getMarketHistory(marketData.market_id);
         setHistoryOrders(history.list);
     }, [marketData])
-
     const fetchMyOrders = useCallback(async () => {
         if (!marketData) {
             return;
@@ -191,7 +182,6 @@ const TradingPageContent = () => {
         fetchMarketHistory();
         fetchMyOrders();
     }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders])
-
     const onOrderCancelClick = useCallback(async (orders: OrderSDKType[]) => {
         if (orders.length === 0) return;
 
@@ -218,6 +208,62 @@ const TradingPageContent = () => {
         fetchMyOrders()
         setSubmittingCancel(false);
     }, [address, tx, toast, fetchMyOrders])
+
+    const onBuyPriceChange = useCallback((price: string) => {
+        setBuyPrice(price);
+        const total = calculateTotalAmount(price, buyAmount, quoteAsset?.decimals || 0);
+        if (total !== '') {
+            setBuyTotal(total);
+        } else {
+            setBuyAmount(calculateAmountFromPrice(price, buyTotal, baseAsset?.decimals || 0));
+        }
+    }, [setBuyPrice, setBuyTotal, buyAmount, quoteAsset, baseAsset, setBuyAmount, buyTotal])
+    const onBuyAmountChange = useCallback((amount: string) => {
+        setBuyAmount(amount);
+        const total = calculateTotalAmount(buyPrice, amount, quoteAsset?.decimals || 0);
+        if (total !== '') {
+            setBuyTotal(total);
+        } else {
+            setBuyPrice(calculatePricePerUnit(amount, buyTotal, quoteAsset?.decimals || 0));
+        }
+    }, [buyPrice, setBuyTotal, quoteAsset, setBuyPrice, buyTotal, setBuyAmount])
+    const onBuyTotalChange = useCallback((total: string) => {
+        setBuyTotal(total);
+        const amount = calculateAmountFromPrice(buyPrice, total, quoteAsset?.decimals || 0);
+        if (amount !== '') {
+            setBuyAmount(amount);
+        } else {
+            setBuyPrice(calculatePricePerUnit(buyAmount, total, baseAsset?.decimals || 0));
+        }
+    }, [buyPrice, setBuyAmount, buyAmount, quoteAsset, baseAsset])
+
+    const onSellPriceChange = useCallback((price: string) => {
+        setSellPrice(price);
+        const total = calculateTotalAmount(price, sellAmount, quoteAsset?.decimals || 0);
+        if (total !== '') {
+            setSellTotal(total);
+        } else {
+            setSellAmount(calculateAmountFromPrice(price, sellTotal, baseAsset?.decimals || 0));
+        }
+    }, [baseAsset?.decimals, quoteAsset?.decimals, sellAmount, sellTotal])
+    const onSellAmountChange = useCallback((amount: string) => {
+        setSellAmount(amount);
+        const total = calculateTotalAmount(sellPrice, amount, quoteAsset?.decimals || 0);
+        if (total !== '') {
+            setSellTotal(total);
+        } else {
+            setSellPrice(calculatePricePerUnit(amount, sellTotal, quoteAsset?.decimals || 0));
+        }
+    }, [setSellAmount, setSellTotal, setSellPrice, sellPrice, sellTotal, quoteAsset])
+    const onSellTotalChange = useCallback((total: string) => {
+        setSellTotal(total);
+        const amount = calculateAmountFromPrice(sellPrice, total, quoteAsset?.decimals || 0);
+        if (amount !== '') {
+            setSellAmount(amount);
+        } else {
+            setSellPrice(calculatePricePerUnit(sellAmount, total, baseAsset?.decimals || 0));
+        }
+    }, [setSellTotal, setSellAmount, setSellPrice, sellPrice, sellAmount, quoteAsset, baseAsset])
 
     useEffect(() => {
         onMount();
@@ -390,7 +436,7 @@ const TradingPageContent = () => {
                                                 size="sm"
                                                 placeholder="0.00000"
                                                 value={buyPrice}
-                                                onChange={(e) => setBuyPrice(e.target.value)}
+                                                onChange={(e) => onBuyPriceChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
                                             />
                                             <Text
@@ -413,7 +459,7 @@ const TradingPageContent = () => {
                                                 size="sm"
                                                 placeholder="0.00000"
                                                 value={buyAmount}
-                                                onChange={(e) => setBuyAmount(e.target.value)}
+                                                onChange={(e) => onBuyAmountChange(sanitizeNumberInput(e.target.value))}
                                                 pr="10"
                                             />
                                             <Text
@@ -436,7 +482,7 @@ const TradingPageContent = () => {
                                                 size="sm"
                                                 placeholder="0.00000"
                                                 value={buyTotal}
-                                                onChange={(e) => setBuyTotal(e.target.value)}
+                                                onChange={(e) => onBuyTotalChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
                                             />
                                             <Text
@@ -469,7 +515,7 @@ const TradingPageContent = () => {
                                                 size="sm"
                                                 placeholder="0.00000"
                                                 value={sellPrice}
-                                                onChange={(e) => setSellPrice(e.target.value)}
+                                                onChange={(e) => onSellPriceChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
                                             />
                                             <Text
@@ -492,7 +538,7 @@ const TradingPageContent = () => {
                                                 size="sm"
                                                 placeholder="0.00000"
                                                 value={sellAmount}
-                                                onChange={(e) => setSellAmount(e.target.value)}
+                                                onChange={(e) => onSellAmountChange(sanitizeNumberInput(e.target.value))}
                                                 pr="10"
                                             />
                                             <Text
@@ -515,7 +561,7 @@ const TradingPageContent = () => {
                                                 size="sm"
                                                 placeholder="0.00000"
                                                 value={sellTotal}
-                                                onChange={(e) => setSellTotal(e.target.value)}
+                                                onChange={(e) => onSellTotalChange(sanitizeNumberInput(e.target.value))}
                                                 pr="12"
                                             />
                                             <Text
