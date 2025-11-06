@@ -36,10 +36,6 @@ export const LightweightChart = (props: ChartProps) => {
     const textColor = useColorModeValue('#666666', '#a0a0a0');
     const bgColor = useColorModeValue('#ffffff', 'rgba(0,0,0,0)');
 
-    const errorTimeout = setTimeout(() => {
-        setChartText("Error loading chart");
-    }, 20000);
-
     const neededIntervals = useCallback(() => {
         if (!priceData || !props.chartType) {
             return 0
@@ -68,7 +64,7 @@ export const LightweightChart = (props: ChartProps) => {
         return 20;
     }, [priceData, props.chartType]);
 
-    const formatByAverage = (avg: number): { precision: number, minMove: number } => {
+    const formatByAverage = useCallback((avg: number): { precision: number, minMove: number } => {
         if (avg < 0.0001) {
             return {precision: 7, minMove: 0.0000001};
         } else if (avg < 0.001) {
@@ -82,7 +78,8 @@ export const LightweightChart = (props: ChartProps) => {
         } else {
             return {precision: 2, minMove: 0.01};
         }
-    }
+
+    }, [])
 
     const getPriceFormatOptions = useCallback((): { precision: number, minMove: number } => {
         if (!priceData || priceData.length === 0) {
@@ -95,6 +92,7 @@ export const LightweightChart = (props: ChartProps) => {
         const avg = (first.high + first.low + middle.high + middle.low + last.high + last.low) / 6;
 
         return formatByAverage(avg);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [priceData]);
 
     const getVolumeFormatOptions = useCallback((): { precision: number, minMove: number } => {
@@ -108,17 +106,23 @@ export const LightweightChart = (props: ChartProps) => {
         const avg = (first.value + middle.value + last.value) / 3;
 
         return formatByAverage(avg);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [priceData]);
 
-    const timeToLocal = (originalTime: number): number => {
+    const timeToLocal = useCallback((originalTime: number): number => {
         //https://tradingview.github.io/lightweight-charts/docs/time-zones
         const localOffset = new Date().getTimezoneOffset() * 60;
         return originalTime - localOffset;
-    }
+    }, [])
 
     useEffect(
         () => {
+            const errorTimeout = setTimeout(() => {
+                setChartText("Error loading chart");
+            }, 10000);
+
             if (!chartContainerRef.current) {
+                clearTimeout(errorTimeout);
                 return;
             }
 
@@ -243,11 +247,14 @@ export const LightweightChart = (props: ChartProps) => {
             window.addEventListener('resize', handleResize);
 
             return () => {
+                clearTimeout(errorTimeout);
                 window.removeEventListener('resize', handleResize);
                 chart.remove();
             };
         },
-        [priceData, vColor, gridColor, textColor, getPriceFormatOptions, getVolumeFormatOptions, neededIntervals, getBarSpacing, bgColor, errorTimeout]
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [priceData, vColor, gridColor, textColor, bgColor]
     );
 
     return (
