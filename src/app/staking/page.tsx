@@ -61,7 +61,6 @@ const StakingPage = () => {
 
         return totalCount + addressData.active.size
     }, [stakingData, addressData])
-
     const filteredOpportunities = useMemo(() => {
         return stakingRewards.filter(
             sr =>
@@ -91,16 +90,6 @@ const StakingPage = () => {
             return 0
         })
     }, [stakingRewards, searchTerm, addressData, isVerifiedAsset, denomTicker]);
-
-    const openModal = useCallback((staking: StakingRewardSDKType) => {
-        setSelectedStaking(staking);
-        setIsModalOpen(true);
-    }, []);
-
-    const closeModal = useCallback(() => {
-        setIsModalOpen(false);
-        setSelectedStaking(undefined);
-    }, []);
 
     const loadSummary = useCallback(() => {
         if (!stakingData || !stakingRewards || !nativeAsset) return;
@@ -171,7 +160,14 @@ const StakingPage = () => {
 
         setSummaryLoading(false)
     }, [stakingData, stakingRewards, nativeAsset, denomDecimals, totalUsdValue, addressData])
-
+    const openModal = useCallback((staking: StakingRewardSDKType) => {
+        setSelectedStaking(staking);
+        setIsModalOpen(true);
+    }, []);
+    const closeModal = useCallback(() => {
+        setIsModalOpen(false);
+        setSelectedStaking(undefined);
+    }, []);
     const onModalAction = useCallback(() => {
         reloadRewardsStaking()
         closeModal()
@@ -181,7 +177,6 @@ const StakingPage = () => {
     useEffect(() => {
         loadSummary()
     }, [loadSummary])
-
     useEffect(() => {
         const reloadInterval = setInterval(() => {
             reload()
