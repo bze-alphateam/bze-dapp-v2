@@ -75,7 +75,7 @@ export async function getAddressStakingRewards(address: string): Promise<Address
     const result =  {
         address: address,
         active: new Map<string, StakingRewardParticipantSDKType>(),
-        unlocking: new Map<string, ExtendedPendingUnlockParticipantSDKType>(),
+        unlocking: new Map<string, ExtendedPendingUnlockParticipantSDKType[]>(),
     }
 
     if (address === "") {
@@ -103,8 +103,8 @@ async function mapParticipantRewards(participantRewards: StakingRewardParticipan
     return result;
 }
 
-async function mapPendingUnlock(pending: PendingUnlockParticipantSDKType[]): Promise<Map<string, ExtendedPendingUnlockParticipantSDKType>> {
-    const result = new Map<string, ExtendedPendingUnlockParticipantSDKType>
+async function mapPendingUnlock(pending: PendingUnlockParticipantSDKType[]): Promise<Map<string, ExtendedPendingUnlockParticipantSDKType[]>> {
+    const result = new Map<string, ExtendedPendingUnlockParticipantSDKType[]>
     for (let i = 0; i < pending.length; i++) {
         // index has a form of {unlock_epoch}/{reward_id}/{address}
         // we need the reward_id to use it as a key
@@ -120,7 +120,10 @@ async function mapPendingUnlock(pending: PendingUnlockParticipantSDKType[]): Pro
             unlockEpoch: new BigNumber(splitIndex[0]),
         }
 
-        result.set(item.rewardId, item);
+        const allItems = result.get(item.rewardId) ?? [];
+        allItems.push(item);
+
+        result.set(item.rewardId, allItems);
     }
 
     return result;

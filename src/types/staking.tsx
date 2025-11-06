@@ -41,7 +41,7 @@ export interface NativeUnbondingSummary {
 export interface AddressRewardsStaking {
     address: string;
     active: Map<string, StakingRewardParticipantSDKType>;
-    unlocking: Map<string, ExtendedPendingUnlockParticipantSDKType>;
+    unlocking: Map<string, ExtendedPendingUnlockParticipantSDKType[]>;
 }
 
 export interface ExtendedPendingUnlockParticipantSDKType extends PendingUnlockParticipantSDKType {

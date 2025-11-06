@@ -30,6 +30,7 @@ import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {useToast} from "@/hooks/useToast";
+import {useEpochs} from "@/hooks/useEpochs";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
@@ -40,7 +41,7 @@ interface RewardsStakingActionModalProps {
     onClose: () => void;
     stakingReward?: StakingRewardSDKType;
     userStake?: StakingRewardParticipantSDKType;
-    userUnlocking?: ExtendedPendingUnlockParticipantSDKType;
+    userUnlocking?: ExtendedPendingUnlockParticipantSDKType[];
     onActionPerformed?: () => void;
 }
 
@@ -57,20 +58,19 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     const {address} = useChain(getChainName())
     const {tx, progressTrack} = useBZETx()
     const {toast} = useToast()
+    const {getHourEpochInfo} = useEpochs()
 
     const actionsModalTitle = useMemo(() => {
         if (!stakingReward) return 'Actions';
 
         return `Stake ${denomTicker(stakingReward.staking_denom)} and earn ${denomTicker(stakingReward.prize_denom)}`
     }, [denomTicker, stakingReward])
-
     const onCloseClick = () => {
         setModalType(MODAL_TYPE_ACTIONS);
         setStakeAmount('');
         setFormError('');
         onClose();
     }
-
     const openModal = (type: string) => {
         setModalType(type);
     };
@@ -80,22 +80,18 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         return uAmountToBigNumberAmount(stakingReward?.min_stake, stakingAsset?.decimals || 0)
     }, [stakingReward, stakingAsset])
-
     const prettyMinStake = useMemo(() => {
         if (!stakingReward || !stakingAsset) return 'Amount to stake';
         if (!!userStake) return 'Amount to stake';
 
         return `Min: ${prettyAmount(minStakeAmount)} ${stakingAsset?.ticker}`
     }, [stakingReward, stakingAsset, userStake, minStakeAmount])
-
     const hasUserStake = useMemo(() => !!userStake, [userStake])
     const hasPendingRewards = useMemo(() => {
         const rewardsToClaim = calculateRewardsStakingPendingRewards(stakingReward, userStake)
 
         return rewardsToClaim.gt(0)
     }, [stakingReward, userStake])
-    const hasUnbonding = useMemo(() => !!userUnlocking, [userUnlocking])
-
     const inputEstimatedRewards = useMemo(() => {
         if (!stakingReward || !stakeAmount || !stakingAsset) return '0';
 
@@ -107,11 +103,9 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         return `${shortNumberFormat(uAmountToBigNumberAmount(dailyReward.integerValue(), prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
     }, [stakingReward, prizeAsset, stakeAmount, stakingAsset])
-
     const yourStake = useMemo(() => {
         return `${prettyAmount(uAmountToAmount(userStake?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
     }, [userStake, stakingAsset])
-
     const pendingRewards = useMemo(() => {
         const rewardsToClaim = calculateRewardsStakingPendingRewards(stakingReward, userStake)
         if (rewardsToClaim.isZero()) {
@@ -120,33 +114,53 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         return `${prettyAmount(uAmountToAmount(rewardsToClaim, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
     }, [stakingReward, userStake, prizeAsset])
-
     const rewardNumber = useMemo(() => {
         return removeLeadingZeros(stakingReward?.reward_id ?? '000')
     }, [stakingReward])
-
     const unstakeModalTitle = useMemo(() => {
         if (!stakingReward || !denomTicker) return 'Unstake Tokens';
 
         return `Unstake your ${denomTicker(stakingReward.staking_denom)}`
     }, [stakingReward, denomTicker])
-
     const claimModalTitle = useMemo(() => {
         if (!stakingReward || !denomTicker) return 'Claim Tokens';
 
         return `Claim your ${denomTicker(stakingReward.prize_denom)} rewards`
     }, [stakingReward, denomTicker])
-
     const pendingUnlock = useMemo(() => {
-        return `${prettyAmount(uAmountToAmount(userUnlocking?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
-    }, [userUnlocking, stakingAsset])
+        if (!userUnlocking || !stakingAsset) return [];
 
+        const currentHour = getHourEpochInfo()
+        if (!currentHour) {
+            return []
+        }
+
+        const result = [];
+        for (const unlock of userUnlocking) {
+            const remainingHours = unlock.unlockEpoch.minus(currentHour.current_epoch)
+            const days = Math.floor(remainingHours.dividedBy(24).toNumber())
+            const unlockAmount = prettyAmount(uAmountToAmount(unlock?.amount, stakingAsset?.decimals || 0))
+            const item = {
+                amount: unlockAmount,
+                title: `${unlockAmount} ${stakingAsset?.ticker} unlocking in 1 hour`
+            };
+            if (days >= 2) {
+                item.title = `${unlockAmount} ${stakingAsset?.ticker} unlocking in ${days} days`;
+            } else if (remainingHours.gt(1)) {
+                item.title = `${unlockAmount} ${stakingAsset?.ticker} unlocking in ${remainingHours.toNumber()} hours`;
+            }
+
+            result.push(item)
+        }
+
+        return result;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userUnlocking, stakingAsset])
     const userStakingAssetBalance = useMemo(() => {
         if (!stakingAssetBalance || !stakingAsset) return '0';
 
         return uAmountToAmount(stakingAssetBalance?.amount, stakingAsset?.decimals || 0)
     }, [stakingAssetBalance, stakingAsset])
-
     const userStakingAssetPrettyBalance = useMemo(() => {
         return `${prettyAmount(userStakingAssetBalance)} ${stakingAsset?.ticker}`
     }, [userStakingAssetBalance, stakingAsset])
@@ -176,7 +190,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         setFormError('')
     }, [stakingReward, stakingAsset, stakeAmount, hasUserStake, userStakingAssetBalance, minStakeAmount])
-
     const handleConfirmStake = useCallback(async () => {
         if (!stakingReward || !stakeAmount) return;
 
@@ -217,7 +230,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         setIsSubmitting(false)
     }, [stakingReward, stakeAmount, address, stakingAsset, userStake, stakingAssetBalance, tx, onActionPerformed, minStakeAmount])
-
     const handleUnstake = useCallback(async () => {
         if (!stakingReward) return;
 
@@ -246,7 +258,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         setIsSubmitting(false)
     }, [stakingReward, userStake, address, tx, onActionPerformed, toast])
-
     const handleRewardsClaim = useCallback(async () => {
         if (!stakingReward) return;
 
@@ -338,19 +349,12 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         )}
                                     </VStack>
                                 </Alert.Root>
-                                {hasUnbonding && (
-                                    <Alert.Root status={"warning"} variant="subtle">
+                                {pendingUnlock.length > 0 && pendingUnlock.map((item, index) => (
+                                    <Alert.Root status={"warning"} variant="subtle" key={index}>
                                         <Alert.Indicator />
-                                        <VStack align="start" gap="2" flex="1">
-                                            <HStack justify="space-between" width="full">
-                                                <Text fontWeight="medium">Pending Unlock:</Text>
-                                                <Text fontWeight="bold" color="orange.500">
-                                                    {pendingUnlock}
-                                                </Text>
-                                            </HStack>
-                                        </VStack>
+                                        <Alert.Title fontSize="sm">{item.title}</Alert.Title>
                                     </Alert.Root>
-                                )}
+                                ))}
                                 <Stack direction={{ base: 'column', sm: 'row' }} width="full" gap="3">
                                     <Button
                                         flex="1"

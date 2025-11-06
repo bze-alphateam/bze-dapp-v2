@@ -20,18 +20,17 @@ import {useAsset} from "@/hooks/useAssets";
 import {calculateRewardsStakingApr, calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {shortNumberFormat} from "@/utils/formatter";
-import {prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import BigNumber from "bignumber.js";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
-import {useEpochs} from "@/hooks/useEpochs";
 import {removeLeadingZeros} from "@/utils/strings";
 
 interface RewardsStakingBoxProps {
     stakingReward?: StakingRewardSDKType;
     onClick?: (sr?: StakingRewardSDKType) => void;
     userStake?: StakingRewardParticipantSDKType;
-    userUnlocking?: ExtendedPendingUnlockParticipantSDKType;
+    userUnlocking?: ExtendedPendingUnlockParticipantSDKType[];
 }
 
 export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlocking} : RewardsStakingBoxProps) => {
@@ -41,7 +40,6 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
     const {asset: prizeAsset, isLoading: prizeAssetIsLoading} = useAsset(stakingReward?.prize_denom ?? '')
     const {uAmountUsdValue: stakingAssetValue, hasPrice: stakingAssetHasPrice} = useAssetPrice(stakingReward?.staking_denom ?? "")
     const {uAmountUsdValue: prizeAssetValue, hasPrice: prizeAssetHasPrice} = useAssetPrice(stakingReward?.prize_denom ?? "")
-    const {getHourEpochInfo} = useEpochs()
 
     const onBoxClick = useCallback(() => {
         if (onClick && stakingReward) {
@@ -77,30 +75,30 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
 
         return `~${apr.toString()}%`
     }, [prizeAsset?.decimals, prizeAssetHasPrice, prizeAssetValue, stakingAsset?.decimals, stakingAssetHasPrice, stakingAssetValue, stakingReward])
-
     const dailyDistribution = useMemo(() => {
         return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.prize_amount, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
     }, [stakingReward, prizeAsset])
-
     const minStake = useMemo(() => {
         return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.min_stake, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
     }, [stakingReward, stakingAsset])
-
     const totalStaked = useMemo(() => {
         return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.staked_amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
     }, [stakingReward, stakingAsset])
-
     const hasUserStake = useMemo(() => !!userStake, [userStake])
     const hasUnbonding = useMemo(() => !!userUnlocking, [userUnlocking])
-
     const yourStake = useMemo(() => {
         return `${prettyAmount(uAmountToAmount(userStake?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
     }, [userStake, stakingAsset])
-
     const pendingUnlock = useMemo(() => {
-        return `${prettyAmount(uAmountToAmount(userUnlocking?.amount, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
-    }, [userUnlocking, stakingAsset])
+        let allAmounts = toBigNumber(0)
+        if (userUnlocking) {
+            for (const unlock of userUnlocking) {
+                allAmounts = allAmounts.plus(unlock.amount)
+            }
+        }
 
+        return `${prettyAmount(uAmountToAmount(allAmounts, stakingAsset?.decimals || 0))} ${stakingAsset?.ticker}`
+    }, [userUnlocking, stakingAsset])
     const pendingRewards = useMemo(() => {
         const rewardsToClaim = calculateRewardsStakingPendingRewards(stakingReward, userStake)
         if (rewardsToClaim.isZero()) {
@@ -109,31 +107,6 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
 
         return `${prettyAmount(uAmountToAmount(rewardsToClaim, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`
     }, [stakingReward, userStake, prizeAsset])
-
-    const pendingUnlockAlert = useMemo(() => {
-        if (!userUnlocking || !stakingAsset || !getHourEpochInfo) {
-            return ''
-        }
-
-        const currentHour = getHourEpochInfo()
-        if (!currentHour) {
-            return ''
-        }
-
-        const remainingHours = userUnlocking.unlockEpoch.minus(currentHour.current_epoch)
-        const days = Math.floor(remainingHours.dividedBy(24).toNumber())
-        const unlockAmount = prettyAmount(uAmountToAmount(userUnlocking?.amount, stakingAsset?.decimals || 0))
-        if (days >= 2) {
-            return `${unlockAmount} ${stakingAsset?.ticker} unlocking in ${days} days`;
-        }
-
-        if (remainingHours.gt(1)) {
-            return `${unlockAmount} ${stakingAsset?.ticker} unlocking in ${remainingHours.toNumber()} hours`;
-        }
-
-        return `${unlockAmount} ${stakingAsset?.ticker} unlocking in 1 hour`;
-    }, [userUnlocking, getHourEpochInfo, stakingAsset])
-
     const rewardNumber = useMemo(() => {
         return removeLeadingZeros(stakingReward?.reward_id ?? '000')
     }, [stakingReward])
@@ -239,7 +212,6 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                             {pendingUnlock}
                                         </Text>
                                     </HStack>
-                                    <Alert.Title fontSize="sm">{pendingUnlockAlert}</Alert.Title>
                                 </VStack>
                             </Alert.Root>
                         )}
