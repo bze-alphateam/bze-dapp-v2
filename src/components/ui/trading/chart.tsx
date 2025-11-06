@@ -122,7 +122,9 @@ export const LightweightChart = (props: ChartProps) => {
                 return;
             }
 
-            if (!priceData) {
+            if (!priceData || priceData.length === 0) {
+                setChartText("No data available");
+                clearTimeout(errorTimeout);
                 return;
             }
 
@@ -257,7 +259,7 @@ export const LightweightChart = (props: ChartProps) => {
                 position: 'relative',
             }}
         >
-            {!chartLoaded && (
+            {(!chartLoaded || priceData.length === 0) && (
                 <Box
                     position="absolute"
                     top="50%"
