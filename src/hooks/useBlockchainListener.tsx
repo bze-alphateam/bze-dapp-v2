@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {getSettings} from "@/storage/settings";
-import {useAssetsContext} from "@/hooks/useAssets";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
-import {addDebounce, addMultipleDebounce} from "@/utils/debounce";
+import {blockchainEventManager} from "@/service/blockchain_event_manager";
+import {
+    CURRENT_WALLET_BALANCE_EVENT,
+    ORDER_BOOK_CHANGED_EVENT,
+    ORDER_EXECUTED_EVENT,
+    TendermintEvent
+} from "@/types/events";
 
 const BLOCK_SUBSCRIPTION_ID = 1;
 const TX_RECIPIENT_SUBSCRIPTION_ID = 2;
@@ -31,15 +36,8 @@ const buildUnsubscribePayload = (id: number, query: string) => {
     };
 }
 
-export interface Attribute {
-    key: string;
-    value: string;
-    index: boolean;
-}
-
-export interface TendermintEvent {
-    type: string;
-    attributes: Attribute[];
+const getMarketId = (event: TendermintEvent) => {
+    return event.attributes.find(attribute => attribute.key === 'market_id')?.value;
 }
 
 const isAddressTransfer = (address: string, event: TendermintEvent) => {
@@ -48,37 +46,50 @@ const isAddressTransfer = (address: string, event: TendermintEvent) => {
     return event.attributes.find(attribute => attribute.value === address) !== undefined;
 };
 
+const isOrderBookEvent = (event: TendermintEvent) => {
+    return event.type.includes('bze.tradebin.Order');
+};
+
 const isOrderExecutedEvent = (event: TendermintEvent) => {
     return event.type.includes('bze.tradebin.OrderExecutedEvent');
 };
 
 export function useBlockchainListener() {
-    const { updateBalances, updateMarketsData } = useAssetsContext();
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectAttemptsRef = useRef(0);
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const shouldReconnectRef = useRef(true);
     const subscribedToTxRef = useRef(false);
     const previousAddressRef = useRef<string | undefined>(undefined);
+    const [isConnected, setIsConnected] = useState(false);
+
     const maxReconnectAttempts = 10;
     const {address} = useChain(getChainName())
 
+    //filters tendermint events and dispatches internal ones
     const onBlockEvent = useCallback((events: TendermintEvent[]) => {
         if (!events) return;
 
         for (const event of events) {
             if (isAddressTransfer(address ?? '', event)) {
-                //use debounce to avoid multiple calls to updateBalances
-                addDebounce('onAddressTransfer', 1000, updateBalances)
+                //the current address balance changed
+                blockchainEventManager.emit(CURRENT_WALLET_BALANCE_EVENT)
                 continue;
             }
+            //add more events not related to markets here, before the market id is extracted
 
-            if (isOrderExecutedEvent(event)) {
-                // the market data is fetched from getbze API so we need to give the web server some time to do it properly
-                addMultipleDebounce('onTradebinEvent', 1500, updateMarketsData, 2)
+            const marketId = getMarketId(event)
+            if (!marketId) continue;
+            //without market id we should not continue
+
+            if (isOrderBookEvent(event)) {
+                blockchainEventManager.emit(ORDER_BOOK_CHANGED_EVENT, {marketId: marketId})
+                if (isOrderExecutedEvent(event)) {
+                    blockchainEventManager.emit(ORDER_EXECUTED_EVENT, {marketId: marketId})
+                }
             }
         }
-    }, [address, updateBalances, updateMarketsData])
+    }, [address])
 
     const subscribeTxEvents = useCallback((walletAddress: string) => {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
@@ -164,6 +175,7 @@ export function useBlockchainListener() {
 
             // Reset reconnect attempts on successful connection
             reconnectAttemptsRef.current = 0;
+            setIsConnected(true); // Set connected
             console.log('WebSocket connected');
         };
 
@@ -193,6 +205,7 @@ export function useBlockchainListener() {
         wsRef.current.onclose = (event) => {
             console.log('WebSocket disconnected', event.code, event.reason);
             subscribedToTxRef.current = false;
+            setIsConnected(false);
 
             // Only reconnect if it wasn't a manual close (code 1000)
             if (event.code !== 1000 && shouldReconnectRef.current) {
@@ -202,6 +215,7 @@ export function useBlockchainListener() {
 
         wsRef.current.onerror = (error) => {
             console.error('WebSocket error:', error);
+            setIsConnected(false);
             // Close the connection to trigger reconnect via onclose
             wsRef.current?.close();
         };
@@ -247,4 +261,8 @@ export function useBlockchainListener() {
             }
         };
     }, [connectWebSocket]);
+
+    return {
+        isConnected,
+    };
 }
