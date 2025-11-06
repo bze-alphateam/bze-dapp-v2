@@ -371,6 +371,19 @@ const TradingPageContent = () => {
         }
     }, [sellPrice, sellAmount, quoteAsset, baseAsset])
 
+    const onOrderBookClick = useCallback((price: string, amount: string) => {
+        setBuyPrice(price);
+        setSellPrice(price);
+
+        setBuyAmount(amount);
+        setSellAmount(amount);
+
+        const total = calculateTotalAmount(price, amount, quoteAsset?.decimals || 0);
+        setSellTotal(total);
+        setBuyTotal(total);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     //order submit functions
     const getMatchingOrders = useCallback((orderType: string, uPrice: BigNumber, uAmount: BigNumber): AggregatedOrderSDKType[] => {
         if (!activeOrders) return [];
@@ -683,12 +696,16 @@ const TradingPageContent = () => {
                                     <Text fontSize="xs" color="fg.muted">Price ({quoteAsset?.ticker})</Text>
                                     <Text fontSize="xs" color="fg.muted">Amount ({baseAsset?.ticker})</Text>
                                 </HStack>
-                                {activeOrders?.sellOrders.map((ask, i) => (
-                                    <HStack key={i} justify="space-between" fontSize="xs" py={1}>
-                                        <Text color="red.500">{uPriceToPrice(ask.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}</Text>
-                                        <Text>{uAmountToAmount(ask.amount, baseAsset?.decimals || 0)}</Text>
-                                    </HStack>
-                                ))}
+                                {activeOrders?.sellOrders.map((ask, i) => {
+                                    const transformedPrice = uPriceToPrice(ask.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)
+                                    const transformedAmount = uAmountToAmount(ask.amount, baseAsset?.decimals || 0)
+                                    return (
+                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(transformedPrice, transformedAmount)}>
+                                            <Text color="red.500">{transformedPrice}</Text>
+                                            <Text>{transformedAmount}</Text>
+                                        </HStack>
+                                    )
+                                })}
                                 {(!activeOrders || activeOrders.sellOrders.length === 0) && (
                                     <Box p={6} textAlign="center">
                                         <Text fontSize="sm" color="fg.muted">No sell orders</Text>
@@ -712,12 +729,16 @@ const TradingPageContent = () => {
 
                             {/* Bids */}
                             <Box>
-                                {activeOrders?.buyOrders.map((bid, i) => (
-                                    <HStack key={i} justify="space-between" fontSize="xs" py={1}>
-                                        <Text color="green.500">{uPriceToPrice(bid.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}</Text>
-                                        <Text>{uAmountToAmount(bid.amount, baseAsset?.decimals || 0)}</Text>
-                                    </HStack>
-                                ))}
+                                {activeOrders?.buyOrders.map((bid, i) => {
+                                    const transformedPrice = uPriceToPrice(bid.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)
+                                    const transformedAmount = uAmountToAmount(bid.amount, baseAsset?.decimals || 0)
+                                    return (
+                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(transformedPrice, transformedAmount)}>
+                                            <Text color="green.500">{transformedPrice}</Text>
+                                            <Text>{transformedAmount}</Text>
+                                        </HStack>
+                                    )
+                                })}
                                 {(!activeOrders || activeOrders?.buyOrders.length === 0 ) && (
                                     <Box p={6} textAlign="center">
                                         <Text fontSize="sm" color="fg.muted">No buy orders</Text>
