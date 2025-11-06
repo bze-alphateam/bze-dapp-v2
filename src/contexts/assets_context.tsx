@@ -23,21 +23,22 @@ import {getEpochsInfo} from "@/query/epoch";
 export interface AssetsContextType {
     //assets
     assetsMap: Map<string, Asset>;
-    updateAssets: (newAssets: Asset[]) => void;
+    updateAssets: () => Promise<Map<string, Asset>>;
 
     marketsMap: Map<string, Market>;
-    updateMarkets: (newMarkets: Market[]) => void;
+    updateMarkets: () => void;
 
     marketsDataMap: Map<string, MarketData>;
-    updateMarketsData: (newMarkets: MarketData[]) => void;
+    updateMarketsData: () => Promise<Map<string, MarketData>>;
 
     balancesMap: Map<string, Balance>;
-    updateBalances: (newBalances: Coin[]) => void;
+    updateBalances: () => void;
 
     // holds a map denom => USD price
     // assets with price 0 will be in this map
     // assets that are not in this map their USD value should not be displayed (example: USDC coin)
     usdPricesMap: Map<string, BigNumber>;
+    updatePrices: (m: Map<string, MarketData>, a: Map<string, Asset>) => void;
 
     //others
     isLoading: boolean;
@@ -48,7 +49,7 @@ export interface AssetsContextType {
     ibcChains: IBCData[]
 
     epochs: Map<string, EpochInfoSDKType>
-    updateEpochs: (newEpochs: EpochInfoSDKType[]) => void;
+    updateEpochs: () => void;
 }
 
 export const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
@@ -94,13 +95,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         return newMap
     }, []);
-
-    const updateAssets = useCallback((newAssets: Asset[]) => {
-        setIsLoading(true)
-        doUpdateAssets(newAssets)
-        setIsLoading(false)
-    }, [doUpdateAssets]);
-
     const doUpdateMarkets = useCallback((newMarkets: Market[]) => {
         const newMap = new Map<string, Market>();
         newMarkets.forEach(market => {
@@ -109,13 +103,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         setMarketsMap(newMap);
     }, []);
-
-    const updateMarkets = useCallback((newMarkets: Market[]) => {
-        setIsLoading(true)
-        doUpdateMarkets(newMarkets)
-        setIsLoading(false)
-    }, [doUpdateMarkets]);
-
     const doUpdateMarketsData = useCallback((newMarkets: MarketData[]) => {
         const newMap = new Map<string, MarketData>();
         newMarkets.forEach(market => {
@@ -126,13 +113,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         return newMap
     }, []);
-
-    const updateMarketsData = useCallback((newMarkets: MarketData[]) => {
-        setIsLoading(true)
-        doUpdateMarketsData(newMarkets)
-        setIsLoading(false)
-    }, [doUpdateMarketsData]);
-
     const doUpdateBalances = useCallback((newBalances: Coin[]) => {
         const newMap = new Map<string, Balance>();
         newBalances.forEach(balance => {
@@ -141,13 +121,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         setBalancesMap(newMap);
     }, []);
-
-    const updateBalances = useCallback((newBalances: Coin[]) => {
-        setIsLoading(true)
-        doUpdateBalances(newBalances)
-        setIsLoading(false)
-    }, [doUpdateBalances]);
-
     const doUpdatePrices = useCallback(async (m: Map<string, MarketData>, a: Map<string, Asset>) => {
         if (a.size === 0 || m.size === 0) return;
         setIsLoadingPrices(true)
@@ -229,7 +202,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setUsdPricesMap(pricesMap)
         setIsLoadingPrices(false)
     }, []);
-
     const doUpdateEpochs = useCallback((newEpochs: EpochInfoSDKType[]) => {
         const newMap = new Map<string, EpochInfoSDKType>();
         newEpochs.forEach(epoch => {
@@ -239,10 +211,29 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setEpochs(newMap);
     }, []);
 
-    const updateEpochs = useCallback((newEpochs: EpochInfoSDKType[]) => {
-        setIsLoading(true)
-        doUpdateEpochs(newEpochs)
-        setIsLoading(false)
+    const updateAssets = useCallback(async () => {
+        const newAssets = await getChainAssets()
+        return doUpdateAssets(newAssets)
+    }, [doUpdateAssets]);
+    const updateMarkets = useCallback(async () => {
+        const newMarkets = await getMarkets()
+        doUpdateMarkets(newMarkets)
+    }, [doUpdateMarkets]);
+    const updateMarketsData = useCallback(async () => {
+        console.log("updateMarketsData")
+        const newMarkets = await getAllTickers()
+
+        return doUpdateMarketsData(newMarkets)
+    }, [doUpdateMarketsData]);
+    const updateBalances = useCallback(async () => {
+        if (!address) return;
+
+        const newBalances = await getAddressBalances(address)
+        doUpdateBalances(newBalances)
+    }, [doUpdateBalances, address]);
+    const updateEpochs = useCallback(async () => {
+        const newEpochs = await getEpochsInfo()
+        doUpdateEpochs(newEpochs.epochs)
     }, [doUpdateEpochs]);
 
     useEffect(() => {
@@ -268,7 +259,10 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     }, [marketsDataMap, assetsMap, doUpdatePrices]);
 
     useEffect(() => {
-        if (!address) return;
+        if (!address) {
+            doUpdateBalances([]);
+            return
+        }
 
         const fetchBalances = async () => {
             setIsLoading(true)
@@ -296,6 +290,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             isLoadingPrices,
             epochs,
             updateEpochs,
+            updatePrices: doUpdatePrices,
         }}>
             {children}
         </AssetsContext.Provider>
