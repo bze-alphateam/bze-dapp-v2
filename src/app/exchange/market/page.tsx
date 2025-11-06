@@ -322,7 +322,7 @@ const TradingPageContent = () => {
         } else {
             setBuyAmount(calculateAmountFromPrice(price, buyTotal, baseAsset?.decimals || 0));
         }
-    }, [setBuyPrice, setBuyTotal, buyAmount, quoteAsset, baseAsset, setBuyAmount, buyTotal])
+    }, [buyAmount, buyTotal, quoteAsset, baseAsset])
     const onBuyAmountChange = useCallback((amount: string) => {
         setBuyAmount(amount);
         const total = calculateTotalAmount(buyPrice, amount, quoteAsset?.decimals || 0);
@@ -331,7 +331,7 @@ const TradingPageContent = () => {
         } else {
             setBuyPrice(calculatePricePerUnit(amount, buyTotal, quoteAsset?.decimals || 0));
         }
-    }, [buyPrice, setBuyTotal, quoteAsset, setBuyPrice, buyTotal, setBuyAmount])
+    }, [buyPrice, buyTotal, quoteAsset])
     const onBuyTotalChange = useCallback((total: string) => {
         setBuyTotal(total);
         const amount = calculateAmountFromPrice(buyPrice, total, quoteAsset?.decimals || 0);
@@ -340,7 +340,7 @@ const TradingPageContent = () => {
         } else {
             setBuyPrice(calculatePricePerUnit(buyAmount, total, baseAsset?.decimals || 0));
         }
-    }, [buyPrice, setBuyAmount, buyAmount, quoteAsset, baseAsset])
+    }, [buyPrice, buyAmount, quoteAsset, baseAsset])
 
     //sell form
     const onSellPriceChange = useCallback((price: string) => {
@@ -351,7 +351,7 @@ const TradingPageContent = () => {
         } else {
             setSellAmount(calculateAmountFromPrice(price, sellTotal, baseAsset?.decimals || 0));
         }
-    }, [baseAsset?.decimals, quoteAsset?.decimals, sellAmount, sellTotal])
+    }, [sellAmount, sellTotal, quoteAsset, baseAsset])
     const onSellAmountChange = useCallback((amount: string) => {
         setSellAmount(amount);
         const total = calculateTotalAmount(sellPrice, amount, quoteAsset?.decimals || 0);
@@ -360,7 +360,7 @@ const TradingPageContent = () => {
         } else {
             setSellPrice(calculatePricePerUnit(amount, sellTotal, quoteAsset?.decimals || 0));
         }
-    }, [setSellAmount, setSellTotal, setSellPrice, sellPrice, sellTotal, quoteAsset])
+    }, [sellPrice, sellTotal, quoteAsset])
     const onSellTotalChange = useCallback((total: string) => {
         setSellTotal(total);
         const amount = calculateAmountFromPrice(sellPrice, total, quoteAsset?.decimals || 0);
@@ -369,7 +369,7 @@ const TradingPageContent = () => {
         } else {
             setSellPrice(calculatePricePerUnit(sellAmount, total, baseAsset?.decimals || 0));
         }
-    }, [setSellTotal, setSellAmount, setSellPrice, sellPrice, sellAmount, quoteAsset, baseAsset])
+    }, [sellPrice, sellAmount, quoteAsset, baseAsset])
 
     //order submit functions
     const getMatchingOrders = useCallback((orderType: string, uPrice: BigNumber, uAmount: BigNumber): AggregatedOrderSDKType[] => {
@@ -480,7 +480,7 @@ const TradingPageContent = () => {
         await tx(msgs);
 
         setSubmittingOrder(false);
-    }, [address, tx, activeOrders, setSubmittingOrder, toast, marketId])
+    }, [address, tx, activeOrders, toast, marketId])
     const onOrderSubmit = useCallback(async (orderType: string) => {
         if (!address || !tx) {
             toast.error('Please connect your wallet');
