@@ -50,6 +50,11 @@ import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
 import {TradeViewChart} from "@/types/charts";
 import {getChartIntervalsLimit, getChartMinutes} from "@/utils/charts";
 import {LightweightChart} from "@/components/ui/trading/chart";
+import {useConnectionType} from "@/hooks/useConnectionType";
+import {CONNECTION_TYPE_WS} from "@/types/settings";
+import {blockchainEventManager} from "@/service/blockchain_event_manager";
+import {getMarketOrderBookChangedEvent} from "@/utils/events";
+import {addDebounce} from "@/utils/debounce";
 
 const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
 
@@ -173,6 +178,7 @@ const TradingPageContent = () => {
     const {totalUsdValue, hasPrice} = useAssetPrice(market?.quote ?? '')
     const {tx} = useBZETx()
     const {toast} = useToast()
+    const {connectionType} = useConnectionType()
 
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
 
@@ -276,7 +282,9 @@ const TradingPageContent = () => {
         fetchMarketHistory();
         fetchMyOrders();
         fetchChartData();
-    }, [fetchActiveOrders, fetchMyHistory, fetchMarketHistory, fetchMyOrders, fetchChartData])
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
     // cancel order/s
     const onOrderCancelClick = useCallback(async (orders: OrderSDKType[]) => {
         if (orders.length === 0) return;
@@ -473,7 +481,6 @@ const TradingPageContent = () => {
 
         setSubmittingOrder(false);
     }, [address, tx, activeOrders, setSubmittingOrder, toast, marketId])
-
     const onOrderSubmit = useCallback(async (orderType: string) => {
         if (!address || !tx) {
             toast.error('Please connect your wallet');
@@ -544,20 +551,58 @@ const TradingPageContent = () => {
 
         return undefined;
 
-    }, [activeOrders, baseAsset, getMatchingOrders, quoteAsset])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeOrders, baseAsset, quoteAsset])
     const buyFillMessage = useMemo(() => {
         if (buyPrice === '' || buyAmount === '') return undefined;
 
         return multipleOrdersFillMessage(ORDER_TYPE_BUY, buyPrice, buyAmount);
-    }, [buyPrice, buyAmount, multipleOrdersFillMessage])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [buyPrice, buyAmount])
     const sellFillMessage = useMemo(() => {
         if (sellPrice === '' || sellAmount === '') return undefined;
         return multipleOrdersFillMessage(ORDER_TYPE_SELL, sellPrice, sellAmount);
-    }, [sellPrice, sellAmount, multipleOrdersFillMessage])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [sellPrice, sellAmount])
 
     useEffect(() => {
+        if (!marketId || marketId === '') return
         onMount();
-    }, [onMount]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [marketId]);
+
+    useEffect(() => {
+        if (!marketId || marketId === '' || connectionType === undefined) return
+        let unsubscribe: () => void;
+        let refreshInterval: NodeJS.Timeout;
+
+        //depending on the connection type we have in this page we want to update the trading data
+        if (connectionType === CONNECTION_TYPE_WS) {
+            unsubscribe = blockchainEventManager.subscribe(getMarketOrderBookChangedEvent(marketId), () => {
+                //after 200ms reload the entire page date
+                addDebounce(`update-trading-page-${marketId}`, 200, onMount);
+
+                // after 3 seconds reload the chart data - chart data comes from Aggregator API - it might get there
+                // with some delay
+                addDebounce(`update-trading-page-chart-${marketId}`, 3000, fetchChartData);
+            })
+        } else {
+            refreshInterval = setInterval(() => {
+                onMount()
+            }, 15 * 1000)
+        }
+
+        return () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval)
+            }
+
+            if (unsubscribe) {
+                unsubscribe()
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [connectionType, marketId]);
 
     return (
         <Container maxW="full" py={4}>

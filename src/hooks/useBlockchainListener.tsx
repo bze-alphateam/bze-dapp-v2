@@ -37,7 +37,8 @@ const buildUnsubscribePayload = (id: number, query: string) => {
 }
 
 const getMarketId = (event: TendermintEvent) => {
-    return event.attributes.find(attribute => attribute.key === 'market_id')?.value;
+    // market id contains " so we have to remove them
+    return event.attributes.find(attribute => attribute.key === 'market_id')?.value.replaceAll('"', "");
 }
 
 const isAddressTransfer = (address: string, event: TendermintEvent) => {
