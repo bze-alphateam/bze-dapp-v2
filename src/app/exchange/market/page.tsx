@@ -949,7 +949,7 @@ const TradingPageContent = () => {
 
                             <Box maxH="300px" overflowY="auto">
                                 <Table.Root size="sm" variant="outline">
-                                    <Table.Header position="sticky" top={0} bg="bg.panel" zIndex={1}>
+                                    <Table.Header position='sticky' top={0} bg="bg.panel">
                                         <Table.Row>
                                             <Table.ColumnHeader>
                                                 <Text fontSize="xs" color="fg.muted">Price</Text>
@@ -1029,7 +1029,7 @@ const TradingPageContent = () => {
                             ) : (
                                 <Box maxH="300px" overflowY="auto">
                                     <Table.Root size="sm" variant="outline">
-                                        <Table.Header position="sticky" top={0} bg="bg.panel" zIndex={1}>
+                                        <Table.Header position="sticky" top={0} bg="bg.panel">
                                             <Table.Row>
                                                 <Table.ColumnHeader>
                                                     <Text fontSize="xs" color="fg.muted">Type</Text>
