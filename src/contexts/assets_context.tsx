@@ -220,7 +220,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         doUpdateMarkets(newMarkets)
     }, [doUpdateMarkets]);
     const updateMarketsData = useCallback(async () => {
-        console.log("updateMarketsData")
         const newMarkets = await getAllTickers()
 
         return doUpdateMarketsData(newMarkets)

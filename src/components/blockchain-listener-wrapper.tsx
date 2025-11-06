@@ -18,7 +18,7 @@ export function BlockchainListenerWrapper() {
             pollingInterval = setInterval(() => {
                 updateBalances()
                 updateMarketsData()
-            }, 30 * 1000)
+            }, 10 * 1000)
         } else {
             //on balance change refresh balances
             const balanceUnsubscribe = blockchainEventManager.subscribe(CURRENT_WALLET_BALANCE_EVENT, () => {
