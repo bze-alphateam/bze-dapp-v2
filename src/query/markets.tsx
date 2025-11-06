@@ -3,16 +3,15 @@ import {
     QueryAllMarketsRequest,
     QueryMarketAggregatedOrdersRequest,
     QueryMarketAggregatedOrdersResponseSDKType,
-    QueryMarketHistoryResponseSDKType,
     QueryMarketHistoryRequest,
+    QueryMarketHistoryResponseSDKType,
+    QueryMarketOrderRequest,
+    QueryMarketOrderResponseSDKType,
     QueryUserMarketOrdersRequest,
     QueryUserMarketOrdersResponseSDKType,
-    QueryMarketOrderResponseSDKType,
-    QueryMarketOrderRequest,
 } from "@bze/bzejs/bze/tradebin/query";
 import {ORDER_TYPE_BUY, ORDER_TYPE_SELL} from "@/types/market";
 import {PageRequest} from "@bze/bzejs/cosmos/base/query/v1beta1/pagination";
-import {getFromLocalStorage, setInLocalStorage} from "@/storage/storage";
 import {OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
 
 const {fromPartial: AllMarketsRequest} = QueryAllMarketsRequest;
@@ -22,8 +21,8 @@ const {fromPartial: QueryUserMarketOrdersRequestFromPartial} = QueryUserMarketOr
 const {fromPartial: QueryMarketOrderRequestFromPartial} = QueryMarketOrderRequest;
 
 const DEFAULT_LIMIT = 1000;
-const ALL_MARKETS_KEY = 'markets:list';
-const ALL_MARKETS_CACHE_TTL = 60 * 5; //5 minutes
+// const ALL_MARKETS_KEY = 'markets:list';
+// const ALL_MARKETS_CACHE_TTL = 60 * 5; //5 minutes
 
 export const getMarkets = async () => {
     try {
@@ -116,26 +115,26 @@ export async function getAddressFullMarketOrders(marketId: string, address: stri
 
 export async function getMarketOrder(marketId: string, orderType: string, orderId: string): Promise<QueryMarketOrderResponseSDKType|undefined> {
     try {
-        const cacheKey = `${ALL_MARKETS_KEY}${marketId}:${orderType}:${orderId}`;
-        const localData = getFromLocalStorage(cacheKey);
-        if (null !== localData) {
-            const parsed = JSON.parse(localData);
-            if (parsed) {
-
-                return parsed;
-            }
-        }
+        // TODO: cache this but we have to delete it when order is half filled
+        //
+        // const cacheKey = `${ALL_MARKETS_KEY}${marketId}:${orderType}:${orderId}`;
+        // const localData = getFromLocalStorage(cacheKey);
+        // if (null !== localData) {
+        //     const parsed = JSON.parse(localData);
+        //     if (parsed) {
+        //
+        //         return parsed;
+        //     }
+        // }
 
         const client = await getRestClient();
-        const response = await client.bze.tradebin.marketOrder(QueryMarketOrderRequestFromPartial({
+        // setInLocalStorage(cacheKey, JSON.stringify(response), ALL_MARKETS_CACHE_TTL);
+
+        return client.bze.tradebin.marketOrder(QueryMarketOrderRequestFromPartial({
             market: marketId,
             orderType: orderType,
             orderId: orderId
         }));
-
-        setInLocalStorage(cacheKey, JSON.stringify(response), ALL_MARKETS_CACHE_TTL);
-
-        return response;
     } catch (e) {
         console.error(e);
 

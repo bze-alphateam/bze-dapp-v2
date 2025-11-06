@@ -182,6 +182,17 @@ const TradingPageContent = () => {
 
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
 
+    const lastPrice = useMemo(() => {
+        if (marketData) {
+            return marketData.last_price;
+        }
+
+        if (historyOrders && historyOrders.length > 0) {
+            return uPriceToPrice(historyOrders[0].price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0);
+        }
+
+        return 0;
+    }, [marketData, historyOrders, quoteAsset, baseAsset])
     const isNegative = useMemo(() => (marketData?.change || 0) < 0, [marketData]);
     const marketTicker = useMemo(() => {
         if (!baseAsset || !quoteAsset) return '?/?';
@@ -316,6 +327,11 @@ const TradingPageContent = () => {
     //buy form
     const onBuyPriceChange = useCallback((price: string) => {
         setBuyPrice(price);
+        if (price === '') {
+            setBuyTotal('');
+            return;
+        }
+
         const total = calculateTotalAmount(price, buyAmount, quoteAsset?.decimals || 0);
         if (total !== '') {
             setBuyTotal(total);
@@ -325,6 +341,11 @@ const TradingPageContent = () => {
     }, [buyAmount, buyTotal, quoteAsset, baseAsset])
     const onBuyAmountChange = useCallback((amount: string) => {
         setBuyAmount(amount);
+        if (amount === '') {
+            setBuyTotal('');
+            return;
+        }
+
         const total = calculateTotalAmount(buyPrice, amount, quoteAsset?.decimals || 0);
         if (total !== '') {
             setBuyTotal(total);
@@ -345,6 +366,11 @@ const TradingPageContent = () => {
     //sell form
     const onSellPriceChange = useCallback((price: string) => {
         setSellPrice(price);
+        if (price === '') {
+            setSellTotal('');
+            return;
+        }
+
         const total = calculateTotalAmount(price, sellAmount, quoteAsset?.decimals || 0);
         if (total !== '') {
             setSellTotal(total);
@@ -354,6 +380,11 @@ const TradingPageContent = () => {
     }, [sellAmount, sellTotal, quoteAsset, baseAsset])
     const onSellAmountChange = useCallback((amount: string) => {
         setSellAmount(amount);
+        if (amount === '') {
+            setSellTotal('');
+            return;
+        }
+
         const total = calculateTotalAmount(sellPrice, amount, quoteAsset?.decimals || 0);
         if (total !== '') {
             setSellTotal(total);
@@ -635,13 +666,13 @@ const TradingPageContent = () => {
                             <VStack align="start" gap={1}>
                                 <HStack>
                                     <Text fontSize="xl" fontWeight="bold">{marketTicker}</Text>
-                                    <Badge colorScheme={priceColor} variant="subtle">
+                                    <Badge colorPalette={(marketData?.change || 0) > 0 ? 'green' : 'red'} variant="subtle">
                                         {marketData?.change || 0}%
                                     </Badge>
                                 </HStack>
                                 <VStack align="start" gap={-1}>
                                     <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
-                                        {marketData?.last_price || 0} {quoteAsset?.ticker}
+                                        {lastPrice} {quoteAsset?.ticker}
                                     </Text>
                                     {shouldShowUsdValues && (
                                         <Text fontSize="xs" color={priceColor}>
@@ -717,7 +748,7 @@ const TradingPageContent = () => {
                             <Box py={2} bg="bg.muted" borderRadius="sm">
                                 <HStack justify="center">
                                     <Text fontSize="md" fontWeight="bold" color={priceColor}>
-                                        {marketData?.last_price || 0}
+                                        {lastPrice}
                                     </Text>
                                     {isNegative ? (
                                         <LuTrendingDown color="red" size={16} />
