@@ -1,4 +1,3 @@
-// Update AssetsContext to add updateEpochs
 'use client';
 
 import {createContext, useState, ReactNode, useEffect, useCallback} from 'react';
@@ -19,6 +18,7 @@ import {getChainNativeAssetDenom, getUSDCDenom} from "@/constants/assets";
 import {getBZEUSDPrice} from "@/query/prices";
 import {EpochInfoSDKType} from "@bze/bzejs/bze/epochs/epoch";
 import {getEpochsInfo} from "@/query/epoch";
+import {CONNECTION_TYPE_NONE, ConnectionType} from "@/types/settings";
 
 export interface AssetsContextType {
     //assets
@@ -50,6 +50,9 @@ export interface AssetsContextType {
 
     epochs: Map<string, EpochInfoSDKType>
     updateEpochs: () => void;
+
+    connectionType: ConnectionType;
+    updateConnectionType: (conn: ConnectionType) => void;
 }
 
 export const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
@@ -68,6 +71,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const [usdPricesMap, setUsdPricesMap] = useState<Map<string, BigNumber>>(new Map());
     const [isLoadingPrices, setIsLoadingPrices] = useState(true);
     const [epochs, setEpochs] = useState<Map<string, EpochInfoSDKType>>(new Map());
+    const [connectionType, setConnectionType] = useState<ConnectionType>(CONNECTION_TYPE_NONE);
 
     const {address} = useChain(getChainName());
 
@@ -234,6 +238,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         const newEpochs = await getEpochsInfo()
         doUpdateEpochs(newEpochs.epochs)
     }, [doUpdateEpochs]);
+    const updateConnectionType = useCallback((conn: ConnectionType) => {
+        setConnectionType(conn)
+    }, [])
 
     useEffect(() => {
         setIsLoading(true)
@@ -290,6 +297,8 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             epochs,
             updateEpochs,
             updatePrices: doUpdatePrices,
+            connectionType,
+            updateConnectionType,
         }}>
             {children}
         </AssetsContext.Provider>

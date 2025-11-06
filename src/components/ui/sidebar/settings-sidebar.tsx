@@ -9,20 +9,27 @@ import {
     Separator,
     Box,
     Input,
-    Alert,
+    Alert, Badge,
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
-import { useState, useEffect } from 'react'
+import {useState, useEffect, useMemo} from 'react'
 import { useSettings } from '@/hooks/useSettings'
 import {convertToWebSocketUrl, validateEndpoints} from '@/utils/validation'
-import { EndpointValidationResults } from '@/types/settings'
+import {
+    CONNECTION_TYPE_NONE,
+    CONNECTION_TYPE_POLLING,
+    CONNECTION_TYPE_WS,
+    EndpointValidationResults
+} from '@/types/settings'
 import {useToast} from "@/hooks/useToast";
+import {useConnectionType} from "@/hooks/useConnectionType";
 
 // Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
     const { theme, setTheme } = useTheme()
     const {toast} = useToast()
     const { settings, isLoaded, updateEndpoints, defaultSettings } = useSettings()
+    const {connectionType} = useConnectionType()
 
     // Local form state
     const [restEndpoint, setRestEndpoint] = useState('')
@@ -90,6 +97,28 @@ export const SettingsSidebarContent = () => {
         setValidationResults({})
     }
 
+    const connectionStatusText = useMemo(() => {
+        switch(connectionType) {
+            case CONNECTION_TYPE_NONE:
+                return 'Failed'
+            case CONNECTION_TYPE_POLLING:
+                return 'Polling'
+            case CONNECTION_TYPE_WS:
+                return 'Connected'
+        }
+    }, [connectionType])
+
+    const connectionStatusBadgeColor = useMemo(() => {
+        switch(connectionType) {
+            case CONNECTION_TYPE_NONE:
+                return 'red'
+            case CONNECTION_TYPE_POLLING:
+                return 'orange'
+            case CONNECTION_TYPE_WS:
+                return 'green'
+        }
+    }, [connectionType])
+
     const hasUnsavedChanges =
         restEndpoint !== settings.endpoints.restEndpoint ||
         rpcEndpoint !== settings.endpoints.rpcEndpoint
@@ -129,6 +158,12 @@ export const SettingsSidebarContent = () => {
                 </Text>
 
                 <VStack gap="4" align="stretch">
+                    <Box>
+                        <HStack gap="2" align="center" justify="space-between">
+                            <Text fontSize="sm" mb="1">Status: </Text>
+                            <Badge colorPalette={connectionStatusBadgeColor}>{connectionStatusText}</Badge>
+                        </HStack>
+                    </Box>
                     {/* REST Endpoint */}
                     <Box>
                         <Text fontSize="sm" mb="1">REST Endpoint</Text>
