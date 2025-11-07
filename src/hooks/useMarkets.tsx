@@ -29,7 +29,7 @@ export function useMarkets() {
 export function useAssetMarkets(denom: string) {
     const { isLoading, markets, marketsData } = useMarkets();
 
-    const assetMarkets = useCallback((): Market[] => {
+    const assetMarkets = useMemo((): Market[] => {
         const baseMatches = []
         const quoteMatches = []
 
@@ -41,7 +41,7 @@ export function useAssetMarkets(denom: string) {
         return [...baseMatches, ...quoteMatches]
     }, [markets, denom]);
 
-    const assetMarketsData = useCallback((): MarketData[] => {
+    const assetMarketsData = useMemo((): MarketData[] => {
         const baseMatches = []
         const quoteMatches = []
 
@@ -53,10 +53,8 @@ export function useAssetMarkets(denom: string) {
         return [...baseMatches, ...quoteMatches]
     }, [marketsData, denom]);
 
-    const getAsset24hTradedVolume = useCallback((): BigNumber => {
-        const assetMarketsDataResult = assetMarketsData()
-
-        return assetMarketsDataResult.reduce((acc, market) => {
+    const getAsset24hTradedVolume = useMemo((): BigNumber => {
+        return assetMarketsData.reduce((acc, market) => {
             // Only sum base_volume if the asset denom matches the market's base
             if (denom === market.base) {
                 return acc.plus(market.base_volume || 0)

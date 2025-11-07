@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useMemo, useState} from 'react'
+import React, {useCallback, useMemo, useState} from 'react'
 
 import {
     Box,
@@ -12,7 +12,7 @@ import {
     IconButton,
     HStack,
     VStack,
-    Separator, Input, Skeleton,
+    Separator, Input, Skeleton, Button,
 } from '@chakra-ui/react'
 import {
     LuChevronDown,
@@ -35,11 +35,16 @@ import {useAssetPrice} from "@/hooks/usePrices";
 import {formatUsdAmount, shortNumberFormat} from "@/utils/formatter";
 import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
+import {useNavigation} from "@/hooks/useNavigation";
+import {createMarketId} from "@/utils/market";
+
+const MAX_MARKETS_PER_ASSET = 5;
 
 function AssetItemMarkets({ marketId }: { marketId: string }) {
-    const { marketSymbol, marketData, isLoading: marketLoading } = useMarket(marketId)
-    const {asset: base, isLoading: baseLoading} = useAsset(marketData?.base ?? "")
-    const {asset: quote, isLoading: quoteLoading} = useAsset(marketData?.quote ?? "")
+    const { marketSymbol, market, marketData, isLoading: marketLoading } = useMarket(marketId)
+    const {asset: base, isLoading: baseLoading} = useAsset(market?.base ?? "")
+    const {asset: quote, isLoading: quoteLoading} = useAsset(market?.quote ?? "")
+    const {toMarketPage} = useNavigation()
 
     return (
         <Box
@@ -80,48 +85,80 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
                             justifyContent="center"
                             position="relative"
                         >
-                            <Text fontWeight="medium">{marketSymbol}</Text>
+                            <Button
+                                variant={'ghost'}
+                                onClick={() => toMarketPage(base?.denom ?? "", quote?.denom ?? "")}
+                            >
+                                {marketSymbol}
+                            </Button>
                         </Box>
                     </HStack>
                 </Box>
-                <Box textAlign="right">
-                    <Text fontSize="xs" color="fg.muted">24h Volume</Text>
-                    <Skeleton asChild loading={marketLoading || quoteLoading}>
-                        <Text fontSize="sm" fontWeight="medium">{marketData?.quote_volume} {quote?.ticker}</Text>
-                    </Skeleton>
-                    <Text fontSize="xs" color="fg.muted">24h Change</Text>
-                    <Skeleton asChild loading={marketLoading}>
-                        <Text
-                            fontSize="sm"
-                            fontWeight="medium"
-                            color={marketData && marketData?.change > 0 ? 'green.500' : 'red.500'}
-                        >
-                            {marketData && marketData?.change > 0 ? '+' : ''}{marketData?.change}%
-                        </Text>
-                    </Skeleton>
-                </Box>
+                {marketData && (
+                    <Box textAlign="right">
+                        <Text fontSize="xs" color="fg.muted">24h Volume</Text>
+                        <Skeleton asChild loading={marketLoading || quoteLoading}>
+                            <Text fontSize="sm" fontWeight="medium">{marketData?.quote_volume} {quote?.ticker}</Text>
+                        </Skeleton>
+                        <Text fontSize="xs" color="fg.muted">24h Change</Text>
+                        <Skeleton asChild loading={marketLoading}>
+                            <Text
+                                fontSize="sm"
+                                fontWeight="medium"
+                                color={marketData && marketData?.change > 0 ? 'green.500' : 'red.500'}
+                            >
+                                {marketData && marketData?.change > 0 ? '+' : ''}{marketData?.change}%
+                            </Text>
+                        </Skeleton>
+                    </Box>
+                )}
+                {!marketData && (
+                    <Box textAlign="right">
+                        <Text fontSize="xs" color="fg.muted">No data</Text>
+                    </Box>
+                )}
             </Flex>
         </Box>)
 }
 
 function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpanded: boolean, toggleExpanded: (denom: string) => void }) {
-    const {assetMarketsData, getAsset24hTradedVolume} = useAssetMarkets(asset.denom)
+    const {assetMarketsData, getAsset24hTradedVolume, assetMarkets} = useAssetMarkets(asset.denom)
     const { price, change, isLoading: priceLoading } = useAssetPrice(asset.denom)
 
-    //todo: add show more button to show more markets if the slice of markets is too long
-    const markets = assetMarketsData()
-        .sort((a, b) => {
-            // Get the relevant volume for market 'a'
-            const volumeA = asset.denom === a.base ? (a.base_volume || 0) : (a.quote_volume || 0);
-            // Get the relevant volume for market 'b'
-            const volumeB = asset.denom === b.base ? (b.base_volume || 0) : (b.quote_volume || 0);
+    const markets = useMemo(() => {
+        const marketsWithData = assetMarketsData
+            .sort((a, b) => {
+                // Get the relevant volume for market 'a'
+                const volumeA = asset.denom === a.base ? (a.base_volume || 0) : (a.quote_volume || 0);
+                // Get the relevant volume for market 'b'
+                const volumeB = asset.denom === b.base ? (b.base_volume || 0) : (b.quote_volume || 0);
 
-            // Sort descending (the highest volume first)
-            return volumeB - volumeA;
-        })
-        .slice(0, 5)
+                // Sort descending (the highest volume first)
+                return volumeB - volumeA;
+            })
+            .slice(0, MAX_MARKETS_PER_ASSET)
+            .map(market => ({market_id: market.market_id}))
 
-    const getTypeColor = (type: string) => {
+        const missingMarkets = MAX_MARKETS_PER_ASSET - marketsWithData.length
+        if (missingMarkets > 0) {
+            //fill the rest with markets without data
+            let added = 0
+            for (const market of assetMarkets) {
+                const mId = createMarketId(market.base, market.quote)
+                const reverseMId = createMarketId(market.quote, market.base)
+                const found = marketsWithData.find(item => item.market_id === mId || item.market_id === reverseMId)
+                if (found) continue
+
+                marketsWithData.push({market_id: mId})
+                added++
+                if (added >= missingMarkets) break
+            }
+        }
+
+        return marketsWithData
+    }, [assetMarketsData, assetMarkets, asset])
+
+    const getTypeColor = useCallback((type: string) => {
         switch (type) {
             case ASSET_TYPE_NATIVE:
                 return 'purple'
@@ -132,7 +169,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
             default:
                 return 'gray'
         }
-    }
+    }, [])
 
     const formattedPrice = useMemo(() => {
         return formatUsdAmount(price)
@@ -142,7 +179,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
         return shortNumberFormat(uAmountToBigNumberAmount(asset.supply, asset.decimals))
     }, [asset.supply, asset.decimals])
 
-    const renderChangeArrow = () => {
+    const renderChangeArrow = useMemo(() => {
         if (change > 0) {
             return  <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
         }
@@ -150,9 +187,9 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
             return  <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
         }
         return null
-    }
+    }, [change])
 
-    const renderChangeText = () => {
+    const renderChangeText = useMemo(() => {
         if (change > 0) {
             return <Text fontSize="sm" color="green.500">+{change}%</Text>
         }
@@ -162,7 +199,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
         }
 
         return <Text fontSize="sm" color="red.200">{change}%</Text>
-    }
+    }, [change])
 
     return (
         <Box
@@ -224,8 +261,8 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
                         </Skeleton>
                         <Skeleton asChild loading={priceLoading}>
                             <HStack gap={1} justify="flex-end">
-                                {renderChangeArrow()}
-                                {renderChangeText()}
+                                {renderChangeArrow}
+                                {renderChangeText}
                             </HStack>
                         </Skeleton>
                     </Box>
@@ -242,7 +279,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
             {/* Mobile Price Display */}
             <Box display={{ base: 'block', sm: 'none' }} px={4} pb={2}>
                 <HStack justify="space-between">
-                    <Text fontWeight="medium">$1.312</Text>
+                    <Text fontWeight="medium">${formattedPrice}</Text>
                     <HStack gap={1}>
                         {change > 0 ? (
                             <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
@@ -278,7 +315,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
                         </Box>
                         <Box>
                             <Text color="fg.muted" fontSize="sm">24h Volume</Text>
-                            <Text fontWeight="medium">{prettyAmount(getAsset24hTradedVolume())} {asset.ticker}</Text>
+                            <Text fontWeight="medium">{prettyAmount(getAsset24hTradedVolume)} {asset.ticker}</Text>
                         </Box>
                         <Box>
                             <Text color="fg.muted" fontSize="sm">Type</Text>
