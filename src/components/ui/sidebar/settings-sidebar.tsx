@@ -12,7 +12,7 @@ import {
     Alert, Badge,
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
-import {useState, useEffect, useMemo} from 'react'
+import {useState, useEffect, useMemo, useCallback} from 'react'
 import { useSettings } from '@/hooks/useSettings'
 import {convertToWebSocketUrl, validateEndpoints} from '@/utils/validation'
 import {
@@ -26,7 +26,7 @@ import {useConnectionType} from "@/hooks/useConnectionType";
 
 // Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
-    const { theme, setTheme } = useTheme()
+    const { setTheme, resolvedTheme} = useTheme()
     const {toast} = useToast()
     const { settings, isLoaded, updateEndpoints, defaultSettings } = useSettings()
     const {connectionType} = useConnectionType()
@@ -45,12 +45,12 @@ export const SettingsSidebarContent = () => {
         }
     }, [isLoaded, settings])
 
-    const handleValidateEndpoints = async () => {
+    const handleValidateEndpoints = useCallback(async (rest: string, rpc: string) => {
         setIsValidating(true)
         setValidationResults({})
 
         try {
-            const results = await validateEndpoints(restEndpoint, rpcEndpoint)
+            const results = await validateEndpoints(rest, rpc)
             setValidationResults({
                 rest: results.rest,
                 rpc: results.rpc
@@ -65,11 +65,11 @@ export const SettingsSidebarContent = () => {
             setIsValidating(false)
             setTimeout(() => setValidationResults({}), 10_000)
         }
-    }
+    }, [])
 
-    const handleSaveEndpoints = async () => {
+    const handleSaveEndpoints = useCallback(async (rest: string, rpc: string) => {
         setValidationResults({})
-        const results = await validateEndpoints(restEndpoint, rpcEndpoint)
+        const results = await validateEndpoints(rest, rpc)
         if (!results.isValid) {
             setValidationResults({
                 rest: results.rest,
@@ -82,20 +82,22 @@ export const SettingsSidebarContent = () => {
         }
 
         const success = updateEndpoints({
-            restEndpoint: restEndpoint.trim(),
-            rpcEndpoint: convertToWebSocketUrl(rpcEndpoint.trim())
+            restEndpoint: rest.trim(),
+            rpcEndpoint: convertToWebSocketUrl(rpc.trim())
         })
 
         if (success) {
             toast.success('Success!', 'Settings have been saved.')
         }
-    }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
-    const handleResetToDefaults = () => {
+    const handleResetToDefaults = useCallback(() => {
         setRestEndpoint(defaultSettings.endpoints.restEndpoint)
         setRpcEndpoint(defaultSettings.endpoints.rpcEndpoint)
         setValidationResults({})
-    }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const connectionStatusText = useMemo(() => {
         switch(connectionType) {
@@ -134,7 +136,7 @@ export const SettingsSidebarContent = () => {
                     <HStack justify="space-between">
                         <Text fontSize="sm">Dark Mode</Text>
                         <Switch.Root
-                            checked={theme === 'dark'}
+                            checked={resolvedTheme === 'dark'}
                             onCheckedChange={(details) => {
                                 const newTheme = details.checked ? 'dark' : 'light'
                                 setTheme(newTheme)
@@ -222,7 +224,7 @@ export const SettingsSidebarContent = () => {
                     <Button
                         size="sm"
                         variant="outline"
-                        onClick={handleValidateEndpoints}
+                        onClick={() => handleValidateEndpoints(restEndpoint, rpcEndpoint)}
                         loading={isValidating}
                         disabled={!restEndpoint.trim() || !rpcEndpoint.trim()}
                     >
@@ -237,7 +239,7 @@ export const SettingsSidebarContent = () => {
                     <Button
                         size="sm"
                         width="full"
-                        onClick={handleSaveEndpoints}
+                        onClick={() => handleSaveEndpoints(restEndpoint, rpcEndpoint)}
                         colorPalette="blue"
                         disabled={!hasUnsavedChanges}
                     >
