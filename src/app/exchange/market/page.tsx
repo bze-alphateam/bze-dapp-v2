@@ -167,9 +167,9 @@ const TradingPageContent = () => {
     const [submittingCancel, setSubmittingCancel] = useState(false);
     const [submittingOrder, setSubmittingOrder] = useState(false);
 
-    const {marketIdParam, toExchangePage} = useNavigationWithParams();
+    const {idParam, toExchangePage} = useNavigationWithParams();
 
-    const {marketData, market, marketId} = useMarket(marketIdParam ?? '')
+    const {marketData, market, marketId} = useMarket(idParam ?? '')
     const {asset: baseAsset} = useAsset(market?.base ?? '')
     const {asset: quoteAsset} = useAsset(market?.quote ?? '')
     const {address} = useChain(getChainName())

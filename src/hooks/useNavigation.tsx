@@ -1,9 +1,8 @@
-// hooks/useNavigation.ts
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {useCallback, useMemo} from "react";
 import {createMarketId} from "@/utils/market";
 
-const MARKET_ID_PARAM = 'market_id'
+const ID_PARAM = 'id'
 
 // Basic navigation without search params (no Suspense needed)
 export const useNavigation = () => {
@@ -11,11 +10,19 @@ export const useNavigation = () => {
     const pathname = usePathname();
 
     const toMarketPage = useCallback((base: string, quote: string) => {
-        router.push(`/exchange/market?${MARKET_ID_PARAM}=${createMarketId(base, quote)}`)
+        router.push(`/exchange/market?${ID_PARAM}=${createMarketId(base, quote)}`)
     }, [router]);
 
     const toExchangePage = useCallback(() => {
         router.push('/exchange')
+    }, [router]);
+
+    const toPoolsPage = useCallback(() => {
+        router.push('/pools')
+    }, [router])
+
+    const toLpPage = useCallback((poolId: string) => {
+        router.push(`/pools/details?${ID_PARAM}=${poolId}`)
     }, [router]);
 
     return {
@@ -23,6 +30,8 @@ export const useNavigation = () => {
         navigate: router.push,
         toMarketPage,
         toExchangePage,
+        toLpPage,
+        toPoolsPage,
     };
 };
 
@@ -35,13 +44,13 @@ export const useNavigationWithParams = () => {
         return searchParams.get(param)
     }, [searchParams]);
 
-    const marketIdParam = useMemo(() => {
-        return searchParams.get(MARKET_ID_PARAM)
+    const idParam = useMemo(() => {
+        return searchParams.get(ID_PARAM)
     }, [searchParams]);
 
     return {
         ...navigation,
         getQueryParam,
-        marketIdParam,
+        idParam,
     };
 };

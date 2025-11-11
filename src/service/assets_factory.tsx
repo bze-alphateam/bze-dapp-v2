@@ -1,6 +1,6 @@
 import {getAllSupply, getAllSupplyMetadata} from "@/query/supply";
 import {MetadataSDKType} from "@bze/bzejs/cosmos/bank/v1beta1/bank";
-import {Asset, IbcTransitionMock} from "@/types/asset";
+import {Asset, ChainAssets, IBCData, IbcTransitionMock, LP_ASSETS_DECIMALS} from "@/types/asset";
 import {getDenomType, isFactoryDenom, isIbcDenom, isLpDenom, isNativeDenom, truncateDenom} from "@/utils/denom";
 import {BZE_CIRCLE_LOGO, TOKEN_LOGO_PLACEHOLDER} from "@/constants/placeholders";
 import {EXCLUDED_ASSETS, STABLE_COINS, VERIFIED_ASSETS} from "@/constants/assets";
@@ -17,17 +17,27 @@ import {denomOnFirstHopChainFromTrace} from "@/utils/ibc";
 
 const ORIGIN_CHAIN_PLACEHOLDER = "Unknown chain"
 
-// returns all assets from the chain except LP tokens
-export const getChainAssets = async (): Promise<Asset[]> => {
+// returns all assets from the chain except excluded tokens
+export const getChainAssets = async (): Promise<ChainAssets> => {
     const [metadata, supply] = await Promise.all([getAllMetadataMap(), getAllSupply()])
-    if (!metadata || !supply) {
-        return [];
+    const result = {
+        assets: new Map<string, Asset>(),
+        ibcData: new Map<string, IBCData>()
     }
 
-    const filtered = supply.filter(asset => !isLpDenom(asset.denom) && !EXCLUDED_ASSETS[asset.denom])
-    const result = [];
+    if (!metadata || !supply) {
+        return result;
+    }
+
+    const filtered = supply.filter(asset => !EXCLUDED_ASSETS[asset.denom])
+    const lpAssets = []
     for (const asset of filtered) {
         const baseAsset = createAsset(asset.denom, BigInt(asset.amount));
+        if (isLpDenom(asset.denom)) {
+            //need lp base and quote assets to populate the lp asset
+            lpAssets.push(baseAsset)
+            continue
+        }
         //try to populate asset from chain registry
         let finalAsset = await populateAssetFromChainRegistry(baseAsset);
 
@@ -37,7 +47,32 @@ export const getChainAssets = async (): Promise<Asset[]> => {
             finalAsset = populateAssetFromBlockchainMetadata(baseAsset, metadataEntry)
         }
 
-        result.push(finalAsset);
+        result.assets.set(finalAsset.denom, finalAsset)
+        if (isIbcDenom(finalAsset.denom) && finalAsset.IBCData && finalAsset.IBCData.chain.channelId !== '') {
+            result.ibcData.set(finalAsset.IBCData.chain.channelId, finalAsset.IBCData)
+        }
+    }
+
+    //populate lp assets with details using the lp base and quote assets
+    for (const lpAsset of lpAssets) {
+        const split = lpAsset.denom.split('_')
+        if (split.length !== 3) {
+            continue;
+        }
+
+        const baseAsset = result.assets.get(split[1])
+        const quoteAsset = result.assets.get(split[2])
+        if (!baseAsset || !quoteAsset) {
+            result.assets.set(lpAsset.denom, lpAsset)
+            continue;
+        }
+
+        lpAsset.name = `LP ${baseAsset.ticker}/${quoteAsset.ticker} Shares`
+        lpAsset.ticker = `LP/${baseAsset.ticker}/${quoteAsset.ticker}`
+        lpAsset.verified = true
+        lpAsset.decimals = LP_ASSETS_DECIMALS
+
+        result.assets.set(lpAsset.denom, lpAsset)
     }
 
     return result

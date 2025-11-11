@@ -1,7 +1,7 @@
 'use client';
 
 import {createContext, useState, ReactNode, useEffect, useCallback} from 'react';
-import {Asset, IBCData} from '@/types/asset';
+import {Asset, ChainAssets, IBCData} from '@/types/asset';
 import {getChainAssets} from "@/service/assets_factory";
 import {Market, MarketData} from '@/types/market';
 import {createMarketId} from "@/utils/market";
@@ -13,12 +13,12 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {getAddressBalances} from "@/query/bank";
 import {Balance} from "@/types/balance";
-import {isIbcDenom} from "@/utils/denom";
 import {getChainNativeAssetDenom, getUSDCDenom} from "@/constants/assets";
 import {getBZEUSDPrice} from "@/query/prices";
 import {EpochInfoSDKType} from "@bze/bzejs/bze/epochs/epoch";
 import {getEpochsInfo} from "@/query/epoch";
 import {CONNECTION_TYPE_NONE, ConnectionType} from "@/types/settings";
+import {toBigNumber, uPriceToBigNumberPrice} from "@/utils/amount";
 
 export interface AssetsContextType {
     //assets
@@ -75,29 +75,11 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
     const {address} = useChain(getChainName());
 
-    const doUpdateAssets = useCallback((newAssets: Asset[]) => {
-        // Create map for efficient lookups
-        const newMap = new Map<string, Asset>();
-        const ibc = new Map<string, IBCData>();
-        newAssets.forEach(asset => {
-            newMap.set(asset.denom, asset);
-            if (!isIbcDenom(asset.denom) || !asset.IBCData) {
-                return
-            }
+    const doUpdateAssets = useCallback((newAssets: ChainAssets) => {
+        setAssetsMap(newAssets.assets);
+        setIbcChains(Array.from(newAssets.ibcData.values()));
 
-            // we set ibcChains from these assets.
-            // use a map to avoid duplicates
-            if (asset.IBCData.chain.channelId === "") {
-                return;
-            }
-
-            ibc.set(asset.IBCData.chain.channelId, asset.IBCData);
-        });
-
-        setAssetsMap(newMap);
-        setIbcChains(Array.from(ibc.values()));
-
-        return newMap
+        return newAssets.assets
     }, []);
     const doUpdateMarkets = useCallback((newMarkets: Market[]) => {
         const newMap = new Map<string, Market>();
@@ -129,24 +111,25 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         if (a.size === 0 || m.size === 0) return;
         setIsLoadingPrices(true)
 
-        const getLastPrice = async (marketId: string, fallback?: () => Promise<number>): Promise<BigNumber> => {
+        const getLastPrice = async (base: Asset, quote: Asset, fallback?: () => Promise<number>): Promise<BigNumber> => {
+            const marketId = createMarketId(base.denom, quote.denom)
             //try to get price from the market data, using the last_price field (it only shows last 24h price)
             const mData = m.get(marketId)
             if (mData && mData.last_price > 0) {
-                return new BigNumber(mData.last_price)
+                return toBigNumber(mData.last_price)
             }
 
             //if we couldn't find the last price in the market data, we'll try to get it from the trade history
             if (mData) {
                 const tradeHistory = await getMarketOrdersHistory(marketId)
                 if (tradeHistory.length > 0) {
-                    return new BigNumber(tradeHistory[0].price)
+                    return uPriceToBigNumberPrice(tradeHistory[0].price, quote.decimals, base.decimals)
                 }
             }
 
             //if we couldn't find the last price in the market data or trade history, we'll try to get it from the ticker
             if (fallback) {
-                return new BigNumber(await fallback())
+                return toBigNumber(await fallback())
             }
 
             //if we couldn't find the last price in the market data, trade history or ticker, we'll return 0
@@ -154,10 +137,16 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         }
 
         const bzeDenom = getChainNativeAssetDenom()
+        const bzeAsset = a.get(bzeDenom)
         const usdcDenom = getUSDCDenom()
+        const usdcAsset = a.get(usdcDenom)
+        if (!bzeAsset || !usdcAsset) {
+            return toBigNumber(0)
+        }
+
 
         //1. get the USD price for BZE
-        const bzeUsdPrice = await getLastPrice(createMarketId(bzeDenom, usdcDenom), getBZEUSDPrice)
+        const bzeUsdPrice = await getLastPrice(bzeAsset, usdcAsset, getBZEUSDPrice)
 
         //2. get the USD price for each asset
         const pricesMap = new Map<string, BigNumber>();
@@ -170,7 +159,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             let priceInUsd = new BigNumber(0)
             const usdMarket = m.get(createMarketId(asset.denom, usdcDenom))
             if (usdMarket) {
-                priceInUsd = await getLastPrice(createMarketId(asset.denom, usdcDenom))
+                priceInUsd = await getLastPrice(asset, usdcAsset)
             }
 
             const bzeMarket = m.get(createMarketId(asset.denom, bzeDenom))
@@ -181,7 +170,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
                 continue
             }
 
-            const priceInBze = await getLastPrice(createMarketId(asset.denom, bzeDenom))
+            const priceInBze = await getLastPrice(asset, bzeAsset)
             if (!priceInBze.gt(0)) {
                 //we dont have a price in BZE on the BZE market -> use the USD price (might be 0)
                 pricesMap.set(asset.denom, priceInUsd)
@@ -194,10 +183,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
                 pricesMap.set(asset.denom, priceInUsdFromBze)
                 continue
             }
-
-            // Note: Aggregator has the price already transformed (and the amounts - not that it matters)
-            // TODO: If the price is obtained from the blockchain (the market pair history) we need to make sure that
-            //  price is converted if the two assets in the market pair have different exponent (different decimals)
 
             //we have a USD market and a BZE market -> return the average of the two prices
             pricesMap.set(asset.denom, priceInUsd.plus(priceInUsdFromBze).dividedBy(2))

@@ -1,3 +1,4 @@
+import {toBigNumber} from "@/utils/amount";
 
 export const sanitizeNumberInput = (input: string) => {
     // Regular expression to match all characters not allowed in a non-negative number
@@ -31,3 +32,5 @@ export const sanitizeIntegerInput = (input: string): string => {
 
     return `${parsed}`;
 }
+
+export const toPercentage = (dec: number|bigint|BigNumber|string) => toBigNumber(dec).multipliedBy(100).decimalPlaces(2).toString();

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, {Suspense, useMemo, useState} from 'react';
 import {
     Box,
     Container,
@@ -15,8 +14,7 @@ import {
     Separator,
     NativeSelectRoot,
     NativeSelectField,
-    IconButton,
-    Slider,
+    Slider, Skeleton,
 } from '@chakra-ui/react';
 import {
     LuArrowLeft,
@@ -25,10 +23,17 @@ import {
     LuLock,
     LuTrendingUp,
     LuInfo,
-    LuRefreshCw,
 } from 'react-icons/lu';
 import { Tooltip } from '@/components/ui/tooltip';
-import {useRouter} from "next/navigation";
+import {useNavigationWithParams} from "@/hooks/useNavigation";
+import {Asset} from "@/types/asset";
+import {TokenLogo} from "@/components/ui/token_logo";
+import {useLiquidityPool} from "@/hooks/useLiquidityPools";
+import {useAsset} from "@/hooks/useAssets";
+import {useAssetPrice} from "@/hooks/usePrices";
+import {prettyAmount, toBigNumber, uAmountToAmount} from "@/utils/amount";
+import BigNumber from "bignumber.js";
+import {toPercentage} from "@/utils/number";
 
 // Types based on project requirements
 type Pool = {
@@ -153,37 +158,65 @@ const lockingPrograms: LockingProgram[] = [
     },
 ];
 
-export default function PoolDetailsPage() {
+const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
+    <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
+        <Box position="relative" w="12" h="12">
+            <TokenLogo
+                src={asset?.logo}
+                symbol={asset?.ticker || ''}
+                style={{ objectFit: 'contain', borderRadius: '50%' }}
+            />
+        </Box>
+        <VStack align="center" gap="2" textAlign="center">
+            <HStack>
+                <Text fontWeight="bold" color="fg.emphasized">{asset?.ticker}</Text>
+                <Text fontSize="sm" color="fg.muted">{asset?.name}</Text>
+            </HStack>
+            <VStack align="center" gap="1">
+                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">{prettyAmount(amount)}</Text>
+                {usdValue.gt(0) && (<Text fontSize="sm" color="fg.muted">{prettyAmount(usdValue)}</Text>)}
+            </VStack>
+        </VStack>
+    </VStack>
+);
+
+const PoolDetailsPageContent = () => {
     const [activeTab, setActiveTab] = useState<'add' | 'remove' | 'lock'>('add');
     const [addAsset0Amount, setAddAsset0Amount] = useState('');
     const [addAsset1Amount, setAddAsset1Amount] = useState('');
     const [removePercentage, setRemovePercentage] = useState(50);
     const [selectedLockProgram, setSelectedLockProgram] = useState('');
     const [lockAmount, setLockAmount] = useState('');
-    const router = useRouter();
+    const {toPoolsPage, idParam} = useNavigationWithParams()
 
-    const AssetDisplay = ({ asset, amount, usdValue }: { asset: Pool['asset0']; amount: string; usdValue: string }) => (
-        <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
-            <Box position="relative" w="12" h="12">
-                <Image
-                    src={asset.image}
-                    alt={asset.symbol}
-                    fill
-                    style={{ objectFit: 'contain', borderRadius: '50%' }}
-                />
-            </Box>
-            <VStack align="center" gap="2" textAlign="center">
-                <HStack>
-                    <Text fontWeight="bold" color="fg.emphasized">{asset.symbol}</Text>
-                    <Text fontSize="sm" color="fg.muted">{asset.name}</Text>
-                </HStack>
-                <VStack align="center" gap="1">
-                    <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">{amount}</Text>
-                    <Text fontSize="sm" color="fg.muted">{usdValue}</Text>
-                </VStack>
-            </VStack>
-        </VStack>
-    );
+    const {pool, poolData, userShares, userSharesPercentage, userReserveBase, userReserveQuote} = useLiquidityPool(idParam ?? '')
+    const {asset: baseAsset, isLoading: isLoadingBaseAsset} = useAsset(pool?.base || '')
+    const {asset: quoteAsset, isLoading: isLoadingQuoteAsset} = useAsset(pool?.quote || '')
+    const {isUSDC: baseAssetIsUsdc, totalUsdValue: baseAssetTotalUsdcValue, isLoading: baseAssetPriceLoading} = useAssetPrice(pool?.base || '')
+    const {isUSDC: quoteAssetIsUsdc, totalUsdValue: quoteAssetTotalUsdcValue, isLoading: quoteAssetPriceLoading} = useAssetPrice(pool?.quote || '')
+
+    const poolBaseReservesAmount = useMemo(() => {
+        if (!pool || !baseAsset) return '0';
+        return uAmountToAmount(pool.reserve_base, baseAsset.decimals);
+    }, [baseAsset, pool])
+    const poolQuoteReservesAmount = useMemo(() => {
+        if (!pool || !quoteAsset) return '0';
+        return uAmountToAmount(pool.reserve_quote, quoteAsset.decimals);
+    }, [pool, quoteAsset])
+    const poolBaseReservesUsdValue = useMemo(() => {
+        if (baseAssetIsUsdc) return toBigNumber(poolBaseReservesAmount);
+
+        return baseAssetTotalUsdcValue(toBigNumber(poolBaseReservesAmount))
+        //eslint-disable-next-line
+    }, [poolBaseReservesAmount])
+    const poolQuoteReservesUsdValue = useMemo(() => {
+        if (quoteAssetIsUsdc) return toBigNumber(poolQuoteReservesAmount);
+
+        return quoteAssetTotalUsdcValue(toBigNumber(poolQuoteReservesAmount))
+        //eslint-disable-next-line
+    }, [poolQuoteReservesAmount])
+
+    const hasPoolData = useMemo(() => poolData !== undefined, [poolData]);
 
     // Custom slider component
     const CustomSlider = ({ value, onChange }: { value: number; onChange: (value: number) => void }) => (
@@ -231,7 +264,7 @@ export default function PoolDetailsPage() {
                     <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => router.push('/pools')}
+                        onClick={() => toPoolsPage()}
                     >
                         <LuArrowLeft />Pools
                     </Button>
@@ -250,11 +283,13 @@ export default function PoolDetailsPage() {
                                 align="center"
                                 direction={{ base: "column", sm: "row" }}
                             >
-                                <AssetDisplay
-                                    asset={mockPool.asset0}
-                                    amount={mockPool.asset0.amount}
-                                    usdValue={mockPool.asset0.usdValue}
-                                />
+                                <Skeleton asChild loading={isLoadingBaseAsset || baseAssetPriceLoading}>
+                                    <AssetDisplay
+                                        asset={baseAsset}
+                                        amount={poolBaseReservesAmount}
+                                        usdValue={poolBaseReservesUsdValue}
+                                    />
+                                </Skeleton>
                                 <Box
                                     fontSize={{ base: "xl", md: "2xl" }}
                                     color="fg.muted"
@@ -267,11 +302,13 @@ export default function PoolDetailsPage() {
                                 >
                                     +
                                 </Box>
-                                <AssetDisplay
-                                    asset={mockPool.asset1}
-                                    amount={mockPool.asset1.amount}
-                                    usdValue={mockPool.asset1.usdValue}
-                                />
+                                <Skeleton asChild loading={isLoadingQuoteAsset || quoteAssetPriceLoading}>
+                                    <AssetDisplay
+                                        asset={quoteAsset}
+                                        amount={poolQuoteReservesAmount}
+                                        usdValue={poolQuoteReservesUsdValue}
+                                    />
+                                </Skeleton>
                             </HStack>
                         </VStack>
 
@@ -279,22 +316,30 @@ export default function PoolDetailsPage() {
                         <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Total Liquidity</Text>
-                                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">{mockPool.totalLiquidity}</Text>
+                                <Skeleton asChild loading={!hasPoolData}>
+                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdValue || 0)}</Text>
+                                </Skeleton>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Volume (24h)</Text>
-                                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">{mockPool.volume24h}</Text>
+                                <Skeleton asChild loading={!hasPoolData}>
+                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdVolume || 0)}</Text>
+                                </Skeleton>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Fees (24h)</Text>
-                                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">{mockPool.fees24h}</Text>
+                                <Skeleton asChild loading={!hasPoolData}>
+                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdFees || 0)}</Text>
+                                </Skeleton>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <HStack justify="center">
                                     <Text fontSize="sm" color="fg.muted">APR</Text>
                                     <LuTrendingUp size={16} />
                                 </HStack>
-                                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="green.500">{mockPool.apr}</Text>
+                                <Skeleton asChild loading={!hasPoolData}>
+                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="green.500">{poolData?.apr || 0}%</Text>
+                                </Skeleton>
                             </VStack>
                         </Grid>
 
@@ -302,29 +347,34 @@ export default function PoolDetailsPage() {
                         <Box w="full" bg="bg.panel" p={{ base: "3", md: "4" }} rounded="lg" borderWidth="1px" borderColor="border">
                             <VStack gap={{ base: "3", md: "4" }}>
                                 <HStack w="full" justify="space-between">
-                                    <Text fontWeight="semibold" color="fg.emphasized" fontSize={{ base: "sm", md: "md" }}>Trading Fee: {mockPool.fee}%</Text>
-                                    <IconButton size="xs" variant="ghost">
-                                        <LuRefreshCw />
-                                    </IconButton>
+                                    <Skeleton asChild loading={!pool}>
+                                        <Text fontWeight="semibold" color="fg.emphasized" fontSize={{ base: "sm", md: "md" }}>Trading Fee: {toPercentage(pool?.fee || 0)}%</Text>
+                                    </Skeleton>
                                 </HStack>
                                 <Separator borderColor="border.emphasized" />
                                 <Grid templateColumns="repeat(3, 1fr)" gap={{ base: "2", md: "4" }} w="full">
                                     <Tooltip content="Rewards distributed to liquidity providers">
                                         <VStack align="center" gap="2" cursor="pointer">
                                             <Text fontSize="xs" color="fg.muted" fontWeight="medium" textAlign="center">LP Rewards</Text>
-                                            <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="green.500">{mockPool.feeDistribution.lpRewards}%</Text>
+                                            <Skeleton asChild loading={!pool}>
+                                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="green.500">{toPercentage(pool?.fee_dest?.providers || 0)}%</Text>
+                                            </Skeleton>
                                         </VStack>
                                     </Tooltip>
                                     <Tooltip content="Fees used for protocol development and maintenance">
                                         <VStack align="center" gap="2" cursor="pointer">
                                             <Text fontSize="xs" color="fg.muted" fontWeight="medium" textAlign="center">Protocol</Text>
-                                            <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="blue.500">{mockPool.feeDistribution.protocol}%</Text>
+                                            <Skeleton asChild loading={!pool}>
+                                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="blue.500">{toPercentage(pool?.fee_dest?.treasury || 0)}%</Text>
+                                            </Skeleton>
                                         </VStack>
                                     </Tooltip>
                                     <Tooltip content="Fees used to buyback and burn BZE tokens">
                                         <VStack align="center" gap="2" cursor="pointer">
                                             <Text fontSize="xs" color="fg.muted" fontWeight="medium" textAlign="center">Buyback & Burn</Text>
-                                            <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="orange.500">{mockPool.feeDistribution.buyback}%</Text>
+                                            <Skeleton asChild loading={!pool}>
+                                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="bold" color="orange.500">{toPercentage(pool?.fee_dest?.burner || 0)}%</Text>
+                                            </Skeleton>
                                         </VStack>
                                     </Tooltip>
                                 </Grid>
@@ -337,28 +387,28 @@ export default function PoolDetailsPage() {
                 <Box w="full" bg="bg.surface" p={{ base: "4", md: "6" }} rounded="xl" borderWidth="1px" borderColor="border">
                     <VStack gap={{ base: "4", md: "6" }}>
                         <HStack w="full" justify="space-between">
-                            <Text fontSize="lg" fontWeight="bold" color="fg.emphasized">Your Position</Text>
-                            <Badge variant="surface" colorPalette="green">Active</Badge>
+                            <Text fontSize="lg" fontWeight="bold" color="fg.emphasized">Your Shares</Text>
+                            <Badge variant="surface" colorPalette={userShares.gt(0) ? 'green' : 'yellow'}>{userShares.gt(0) ? 'Active' : 'Inactive'}</Badge>
                         </HStack>
 
                         <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                                <Text fontSize="sm" color="fg.muted" textAlign="center">LP Tokens</Text>
-                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{mockUserPosition.shares}</Text>
-                                <Text fontSize="xs" color="fg.muted">{mockUserPosition.shareOfPool} of pool</Text>
+                                <Text fontSize="sm" color="fg.muted" textAlign="center">LP Shares</Text>
+                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(userShares)}</Text>
+                                <Text fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</Text>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                                <Text fontSize="sm" color="fg.muted" textAlign="center">Your Assets</Text>
+                                <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
                                 <VStack gap="1">
-                                    <Text fontSize="sm" color="fg.emphasized">{mockUserPosition.asset0Amount} {mockPool.asset0.symbol}</Text>
-                                    <Text fontSize="sm" color="fg.emphasized">{mockUserPosition.asset1Amount} {mockPool.asset1.symbol}</Text>
+                                    <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
+                                    <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
                                 </VStack>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                                <Text fontSize="sm" color="fg.muted" textAlign="center">Earned Fees</Text>
+                                <Text fontSize="sm" color="fg.muted" textAlign="center">Extra Rewards</Text>
                                 <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">{mockUserPosition.earnedFees}</Text>
                                 <Button size="sm" variant="outline" colorPalette="green">
-                                    Claim Fees
+                                    Claim
                                 </Button>
                             </VStack>
                         </Grid>
@@ -639,3 +689,13 @@ export default function PoolDetailsPage() {
         </Container>
     );
 }
+
+const PoolDetailsPage = () => {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <PoolDetailsPageContent />
+        </Suspense>
+    );
+};
+
+export default PoolDetailsPage;

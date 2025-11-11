@@ -1,4 +1,6 @@
 
+export const LP_ASSETS_DECIMALS = 12
+
 export interface Asset {
     type: string; //ibc, factory or native
     denom: string; //base denom (blockchain denom)
@@ -42,4 +44,9 @@ export interface IbcTransitionMock {
         channel_id: string;
         path?: string;
     };
+}
+
+export interface ChainAssets {
+    assets: Map<string, Asset>;
+    ibcData: Map<string, IBCData>;
 }

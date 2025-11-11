@@ -5,11 +5,11 @@ import BigNumber from 'bignumber.js';
 const MAX_PRICE_DECIMALS = 14;
 
 export function toBigNumber(amount: string | number | BigNumber | bigint): BigNumber {
-    if (typeof amount === "string" || typeof amount === "number" || typeof amount === "bigint") {
-        amount = new BigNumber(amount);
+    if (amount instanceof BigNumber) {
+        return amount;
     }
 
-    return amount;
+    return new BigNumber(amount);
 }
 
 export function uAmountToAmount(amount: string | number | BigNumber | bigint | undefined, noOfDecimals: number): string {
