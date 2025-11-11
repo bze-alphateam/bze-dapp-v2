@@ -141,6 +141,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         const usdcDenom = getUSDCDenom()
         const usdcAsset = a.get(usdcDenom)
         if (!bzeAsset || !usdcAsset) {
+            setIsLoadingPrices(false)
             return toBigNumber(0)
         }
 
