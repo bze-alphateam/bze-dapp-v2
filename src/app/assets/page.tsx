@@ -464,11 +464,11 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
 export default function AssetsPage() {
     const [expandedAsset, setExpandedAsset] = useState<string>('')
     const [searchTerm, setSearchTerm] = useState('')
-    const {isLoading, assets} = useAssets()
+    const {isLoading, assetsLpExcluded} = useAssets()
 
     const filteredAssets = () => {
         if (searchTerm === '') {
-            return assets.sort((token1: Asset, token2: Asset) => {
+            return assetsLpExcluded.sort((token1: Asset, token2: Asset) => {
                 if (isNativeDenom(token1.denom)) {
                     return -1;
                 }
@@ -484,7 +484,7 @@ export default function AssetsPage() {
                 return token1.name > token2.name ? 1 : -1;
             })
         } else {
-            return assets.filter(asset =>
+            return assetsLpExcluded.filter(asset =>
                 asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 asset.ticker.toLowerCase().includes(searchTerm.toLowerCase())
             )
@@ -505,14 +505,14 @@ export default function AssetsPage() {
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Total Assets</Text>
                         <Skeleton asChild loading={isLoading}>
-                            <Text fontSize="2xl" fontWeight="bold">{assets.length}</Text>
+                            <Text fontSize="2xl" fontWeight="bold">{assetsLpExcluded.length}</Text>
                         </Skeleton>
                     </Box>
                     <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
                         <Text color="fg.muted" fontSize="sm">Native</Text>
                         <Skeleton asChild loading={isLoading}>
                             <Text fontSize="2xl" fontWeight="bold">
-                                {assets.filter(a => a.type === ASSET_TYPE_NATIVE).length}
+                                {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_NATIVE).length}
                             </Text>
                         </Skeleton>
                     </Box>
@@ -520,7 +520,7 @@ export default function AssetsPage() {
                         <Text color="fg.muted" fontSize="sm">Factory</Text>
                         <Skeleton asChild loading={isLoading}>
                             <Text fontSize="2xl" fontWeight="bold">
-                                {assets.filter(a => a.type === ASSET_TYPE_FACTORY).length}
+                                {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_FACTORY).length}
                             </Text>
                         </Skeleton>
                     </Box>
@@ -528,7 +528,7 @@ export default function AssetsPage() {
                         <Text color="fg.muted" fontSize="sm">IBC</Text>
                         <Skeleton asChild loading={isLoading}>
                             <Text fontSize="2xl" fontWeight="bold">
-                                {assets.filter(a => a.type === ASSET_TYPE_IBC).length}
+                                {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_IBC).length}
                             </Text>
                         </Skeleton>
                     </Box>

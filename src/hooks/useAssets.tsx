@@ -2,7 +2,7 @@ import {useCallback, useContext, useMemo} from 'react';
 import { AssetsContext, AssetsContextType } from '@/contexts/assets_context';
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {Asset} from "@/types/asset";
-import {truncateDenom} from "@/utils/denom";
+import {isLpDenom, truncateDenom} from "@/utils/denom";
 
 // Base hook to access context (private)
 export function useAssetsContext(): AssetsContextType {
@@ -54,6 +54,10 @@ export function useAssets() {
         return asset.decimals
     }, [assets])
 
+    const assetsLpExcluded = useMemo(() => {
+        return assets?.filter(item => !isLpDenom(item.denom))
+    }, [assets])
+
     return {
         assets,
         isLoading,
@@ -61,6 +65,7 @@ export function useAssets() {
         isVerifiedAsset,
         denomTicker,
         denomDecimals,
+        assetsLpExcluded,
     };
 }
 
