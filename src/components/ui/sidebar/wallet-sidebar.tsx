@@ -25,7 +25,7 @@ import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
 import {AssetBalance, useBalances} from "@/hooks/useBalances";
 import {useIBCChains} from "@/hooks/useAssets";
-import {isIbcAsset, isIbcDenom} from "@/utils/denom";
+import {isIbcAsset, isIbcDenom, isLpDenom} from "@/utils/denom";
 
 import {amountToBigNumberUAmount, amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {getChainNativeAssetDenom} from "@/constants/assets";
@@ -808,6 +808,16 @@ const IBCSendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: ()
 
 // Updated Wallet Sidebar Content Component (now fully scrollable)
 export const WalletSidebarContent = () => {
+    const [viewState, setViewState] = useState<ViewState>('balances')
+    const [isDisconnecting, setIsDisconnecting] = useState(false)
+    const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
+    const copyButtonRef = useRef<HTMLButtonElement>(null)
+
+    // IBC Deposit form state
+    const [depositChain, setDepositChain] = useState('')
+    const [depositToken, setDepositToken] = useState('')
+    const [depositAmount, setDepositAmount] = useState('')
+
     const {
         status,
         username,
@@ -819,43 +829,43 @@ export const WalletSidebarContent = () => {
     const walletManager = useWalletManager()
     const {ibcChains} = useIBCChains()
 
+    const balancesWithoutLps = useMemo(() => {
+        if (assetsLoading) return [];
+
+        return getAssetsBalances().filter(asset => !isLpDenom(asset.denom))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [assetsLoading])
+
     const nativeDenom = getChainNativeAssetDenom()
-    const sortedBalances = getAssetsBalances().sort((a, b) => {
-        // 1. Native denom always first
-        if (a.denom === nativeDenom) return -1;
-        if (b.denom === nativeDenom) return 1;
+    const sortedBalances = useMemo(() => {
+        return balancesWithoutLps.sort((a, b) => {
+            // 1. Native denom always first
+            if (a.denom === nativeDenom) return -1;
+            if (b.denom === nativeDenom) return 1;
 
-        // 2. Verified vs non-verified
-        if (a.verified && !b.verified) return -1;
-        if (!a.verified && b.verified) return 1;
+            // 2. Verified vs non-verified
+            if (a.verified && !b.verified) return -1;
+            if (!a.verified && b.verified) return 1;
 
-        // 3. Positive balances vs zero balances
-        const aHasBalance = a.amount.gt(0);
-        const bHasBalance = b.amount.gt(0);
+            // 3. Positive balances vs zero balances
+            const aHasBalance = a.amount.gt(0);
+            const bHasBalance = b.amount.gt(0);
 
-        if (aHasBalance && !bHasBalance) return -1;
-        if (!aHasBalance && bHasBalance) return 1;
+            if (aHasBalance && !bHasBalance) return -1;
+            if (!aHasBalance && bHasBalance) return 1;
 
-        // 4. If both have positive balances, sort by USD amount descending
-        if (aHasBalance && bHasBalance) {
-            return a.USDValue.gt(b.USDValue) ? -1 : 1;
-        }
+            // 4. If both have positive balances, sort by USD amount descending
+            if (aHasBalance && bHasBalance) {
+                return a.USDValue.gt(b.USDValue) ? -1 : 1;
+            }
 
-        // 5. For remaining items (both zero balance), maintain stable sort
-        return 0;
-    })
+            // 5. For remaining items (both zero balance), maintain stable sort
+            return 0;
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [balancesWithoutLps])
 
-    const [viewState, setViewState] = useState<ViewState>('balances')
-    const [isDisconnecting, setIsDisconnecting] = useState(false)
-    const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
-    const copyButtonRef = useRef<HTMLButtonElement>(null)
-
-    // IBC Deposit form state
-    const [depositChain, setDepositChain] = useState('')
-    const [depositToken, setDepositToken] = useState('')
-    const [depositAmount, setDepositAmount] = useState('')
-
-    const walletAddress = stringTruncateFromCenter(address ?? "", 16)
+    const walletAddress = useMemo(() => stringTruncateFromCenter(address ?? "", 16), [address])
 
     const chainCollection = createListCollection({
         items: mockIBCChains
@@ -867,6 +877,7 @@ export const WalletSidebarContent = () => {
         setTimeout(() => setShowCopiedTooltip(false), 2000)
     }
 
+    //TODO: handle IBC deposit form
     const handleIBCDeposit = () => {
         console.log('IBC Deposit:', { depositChain, depositToken, depositAmount })
         // Handle IBC deposit logic
