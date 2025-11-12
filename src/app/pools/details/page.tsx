@@ -42,35 +42,6 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 
-// Types based on project requirements
-type Pool = {
-    id: string;
-    asset0: {
-        symbol: string;
-        name: string;
-        image: string;
-        amount: string;
-        usdValue: string;
-    };
-    asset1: {
-        symbol: string;
-        name: string;
-        image: string;
-        amount: string;
-        usdValue: string;
-    };
-    totalLiquidity: string;
-    fee: number;
-    feeDistribution: {
-        lpRewards: number;
-        protocol: number;
-        buyback: number;
-    };
-    apr: string;
-    volume24h: string;
-    fees24h: string;
-};
-
 type UserPosition = {
     shares: string;
     shareOfPool: string;
@@ -87,35 +58,6 @@ type LockingProgram = {
     multiplier: string;
     apr: string;
     description: string;
-};
-
-// Mock data
-const mockPool: Pool = {
-    id: 'bze-usdc',
-    asset0: {
-        symbol: 'BZE',
-        name: 'BeeZee',
-        image: '/images/bze_alternative_512x512.png',
-        amount: '125,847.23',
-        usdValue: '$62,923.62',
-    },
-    asset1: {
-        symbol: 'USDC',
-        name: 'USD Coin',
-        image: '/images/token.svg',
-        amount: '62,923.45',
-        usdValue: '$62,923.45',
-    },
-    totalLiquidity: '$125,847.07',
-    fee: 0.3,
-    feeDistribution: {
-        lpRewards: 70,
-        protocol: 20,
-        buyback: 10,
-    },
-    apr: '24.5%',
-    volume24h: '$1,254,892',
-    fees24h: '$3,764.68',
 };
 
 const mockUserPosition: UserPosition = {
@@ -159,8 +101,6 @@ const lockingPrograms: LockingProgram[] = [
     },
 ];
 
-const {addLiquidity} = bze.tradebin.MessageComposer.withTypeUrl;
-
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
         <Box position="relative" w="12" h="12">
@@ -182,6 +122,8 @@ const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: stri
         </VStack>
     </VStack>
 );
+
+const {addLiquidity, removeLiquidity} = bze.tradebin.MessageComposer.withTypeUrl;
 
 interface AddLiquidityTabProps {
     baseAsset?: Asset;
@@ -328,7 +270,7 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
                         <Input
                             placeholder="0.0"
                             value={addLiquidityBaseAmount}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityBaseAmountChange(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityBaseAmountChange(sanitizeNumberInput(e.target.value))}
                             flex="1"
                             disabled={isSubmitting}
                         />
@@ -347,7 +289,7 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
                         <Input
                             placeholder="0.0"
                             value={addLiquidityQuoteAmount}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityQuoteAmountChange(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityQuoteAmountChange(sanitizeNumberInput(e.target.value))}
                             flex="1"
                             disabled={isSubmitting}
                         />
@@ -455,6 +397,326 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
         </VStack>
     )
 }
+interface RemoveLiquidityTabProps {
+    pool?: LiquidityPoolSDKType;
+    userShares: BigNumber;
+    userReserveBase: BigNumber;
+    userReserveQuote: BigNumber;
+    baseAsset?: Asset;
+    quoteAsset?: Asset;
+    onRemove: () => void;
+}
+
+const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote, baseAsset, quoteAsset, onRemove}: RemoveLiquidityTabProps) => {
+    const [removePercentage, setRemovePercentage] = useState(0);
+    const [removeAmount, setRemoveAmount] = useState('');
+    const [removeSlippage, setRemoveSlippage] = useState('0.5');
+    const [showSlippageEdit, setShowSlippageEdit] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const {address} = useChain(getChainName())
+    const {tx} = useBZETx()
+    const {toast} = useToast()
+
+    const userSharesAmount = useMemo(() => {
+        return uAmountToAmount(userShares, LP_ASSETS_DECIMALS);
+    }, [userShares]);
+
+    const estimatedBaseAmount = useMemo(() => {
+        if (!removeAmount || removeAmount === '0') {
+            return '0';
+        }
+
+        const removeUAmount = amountToBigNumberUAmount(removeAmount, LP_ASSETS_DECIMALS);
+        const ratio = removeUAmount.dividedBy(userShares);
+        return uAmountToAmount(userReserveBase.multipliedBy(ratio), baseAsset?.decimals || 0);
+    }, [removeAmount, userShares, userReserveBase, baseAsset]);
+
+    const estimatedQuoteAmount = useMemo(() => {
+        if (!removeAmount || removeAmount === '0') {
+            return '0';
+        }
+
+        const removeUAmount = amountToBigNumberUAmount(removeAmount, LP_ASSETS_DECIMALS);
+        const ratio = removeUAmount.dividedBy(userShares);
+        return uAmountToAmount(userReserveQuote.multipliedBy(ratio), quoteAsset?.decimals || 0);
+    }, [removeAmount, userShares, userReserveQuote, quoteAsset]);
+
+    const minimumBaseAmount = useMemo(() => {
+        if (!estimatedBaseAmount || estimatedBaseAmount === '0') return '0';
+
+        const slippageDecimal = toBigNumber(removeSlippage).dividedBy(100);
+        const expected = toBigNumber(estimatedBaseAmount);
+        const minimum = expected.minus(expected.multipliedBy(slippageDecimal));
+
+        return minimum.toString();
+    }, [estimatedBaseAmount, removeSlippage]);
+
+    const minimumQuoteAmount = useMemo(() => {
+        if (!estimatedQuoteAmount || estimatedQuoteAmount === '0') return '0';
+
+        const slippageDecimal = toBigNumber(removeSlippage).dividedBy(100);
+        const expected = toBigNumber(estimatedQuoteAmount);
+        const minimum = expected.minus(expected.multipliedBy(slippageDecimal));
+
+        return minimum.toString();
+    }, [estimatedQuoteAmount, removeSlippage]);
+
+    const onPercentageChange = useCallback((percentage: number) => {
+        setRemovePercentage(percentage);
+        const amount = toBigNumber(userSharesAmount).multipliedBy(percentage).dividedBy(100);
+        setRemoveAmount(amount.toString());
+    }, [userSharesAmount]);
+
+    const onAmountChange = useCallback((value: string) => {
+        setRemoveAmount(value);
+        if (!value || value === '0') {
+            setRemovePercentage(0);
+            return;
+        }
+
+        const percentage = toBigNumber(value).dividedBy(userSharesAmount).multipliedBy(100);
+        setRemovePercentage(Math.min(100, Math.max(0, percentage.toNumber())));
+    }, [userSharesAmount]);
+
+    const canRemove = useMemo(() => !isSubmitting && userShares.gt(0), [isSubmitting, userShares]);
+
+    const handleRemove = useCallback(async () => {
+        if (!pool || !address) {
+            toast.error('Please connect your wallet');
+            return;
+        }
+
+        if (!removeAmount || removeAmount === '0') {
+            toast.error('Please enter an amount to remove');
+            return;
+        }
+
+        const removeUAmount = amountToBigNumberUAmount(removeAmount, LP_ASSETS_DECIMALS);
+        if (removeUAmount.isNaN() || removeUAmount.lte(0)) {
+            toast.error('Invalid shares amount provided');
+            return;
+        }
+
+        if (removeUAmount.gt(userShares)) {
+            toast.error('You don\'t have enough LP shares');
+            return;
+        }
+
+        const slippageDecimal = toBigNumber(removeSlippage).dividedBy(100);
+        if (slippageDecimal.isNaN() || slippageDecimal.lt(0) || slippageDecimal.gt(1)) {
+            toast.error('Slippage must be a valid number between 0 and 100');
+            return;
+        }
+
+        const minBaseUAmount = amountToBigNumberUAmount(minimumBaseAmount, baseAsset?.decimals || 0);
+        const minQuoteUAmount = amountToBigNumberUAmount(minimumQuoteAmount, quoteAsset?.decimals || 0);
+
+        setIsSubmitting(true);
+
+        const msg = removeLiquidity({
+            creator: address,
+            poolId: pool.id,
+            lpTokens: removeUAmount.toString(),
+            minBase: minBaseUAmount.toFixed(0),
+            minQuote: minQuoteUAmount.toFixed(0),
+        });
+
+        await tx([msg]);
+
+        setIsSubmitting(false);
+        onRemove();
+    }, [pool, address, removeAmount, userShares, removeSlippage, minimumBaseAmount, minimumQuoteAmount, baseAsset, quoteAsset, toast, tx, onRemove]);
+
+    return (
+        <VStack gap="4" w="full">
+            <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Remove Liquidity</Text>
+
+            <VStack w="full" gap="4">
+                <Box w="full">
+                    <HStack justify="space-between" mb="2">
+                        <Text fontSize="sm" color="fg.muted">LP Shares Amount</Text>
+                        <Text fontSize="xs" color="fg.muted">Available: {prettyAmount(userSharesAmount)}</Text>
+                    </HStack>
+                    <HStack>
+                        <Input
+                            placeholder="0.0"
+                            value={removeAmount}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAmountChange(sanitizeNumberInput(e.target.value))}
+                            flex="1"
+                            disabled={!canRemove}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => onAmountChange(userSharesAmount)} disabled={!canRemove}>MAX</Button>
+                    </HStack>
+                </Box>
+
+                <Box w="full">
+                    <HStack justify="space-between" mb="3">
+                        <Text fontSize="sm" color="fg.muted">Amount to Remove</Text>
+                        <Text fontSize="sm" fontWeight="semibold" color="fg.emphasized">{removePercentage.toFixed(0)}%</Text>
+                    </HStack>
+                    <Box w="full">
+                        <Slider.Root
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[removePercentage]}
+                            onValueChange={(e) => onPercentageChange(e.value[0])}
+                            w="full"
+                            disabled={!canRemove}
+                        >
+                            <Slider.Control>
+                                <Slider.Track h="2" bg="bg.muted" rounded="full">
+                                    <Slider.Range bg="blue.500" />
+                                </Slider.Track>
+                                <Slider.Thumb
+                                    index={0}
+                                    boxSize="4"
+                                    bg="blue.500"
+                                    border="2px solid"
+                                    borderColor="white"
+                                    cursor="pointer"
+                                    _focus={{ boxShadow: "0 0 0 3px rgba(66, 153, 225, 0.6)" }}
+                                />
+                            </Slider.Control>
+                        </Slider.Root>
+                    </Box>
+                    <HStack justify="space-between" mt="3">
+                        {[25, 50, 75, 100].map((percentage) => (
+                            <Button
+                                key={percentage}
+                                size="sm"
+                                variant={removePercentage === percentage ? "solid" : "outline"}
+                                onClick={() => onPercentageChange(percentage)}
+                                disabled={!canRemove}
+                            >
+                                {percentage}%
+                            </Button>
+                        ))}
+                    </HStack>
+                </Box>
+
+                {/* Expected Output & Slippage */}
+                {removeAmount && removeAmount !== '0' && (
+                    <Box w="full" p="3" bg="bg.muted" borderRadius="md" borderWidth="1px">
+                        <VStack align="stretch" gap="2">
+                            <Text fontSize="sm" color="fg.muted" mb="1">You will receive:</Text>
+
+                            <HStack justify="space-between">
+                                <Text fontSize="sm" color="fg.muted">{baseAsset?.ticker}</Text>
+                                <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
+                                    {prettyAmount(estimatedBaseAmount)}
+                                </Text>
+                            </HStack>
+
+                            <HStack justify="space-between">
+                                <Text fontSize="sm" color="fg.muted">{quoteAsset?.ticker}</Text>
+                                <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
+                                    {prettyAmount(estimatedQuoteAmount)}
+                                </Text>
+                            </HStack>
+
+                            <Box borderTopWidth="1px" pt="2" mt="1">
+                                <HStack justify="space-between">
+                                    <HStack gap="1">
+                                        <Text fontSize="sm" color="fg.muted">Slippage Tolerance</Text>
+                                        <Button
+                                            size="xs"
+                                            variant="ghost"
+                                            onClick={() => setShowSlippageEdit(!showSlippageEdit)}
+                                            px="1"
+                                            disabled={!canRemove}
+                                        >
+                                            <LuSettings size={14} />
+                                        </Button>
+                                    </HStack>
+                                    <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
+                                        {removeSlippage}%
+                                    </Text>
+                                </HStack>
+
+                                {showSlippageEdit && (
+                                    <VStack align="stretch" gap="2" pt="2" borderTopWidth="1px" mt="2">
+                                        <HStack gap="2" flexWrap="wrap">
+                                            <Button
+                                                size="xs"
+                                                variant={removeSlippage === '0.5' ? 'solid' : 'outline'}
+                                                onClick={() => setRemoveSlippage('0.5')}
+                                                disabled={!canRemove}
+                                            >
+                                                0.5%
+                                            </Button>
+                                            <Button
+                                                size="xs"
+                                                variant={removeSlippage === '1' ? 'solid' : 'outline'}
+                                                onClick={() => setRemoveSlippage('1')}
+                                                disabled={!canRemove}
+                                            >
+                                                1%
+                                            </Button>
+                                            <Button
+                                                size="xs"
+                                                variant={removeSlippage === '3' ? 'solid' : 'outline'}
+                                                onClick={() => setRemoveSlippage('3')}
+                                                disabled={!canRemove}
+                                            >
+                                                3%
+                                            </Button>
+                                            <HStack flex="1" minW="120px">
+                                                <Input
+                                                    size="xs"
+                                                    placeholder="Custom"
+                                                    value={removeSlippage}
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRemoveSlippage(sanitizeNumberInput(e.target.value))}
+                                                    maxW="80px"
+                                                    disabled={!canRemove}
+                                                />
+                                                <Text fontSize="xs" color="fg.muted">%</Text>
+                                            </HStack>
+                                        </HStack>
+
+                                        {parseFloat(removeSlippage) > 5 && (
+                                            <Text fontSize="xs" color="orange.500">
+                                                ⚠️ High slippage may result in unfavorable rates
+                                            </Text>
+                                        )}
+                                    </VStack>
+                                )}
+
+                                <VStack align="stretch" gap="1" mt="2" pt="2" borderTopWidth="1px">
+                                    <Text fontSize="xs" color="fg.muted" mb="1">Minimum received:</Text>
+                                    <HStack justify="space-between">
+                                        <Text fontSize="xs" color="fg.muted">{baseAsset?.ticker}</Text>
+                                        <Text fontSize="xs" color="fg.muted">
+                                            {prettyAmount(minimumBaseAmount)}
+                                        </Text>
+                                    </HStack>
+                                    <HStack justify="space-between">
+                                        <Text fontSize="xs" color="fg.muted">{quoteAsset?.ticker}</Text>
+                                        <Text fontSize="xs" color="fg.muted">
+                                            {prettyAmount(minimumQuoteAmount)}
+                                        </Text>
+                                    </HStack>
+                                </VStack>
+                            </Box>
+                        </VStack>
+                    </Box>
+                )}
+            </VStack>
+
+            <Button
+                w="full"
+                colorPalette="red"
+                size="lg"
+                onClick={handleRemove}
+                disabled={!removeAmount || removeAmount === '0' || isSubmitting || !canRemove}
+                loading={isSubmitting}
+            >
+                Remove Liquidity
+            </Button>
+        </VStack>
+    )
+}
 
 interface UserPositionProps {
     userShares: BigNumber;
@@ -539,7 +801,6 @@ const UserPosition = ({userShares, userSharesPercentage, userReserveBase, userRe
 }
 
 const PoolDetailsPageContent = () => {
-    const [removePercentage, setRemovePercentage] = useState(50);
     const [selectedLockProgram, setSelectedLockProgram] = useState('');
     const [lockAmount, setLockAmount] = useState('');
 
@@ -584,32 +845,6 @@ const PoolDetailsPageContent = () => {
         //eslint-disable-next-line
     }, [poolQuoteReservesAmount])
     const hasPoolData = useMemo(() => poolData !== undefined, [poolData]);
-
-    // Custom slider component
-    const CustomSlider = ({ value, onChange }: { value: number; onChange: (value: number) => void }) => (
-        <Box w="full">
-            <Slider.Root
-                min={0}
-                max={100}
-                step={1}
-                value={[value]}
-                onValueChange={(details) => onChange(details.value[0])}
-                w="full"
-            >
-                <Slider.Control>
-                    <Slider.Track h="2" bg="bg.muted" rounded="full">
-                        <Slider.Range bg="blue.500" />
-                    </Slider.Track>
-                    <Slider.Thumb
-                        index={0}
-                        boxSize="4"
-                        bg="blue.500"
-                        _hover={{ bg: "blue.600" }}
-                    />
-                </Slider.Control>
-            </Slider.Root>
-        </Box>
-    );
 
     // Custom tabs
     const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -796,56 +1031,15 @@ const PoolDetailsPageContent = () => {
                         )}
 
                         {activeTab === 'remove' && (
-                            <VStack gap="4" w="full">
-                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Remove Liquidity</Text>
-
-                                <VStack w="full" gap="4">
-                                    <Box w="full">
-                                        <HStack justify="space-between" mb="3">
-                                            <Text fontSize="sm" color="fg.muted">Amount to Remove</Text>
-                                            <Text fontSize="sm" fontWeight="semibold" color="fg.emphasized">{removePercentage}%</Text>
-                                        </HStack>
-                                        <CustomSlider
-                                            value={removePercentage}
-                                            onChange={setRemovePercentage}
-                                        />
-                                        <HStack justify="space-between" mt="3">
-                                            {[25, 50, 75, 100].map((percentage) => (
-                                                <Button
-                                                    key={percentage}
-                                                    size="sm"
-                                                    variant={removePercentage === percentage ? "solid" : "outline"}
-                                                    onClick={() => setRemovePercentage(percentage)}
-                                                >
-                                                    {percentage}%
-                                                </Button>
-                                            ))}
-                                        </HStack>
-                                    </Box>
-
-                                    <Box w="full" bg="bg.panel" p={{ base: "3", md: "4" }} rounded="lg" borderWidth="1px" borderColor="border">
-                                        <Text fontSize="sm" color="fg.muted" mb="3">You will receive:</Text>
-                                        <VStack gap="2">
-                                            <HStack justify="space-between" w="full">
-                                                <Text fontSize="sm" color="fg.muted">{mockPool.asset0.symbol}</Text>
-                                                <Text fontSize="sm" fontWeight="semibold" color="fg.emphasized">
-                                                    {(parseFloat(mockUserPosition.asset0Amount.replace(',', '')) * removePercentage / 100).toFixed(2)}
-                                                </Text>
-                                            </HStack>
-                                            <HStack justify="space-between" w="full">
-                                                <Text fontSize="sm" color="fg.muted">{mockPool.asset1.symbol}</Text>
-                                                <Text fontSize="sm" fontWeight="semibold" color="fg.emphasized">
-                                                    {(parseFloat(mockUserPosition.asset1Amount.replace(',', '')) * removePercentage / 100).toFixed(2)}
-                                                </Text>
-                                            </HStack>
-                                        </VStack>
-                                    </Box>
-                                </VStack>
-
-                                <Button w="full" colorPalette="red" size="lg">
-                                    Remove Liquidity
-                                </Button>
-                            </VStack>
+                            <RemoveLiquidityTab
+                                pool={pool}
+                                userShares={userShares}
+                                userReserveBase={userReserveBase}
+                                userReserveQuote={userReserveQuote}
+                                baseAsset={baseAsset}
+                                quoteAsset={quoteAsset}
+                                onRemove={reload}
+                            />
                         )}
 
                         {activeTab === 'lock' && (
