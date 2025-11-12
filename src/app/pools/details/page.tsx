@@ -40,6 +40,7 @@ import {useToast} from "@/hooks/useToast";
 import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
+import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 
 // Types based on project requirements
 type Pool = {
@@ -182,68 +183,34 @@ const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: stri
     </VStack>
 );
 
-const PoolDetailsPageContent = () => {
-    const [removePercentage, setRemovePercentage] = useState(50);
-    const [selectedLockProgram, setSelectedLockProgram] = useState('');
-    const [lockAmount, setLockAmount] = useState('');
+interface AddLiquidityTabProps {
+    baseAsset?: Asset;
+    quoteAsset?: Asset;
+    pool?: LiquidityPoolSDKType;
 
-    const [activeTab, setActiveTab] = useState<'add' | 'remove' | 'lock'>('add');
+    onAddLiquiditySuccess?: () => void;
+    calculateSharesFromAmounts?: (baseAmount: string | BigNumber, quoteAmount: string | BigNumber) => BigNumber
+    calculateOppositeAmount?: (amount: string | BigNumber, isBase: boolean) => BigNumber;
+}
+const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmounts, onAddLiquiditySuccess, calculateOppositeAmount}: AddLiquidityTabProps) => {
     const [addLiquidityBaseAmount, setAddLiquidityBaseAmount] = useState('');
     const [addLiquidityQuoteAmount, setAddLiquidityQuoteAmount] = useState('');
     const [addLiquiditySlippage, setAddLiquiditySlippage] = useState('0.5');
     const [showSlippageEdit, setShowSlippageEdit] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const {toPoolsPage, idParam} = useNavigationWithParams()
     const {address} = useChain(getChainName())
     const {tx} = useBZETx()
     const {toast} = useToast()
-    const {
-        pool,
-        poolData,
-        userShares,
-        userSharesPercentage,
-        userReserveBase,
-        userReserveQuote,
-        calculateOppositeAmount,
-        calculateSharesFromAmounts,
-        reload,
-    } = useLiquidityPool(idParam ?? '')
-    const {asset: baseAsset, isLoading: isLoadingBaseAsset} = useAsset(pool?.base || '')
-    const {asset: quoteAsset, isLoading: isLoadingQuoteAsset} = useAsset(pool?.quote || '')
-    const {isUSDC: baseAssetIsUsdc, totalUsdValue: baseAssetTotalUsdcValue, isLoading: baseAssetPriceLoading} = useAssetPrice(pool?.base || '')
-    const {isUSDC: quoteAssetIsUsdc, totalUsdValue: quoteAssetTotalUsdcValue, isLoading: quoteAssetPriceLoading} = useAssetPrice(pool?.quote || '')
     const {balance: baseBalance} = useBalance(pool?.base || '')
     const {balance: quoteBalance} = useBalance(pool?.quote || '')
 
-    const poolBaseReservesAmount = useMemo(() => {
-        if (!pool || !baseAsset) return '0';
-        return uAmountToAmount(pool.reserve_base, baseAsset.decimals);
-    }, [baseAsset, pool])
-    const poolQuoteReservesAmount = useMemo(() => {
-        if (!pool || !quoteAsset) return '0';
-        return uAmountToAmount(pool.reserve_quote, quoteAsset.decimals);
-    }, [pool, quoteAsset])
-    const poolBaseReservesUsdValue = useMemo(() => {
-        if (baseAssetIsUsdc) return toBigNumber(poolBaseReservesAmount);
-
-        return baseAssetTotalUsdcValue(toBigNumber(poolBaseReservesAmount))
-        //eslint-disable-next-line
-    }, [poolBaseReservesAmount])
-    const poolQuoteReservesUsdValue = useMemo(() => {
-        if (quoteAssetIsUsdc) return toBigNumber(poolQuoteReservesAmount);
-
-        return quoteAssetTotalUsdcValue(toBigNumber(poolQuoteReservesAmount))
-        //eslint-disable-next-line
-    }, [poolQuoteReservesAmount])
-
-    const hasPoolData = useMemo(() => poolData !== undefined, [poolData]);
     const baseBalanceAmount = useMemo(() => uAmountToAmount(baseBalance.amount, baseAsset?.decimals || 0), [baseAsset, baseBalance])
     const quoteBalanceAmount = useMemo(() => uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals || 0), [quoteAsset, quoteBalance])
 
     const onAddLiquidityBaseAmountChange = useCallback((value: string) => {
         setAddLiquidityBaseAmount(value);
-        if (value === '') {
+        if (value === '' || !calculateOppositeAmount) {
             setAddLiquidityQuoteAmount('')
             return
         }
@@ -257,7 +224,7 @@ const PoolDetailsPageContent = () => {
     }, [baseAsset, quoteAsset])
     const onAddLiquidityQuoteAmountChange = useCallback((value: string) => {
         setAddLiquidityQuoteAmount(value);
-        if (value === '') {
+        if (value === '' || !calculateOppositeAmount) {
             setAddLiquidityBaseAmount('')
             return
         }
@@ -271,7 +238,7 @@ const PoolDetailsPageContent = () => {
         //eslint-disable-next-line
     }, [baseAsset, quoteAsset])
     const expectedShares = useMemo(() => {
-        if (!addLiquidityBaseAmount || !addLiquidityQuoteAmount) return '0';
+        if (!addLiquidityBaseAmount || !addLiquidityQuoteAmount || !calculateSharesFromAmounts) return '0';
 
         const baseUAmount = amountToBigNumberUAmount(addLiquidityBaseAmount, baseAsset?.decimals || 0);
         const quoteUAmount = amountToBigNumberUAmount(addLiquidityQuoteAmount, quoteAsset?.decimals || 0);
@@ -343,9 +310,280 @@ const PoolDetailsPageContent = () => {
         await tx([msg])
 
         setIsSubmitting(false)
-        reload();
+        if (onAddLiquiditySuccess) onAddLiquiditySuccess()
         //eslint-disable-next-line
     }, [pool, addLiquidityBaseAmount, addLiquidityQuoteAmount, addLiquiditySlippage, expectedShares, quoteBalance, baseBalance, baseAsset, quoteAsset, address])
+
+    return (
+        <VStack gap="4" w="full">
+            <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Add Liquidity</Text>
+
+            <VStack w="full" gap="4">
+                <Box w="full">
+                    <HStack justify="space-between" mb="2">
+                        <Text fontSize="sm" color="fg.muted">{baseAsset?.ticker} Amount</Text>
+                        <Text fontSize="xs" color="fg.muted">Available: {prettyAmount(baseBalanceAmount)}</Text>
+                    </HStack>
+                    <HStack>
+                        <Input
+                            placeholder="0.0"
+                            value={addLiquidityBaseAmount}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityBaseAmountChange(e.target.value)}
+                            flex="1"
+                            disabled={isSubmitting}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => onAddLiquidityBaseAmountChange(baseBalanceAmount)}>MAX</Button>
+                    </HStack>
+                </Box>
+
+                <Box fontSize="lg" color="fg.muted" fontWeight="bold" textAlign="center">+</Box>
+
+                <Box w="full">
+                    <HStack justify="space-between" mb="2">
+                        <Text fontSize="sm" color="fg.muted">{quoteAsset?.ticker} Amount</Text>
+                        <Text fontSize="xs" color="fg.muted">Available: {prettyAmount(quoteBalanceAmount)}</Text>
+                    </HStack>
+                    <HStack>
+                        <Input
+                            placeholder="0.0"
+                            value={addLiquidityQuoteAmount}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityQuoteAmountChange(e.target.value)}
+                            flex="1"
+                            disabled={isSubmitting}
+                        />
+                        <Button variant="outline" size="sm" onClick={() => onAddLiquidityQuoteAmountChange(quoteBalanceAmount)}>MAX</Button>
+                    </HStack>
+                </Box>
+
+                {/* Expected Output & Slippage */}
+                {addLiquidityBaseAmount && addLiquidityQuoteAmount && (
+                    <Box w="full" p="3" bg="bg.muted" borderRadius="md" borderWidth="1px">
+                        <VStack align="stretch" gap="2">
+                            <HStack justify="space-between">
+                                <Text fontSize="sm" color="fg.muted">Expected LP Tokens</Text>
+                                <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
+                                    {prettyAmount(expectedShares)} LP
+                                </Text>
+                            </HStack>
+
+                            <HStack justify="space-between">
+                                <HStack gap="1">
+                                    <Text fontSize="sm" color="fg.muted">Slippage</Text>
+                                    <Button
+                                        size="xs"
+                                        variant="ghost"
+                                        onClick={() => setShowSlippageEdit(!showSlippageEdit)}
+                                        px="1"
+                                        disabled={isSubmitting}
+                                    >
+                                        <LuSettings size={14} />
+                                    </Button>
+                                </HStack>
+                                <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
+                                    {addLiquiditySlippage}%
+                                </Text>
+                            </HStack>
+
+                            {showSlippageEdit && (
+                                <VStack align="stretch" gap="2" pt="2" borderTopWidth="1px">
+                                    <HStack gap="2" flexWrap="wrap">
+                                        <Button
+                                            size="xs"
+                                            variant={addLiquiditySlippage === '0.5' ? 'solid' : 'outline'}
+                                            onClick={() => setAddLiquiditySlippage('0.5')}
+                                            disabled={isSubmitting}
+                                        >
+                                            0.5%
+                                        </Button>
+                                        <Button
+                                            size="xs"
+                                            variant={addLiquiditySlippage === '1' ? 'solid' : 'outline'}
+                                            onClick={() => setAddLiquiditySlippage('1')}
+                                            disabled={isSubmitting}
+                                        >
+                                            1%
+                                        </Button>
+                                        <Button
+                                            size="xs"
+                                            variant={addLiquiditySlippage === '3' ? 'solid' : 'outline'}
+                                            onClick={() => setAddLiquiditySlippage('3')}
+                                            disabled={isSubmitting}
+                                        >
+                                            3%
+                                        </Button>
+                                        <HStack flex="1" minW="120px">
+                                            <Input
+                                                size="xs"
+                                                placeholder="Custom"
+                                                value={addLiquiditySlippage}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddLiquiditySlippage(sanitizeNumberInput(e.target.value))}
+                                                maxW="80px"
+                                                disabled={isSubmitting}
+                                            />
+                                            <Text fontSize="xs" color="fg.muted">%</Text>
+                                        </HStack>
+                                    </HStack>
+
+                                    {parseFloat(addLiquiditySlippage) > 5 && (
+                                        <Text fontSize="xs" color="orange.500">
+                                            ⚠️ High slippage may result in unfavorable rates
+                                        </Text>
+                                    )}
+                                </VStack>
+                            )}
+
+                            <HStack justify="space-between">
+                                <Text fontSize="xs" color="fg.muted">Minimum LP Tokens</Text>
+                                <Text fontSize="xs" color="fg.muted">
+                                    {prettyAmount(minimumShares)} LP
+                                </Text>
+                            </HStack>
+                        </VStack>
+                    </Box>
+                )}
+            </VStack>
+
+            <Button
+                w="full"
+                colorPalette="blue"
+                size="lg"
+                onClick={onAddLiquidity}
+                disabled={isSubmitting}
+            >
+                Add Liquidity
+            </Button>
+        </VStack>
+    )
+}
+
+interface UserPositionProps {
+    userShares: BigNumber;
+    userReserveBase: BigNumber;
+    userReserveQuote: BigNumber;
+    userSharesPercentage: BigNumber|string;
+    baseAsset: Asset;
+    quoteAsset: Asset;
+}
+const UserPosition = ({userShares, userSharesPercentage, userReserveBase, userReserveQuote,  baseAsset, quoteAsset} : UserPositionProps) => {
+
+    return (
+        <Box w="full" bg="bg.surface" p={{ base: "4", md: "6" }} rounded="xl" borderWidth="1px" borderColor="border">
+            <VStack gap={{ base: "4", md: "6" }}>
+                <HStack w="full" justify="space-between">
+                    <Text fontSize="lg" fontWeight="bold" color="fg.emphasized">Your Shares</Text>
+                    <Badge variant="surface" colorPalette={userShares.gt(0) ? 'green' : 'yellow'}>{userShares.gt(0) ? 'Active' : 'Inactive'}</Badge>
+                </HStack>
+
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
+                    <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                        <Text fontSize="sm" color="fg.muted" textAlign="center">LP Shares</Text>
+                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(uAmountToAmount(userShares, LP_ASSETS_DECIMALS))}</Text>
+                        <Text fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</Text>
+                    </VStack>
+                    <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                        <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
+                        <VStack gap="1">
+                            <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
+                            <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
+                        </VStack>
+                    </VStack>
+                    <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                        <Text fontSize="sm" color="fg.muted" textAlign="center">Extra Rewards</Text>
+                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">{mockUserPosition.earnedFees}</Text>
+                        <Button size="sm" variant="outline" colorPalette="green">
+                            Claim
+                        </Button>
+                    </VStack>
+                </Grid>
+
+                {mockUserPosition.lockedShares !== '0' && (
+                    <Box
+                        w="full"
+                        bg="purple.50"
+                        _dark={{ bg: "purple.900/20", borderColor: "purple.600" }}
+                        p="4"
+                        rounded="lg"
+                        borderWidth="1px"
+                        borderColor="purple.200"
+                    >
+                        <HStack>
+                            <Box color="purple.500">
+                                <LuLock size={20} />
+                            </Box>
+                            <VStack align="start" gap="1" flex="1">
+                                <Text
+                                    fontSize="sm"
+                                    fontWeight="semibold"
+                                    color="purple.700"
+                                    _dark={{ color: "purple.300" }}
+                                >
+                                    Staked Position: {mockUserPosition.lockedShares} LP tokens
+                                </Text>
+                                <Text
+                                    fontSize="xs"
+                                    color="purple.600"
+                                    _dark={{ color: "purple.400" }}
+                                >
+                                    Earning boosted rewards • Can unstake anytime
+                                </Text>
+                            </VStack>
+                            <Button size="xs" variant="outline" colorPalette="purple">
+                                Unstake
+                            </Button>
+                        </HStack>
+                    </Box>
+                )}
+            </VStack>
+        </Box>
+    )
+}
+
+const PoolDetailsPageContent = () => {
+    const [removePercentage, setRemovePercentage] = useState(50);
+    const [selectedLockProgram, setSelectedLockProgram] = useState('');
+    const [lockAmount, setLockAmount] = useState('');
+
+    const [activeTab, setActiveTab] = useState<'add' | 'remove' | 'lock'>('add');
+
+    const {toPoolsPage, idParam} = useNavigationWithParams()
+
+    const {
+        pool,
+        poolData,
+        userShares,
+        userSharesPercentage,
+        userReserveBase,
+        userReserveQuote,
+        calculateOppositeAmount,
+        calculateSharesFromAmounts,
+        reload,
+    } = useLiquidityPool(idParam ?? '')
+    const {asset: baseAsset, isLoading: isLoadingBaseAsset} = useAsset(pool?.base || '')
+    const {asset: quoteAsset, isLoading: isLoadingQuoteAsset} = useAsset(pool?.quote || '')
+    const {isUSDC: baseAssetIsUsdc, totalUsdValue: baseAssetTotalUsdcValue, isLoading: baseAssetPriceLoading} = useAssetPrice(pool?.base || '')
+    const {isUSDC: quoteAssetIsUsdc, totalUsdValue: quoteAssetTotalUsdcValue, isLoading: quoteAssetPriceLoading} = useAssetPrice(pool?.quote || '')
+
+    const poolBaseReservesAmount = useMemo(() => {
+        if (!pool || !baseAsset) return '0';
+        return uAmountToAmount(pool.reserve_base, baseAsset.decimals);
+    }, [baseAsset, pool])
+    const poolQuoteReservesAmount = useMemo(() => {
+        if (!pool || !quoteAsset) return '0';
+        return uAmountToAmount(pool.reserve_quote, quoteAsset.decimals);
+    }, [pool, quoteAsset])
+    const poolBaseReservesUsdValue = useMemo(() => {
+        if (baseAssetIsUsdc) return toBigNumber(poolBaseReservesAmount);
+
+        return baseAssetTotalUsdcValue(toBigNumber(poolBaseReservesAmount))
+        //eslint-disable-next-line
+    }, [poolBaseReservesAmount])
+    const poolQuoteReservesUsdValue = useMemo(() => {
+        if (quoteAssetIsUsdc) return toBigNumber(poolQuoteReservesAmount);
+
+        return quoteAssetTotalUsdcValue(toBigNumber(poolQuoteReservesAmount))
+        //eslint-disable-next-line
+    }, [poolQuoteReservesAmount])
+    const hasPoolData = useMemo(() => poolData !== undefined, [poolData]);
 
     // Custom slider component
     const CustomSlider = ({ value, onChange }: { value: number; onChange: (value: number) => void }) => (
@@ -513,74 +751,7 @@ const PoolDetailsPageContent = () => {
                 </Box>
 
                 {/* User Position */}
-                <Box w="full" bg="bg.surface" p={{ base: "4", md: "6" }} rounded="xl" borderWidth="1px" borderColor="border">
-                    <VStack gap={{ base: "4", md: "6" }}>
-                        <HStack w="full" justify="space-between">
-                            <Text fontSize="lg" fontWeight="bold" color="fg.emphasized">Your Shares</Text>
-                            <Badge variant="surface" colorPalette={userShares.gt(0) ? 'green' : 'yellow'}>{userShares.gt(0) ? 'Active' : 'Inactive'}</Badge>
-                        </HStack>
-
-                        <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                                <Text fontSize="sm" color="fg.muted" textAlign="center">LP Shares</Text>
-                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(uAmountToAmount(userShares, LP_ASSETS_DECIMALS))}</Text>
-                                <Text fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</Text>
-                            </VStack>
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                                <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
-                                <VStack gap="1">
-                                    <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
-                                    <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
-                                </VStack>
-                            </VStack>
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                                <Text fontSize="sm" color="fg.muted" textAlign="center">Extra Rewards</Text>
-                                <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">{mockUserPosition.earnedFees}</Text>
-                                <Button size="sm" variant="outline" colorPalette="green">
-                                    Claim
-                                </Button>
-                            </VStack>
-                        </Grid>
-
-                        {mockUserPosition.lockedShares !== '0' && (
-                            <Box
-                                w="full"
-                                bg="purple.50"
-                                _dark={{ bg: "purple.900/20", borderColor: "purple.600" }}
-                                p="4"
-                                rounded="lg"
-                                borderWidth="1px"
-                                borderColor="purple.200"
-                            >
-                                <HStack>
-                                    <Box color="purple.500">
-                                        <LuLock size={20} />
-                                    </Box>
-                                    <VStack align="start" gap="1" flex="1">
-                                        <Text
-                                            fontSize="sm"
-                                            fontWeight="semibold"
-                                            color="purple.700"
-                                            _dark={{ color: "purple.300" }}
-                                        >
-                                            Staked Position: {mockUserPosition.lockedShares} LP tokens
-                                        </Text>
-                                        <Text
-                                            fontSize="xs"
-                                            color="purple.600"
-                                            _dark={{ color: "purple.400" }}
-                                        >
-                                            Earning boosted rewards • Can unstake anytime
-                                        </Text>
-                                    </VStack>
-                                    <Button size="xs" variant="outline" colorPalette="purple">
-                                        Unstake
-                                    </Button>
-                                </HStack>
-                            </Box>
-                        )}
-                    </VStack>
-                </Box>
+                {baseAsset && quoteAsset && (<UserPosition userShares={userShares} userReserveBase={userReserveBase} userReserveQuote={userReserveQuote} userSharesPercentage={userSharesPercentage} baseAsset={baseAsset} quoteAsset={quoteAsset} />)}
 
                 {/* Actions Tabs */}
                 <Box w="full" bg="bg.surface" p={{ base: "4", md: "6" }} rounded="xl" borderWidth="1px" borderColor="border">
@@ -612,147 +783,16 @@ const PoolDetailsPageContent = () => {
                             </HStack>
                             <Separator borderColor="border.emphasized" />
                         </VStack>
-
                         {/* Tab Content */}
                         {activeTab === 'add' && (
-                            <VStack gap="4" w="full">
-                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Add Liquidity</Text>
-
-                                <VStack w="full" gap="4">
-                                    <Box w="full">
-                                        <HStack justify="space-between" mb="2">
-                                            <Text fontSize="sm" color="fg.muted">{baseAsset?.ticker} Amount</Text>
-                                            <Text fontSize="xs" color="fg.muted">Available: {prettyAmount(baseBalanceAmount)}</Text>
-                                        </HStack>
-                                        <HStack>
-                                            <Input
-                                                placeholder="0.0"
-                                                value={addLiquidityBaseAmount}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityBaseAmountChange(e.target.value)}
-                                                flex="1"
-                                                disabled={isSubmitting}
-                                            />
-                                            <Button variant="outline" size="sm" onClick={() => onAddLiquidityBaseAmountChange(baseBalanceAmount)}>MAX</Button>
-                                        </HStack>
-                                    </Box>
-
-                                    <Box fontSize="lg" color="fg.muted" fontWeight="bold" textAlign="center">+</Box>
-
-                                    <Box w="full">
-                                        <HStack justify="space-between" mb="2">
-                                            <Text fontSize="sm" color="fg.muted">{quoteAsset?.ticker} Amount</Text>
-                                            <Text fontSize="xs" color="fg.muted">Available: {prettyAmount(quoteBalanceAmount)}</Text>
-                                        </HStack>
-                                        <HStack>
-                                            <Input
-                                                placeholder="0.0"
-                                                value={addLiquidityQuoteAmount}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onAddLiquidityQuoteAmountChange(e.target.value)}
-                                                flex="1"
-                                                disabled={isSubmitting}
-                                            />
-                                            <Button variant="outline" size="sm" onClick={() => onAddLiquidityQuoteAmountChange(quoteBalanceAmount)}>MAX</Button>
-                                        </HStack>
-                                    </Box>
-
-                                    {/* Expected Output & Slippage */}
-                                    {addLiquidityBaseAmount && addLiquidityQuoteAmount && (
-                                        <Box w="full" p="3" bg="bg.muted" borderRadius="md" borderWidth="1px">
-                                            <VStack align="stretch" gap="2">
-                                                <HStack justify="space-between">
-                                                    <Text fontSize="sm" color="fg.muted">Expected LP Tokens</Text>
-                                                    <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
-                                                        {prettyAmount(expectedShares)} LP
-                                                    </Text>
-                                                </HStack>
-
-                                                <HStack justify="space-between">
-                                                    <HStack gap="1">
-                                                        <Text fontSize="sm" color="fg.muted">Slippage</Text>
-                                                        <Button
-                                                            size="xs"
-                                                            variant="ghost"
-                                                            onClick={() => setShowSlippageEdit(!showSlippageEdit)}
-                                                            px="1"
-                                                            disabled={isSubmitting}
-                                                        >
-                                                            <LuSettings size={14} />
-                                                        </Button>
-                                                    </HStack>
-                                                    <Text fontSize="sm" fontWeight="medium" color="fg.emphasized">
-                                                        {addLiquiditySlippage}%
-                                                    </Text>
-                                                </HStack>
-
-                                                {showSlippageEdit && (
-                                                    <VStack align="stretch" gap="2" pt="2" borderTopWidth="1px">
-                                                        <HStack gap="2" flexWrap="wrap">
-                                                            <Button
-                                                                size="xs"
-                                                                variant={addLiquiditySlippage === '0.5' ? 'solid' : 'outline'}
-                                                                onClick={() => setAddLiquiditySlippage('0.5')}
-                                                                disabled={isSubmitting}
-                                                            >
-                                                                0.5%
-                                                            </Button>
-                                                            <Button
-                                                                size="xs"
-                                                                variant={addLiquiditySlippage === '1' ? 'solid' : 'outline'}
-                                                                onClick={() => setAddLiquiditySlippage('1')}
-                                                                disabled={isSubmitting}
-                                                            >
-                                                                1%
-                                                            </Button>
-                                                            <Button
-                                                                size="xs"
-                                                                variant={addLiquiditySlippage === '3' ? 'solid' : 'outline'}
-                                                                onClick={() => setAddLiquiditySlippage('3')}
-                                                                disabled={isSubmitting}
-                                                            >
-                                                                3%
-                                                            </Button>
-                                                            <HStack flex="1" minW="120px">
-                                                                <Input
-                                                                    size="xs"
-                                                                    placeholder="Custom"
-                                                                    value={addLiquiditySlippage}
-                                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddLiquiditySlippage(sanitizeNumberInput(e.target.value))}
-                                                                    maxW="80px"
-                                                                    disabled={isSubmitting}
-                                                                />
-                                                                <Text fontSize="xs" color="fg.muted">%</Text>
-                                                            </HStack>
-                                                        </HStack>
-
-                                                        {parseFloat(addLiquiditySlippage) > 5 && (
-                                                            <Text fontSize="xs" color="orange.500">
-                                                                ⚠️ High slippage may result in unfavorable rates
-                                                            </Text>
-                                                        )}
-                                                    </VStack>
-                                                )}
-
-                                                <HStack justify="space-between">
-                                                    <Text fontSize="xs" color="fg.muted">Minimum LP Tokens</Text>
-                                                    <Text fontSize="xs" color="fg.muted">
-                                                        {prettyAmount(minimumShares)} LP
-                                                    </Text>
-                                                </HStack>
-                                            </VStack>
-                                        </Box>
-                                    )}
-                                </VStack>
-
-                                <Button
-                                    w="full"
-                                    colorPalette="blue"
-                                    size="lg"
-                                    onClick={onAddLiquidity}
-                                    disabled={isSubmitting}
-                                >
-                                    Add Liquidity
-                                </Button>
-                            </VStack>
+                            <AddLiquidityTab
+                                baseAsset={baseAsset}
+                                quoteAsset={quoteAsset}
+                                pool={pool}
+                                onAddLiquiditySuccess={reload}
+                                calculateSharesFromAmounts={calculateSharesFromAmounts}
+                                calculateOppositeAmount={calculateOppositeAmount}
+                            />
                         )}
 
                         {activeTab === 'remove' && (
