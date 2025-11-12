@@ -77,7 +77,7 @@ export function useLiquidityPool(poolId: string) {
         const balance = balancesMap.get(pool.lp_denom)
         if (!balance) return toBigNumber(0)
 
-        return balance.amount
+        return toBigNumber(balance.amount)
     } , [balancesMap, pool])
 
     const totalShares = useMemo(() => {
