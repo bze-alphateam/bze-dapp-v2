@@ -13,10 +13,7 @@ export interface AssetBalance extends Asset {
 export function useBalances() {
     const { balancesMap, isLoading, assetsMap, usdPricesMap } = useAssetsContext()
 
-    const balances = useMemo(() =>
-            Array.from(balancesMap.values()),
-        [balancesMap]
-    )
+    const balances = useMemo(() => Array.from(balancesMap.values()), [balancesMap])
 
     const getAssetsBalances = useCallback(() => {
         const result: AssetBalance[] = []

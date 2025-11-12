@@ -2,10 +2,9 @@ import {useCallback, useEffect, useMemo, useState} from "react";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {getLiquidityPool, getLiquidityPools} from "@/query/liquidity_pools";
 import {LiquidityPoolData} from "@/types/liquidity_pool";
-import {toBigNumber, uAmountToBigNumberAmount} from "@/utils/amount";
+import {toBigNumber} from "@/utils/amount";
 import {useAssetsContext} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
-import {LP_ASSETS_DECIMALS} from "@/types/asset";
 
 const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>): LiquidityPoolData => {
     const basePrice = prices.get(pool.base) || toBigNumber(0)
@@ -78,7 +77,7 @@ export function useLiquidityPool(poolId: string) {
         const balance = balancesMap.get(pool.lp_denom)
         if (!balance) return toBigNumber(0)
 
-        return uAmountToBigNumberAmount(balance.amount, LP_ASSETS_DECIMALS)
+        return balance.amount
     } , [balancesMap, pool])
 
     const totalShares = useMemo(() => {
@@ -87,7 +86,7 @@ export function useLiquidityPool(poolId: string) {
         const sharesAsset = assetsMap.get(pool.lp_denom)
         if (!sharesAsset) return toBigNumber(0)
 
-        return uAmountToBigNumberAmount(sharesAsset?.supply || 0, LP_ASSETS_DECIMALS)
+        return toBigNumber(sharesAsset?.supply || 0)
     }, [assetsMap, pool])
 
     const userSharesPercentage = useMemo(() => {
@@ -116,6 +115,67 @@ export function useLiquidityPool(poolId: string) {
         return userShares.dividedBy(totalShares).multipliedBy(reserveQuote);
     }, [pool, userShares, totalShares]);
 
+    //calculates the opposite amount of a given amount in the pool
+    const calculateOppositeAmount = useCallback((amount: string | BigNumber, isBase: boolean): BigNumber => {
+        if (!pool) {
+            return toBigNumber(0);
+        }
+
+        const amountBN = toBigNumber(amount);
+        if (amountBN.isZero() || amountBN.isNaN()) {
+            return toBigNumber(0);
+        }
+
+        const reserveBase = toBigNumber(pool.reserve_base);
+        const reserveQuote = toBigNumber(pool.reserve_quote);
+
+        if (reserveBase.isZero() || reserveQuote.isZero()) {
+            return toBigNumber(0);
+        }
+
+        if (isBase) {
+            // Given base amount, calculate quote amount
+            // quoteAmount = (baseAmount * reserveQuote) / reserveBase
+            return amountBN.multipliedBy(reserveQuote).dividedBy(reserveBase);
+        } else {
+            // Given quote amount, calculate base amount
+            // baseAmount = (quoteAmount * reserveBase) / reserveQuote
+            return amountBN.multipliedBy(reserveBase).dividedBy(reserveQuote);
+        }
+    }, [pool]);
+
+    const calculateSharesFromAmounts = useCallback((baseAmount: string | BigNumber, quoteAmount: string | BigNumber): BigNumber => {
+        if (!pool || !totalShares) {
+            return toBigNumber(0);
+        }
+
+        const baseAmountBN = toBigNumber(baseAmount);
+        const quoteAmountBN = toBigNumber(quoteAmount);
+
+        if (baseAmountBN.isZero() || baseAmountBN.isNaN() || quoteAmountBN.isZero() || quoteAmountBN.isNaN()) {
+            return toBigNumber(0);
+        }
+
+        const reserveBase = toBigNumber(pool.reserve_base);
+        const reserveQuote = toBigNumber(pool.reserve_quote);
+
+        if (reserveBase.isZero() || reserveQuote.isZero() || totalShares.isZero()) {
+            return toBigNumber(0);
+        }
+
+        // Calculate ratios: baseAmount / poolBaseReserve and quoteAmount / poolQuoteReserve
+        const baseRatio = baseAmountBN.dividedBy(reserveBase);
+        const quoteRatio = quoteAmountBN.dividedBy(reserveQuote);
+
+        // Use the smaller ratio (mimics the Go code's LT comparison)
+        const mintRatio = BigNumber.minimum(baseRatio, quoteRatio);
+
+        // Calculate tokens to mint: mintRatio * lpSupply
+        const tokensToMint = mintRatio.multipliedBy(totalShares);
+
+        // Truncate to integer (mimics Go's TruncateInt())
+        return tokensToMint.integerValue(BigNumber.ROUND_DOWN);
+    }, [pool, totalShares]);
 
     useEffect(() => {
         load();
@@ -132,5 +192,7 @@ export function useLiquidityPool(poolId: string) {
         userSharesPercentage,
         userReserveBase,
         userReserveQuote,
+        calculateOppositeAmount,
+        calculateSharesFromAmounts,
     }
 }
