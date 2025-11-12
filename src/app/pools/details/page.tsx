@@ -846,6 +846,10 @@ const PoolDetailsPageContent = () => {
     }, [poolQuoteReservesAmount])
     const hasPoolData = useMemo(() => poolData !== undefined, [poolData]);
 
+    const onLiquidityChanged = useCallback(() => {
+        reload()
+    }, [reload])
+
     // Custom tabs
     const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
         <Button
@@ -1013,7 +1017,7 @@ const PoolDetailsPageContent = () => {
                                     onClick={() => setActiveTab('lock')}
                                 >
                                     <LuLock />
-                                    Stake Rewards
+                                    Boost Rewards
                                 </TabButton>
                             </HStack>
                             <Separator borderColor="border.emphasized" />
@@ -1024,7 +1028,7 @@ const PoolDetailsPageContent = () => {
                                 baseAsset={baseAsset}
                                 quoteAsset={quoteAsset}
                                 pool={pool}
-                                onAddLiquiditySuccess={reload}
+                                onAddLiquiditySuccess={onLiquidityChanged}
                                 calculateSharesFromAmounts={calculateSharesFromAmounts}
                                 calculateOppositeAmount={calculateOppositeAmount}
                             />
@@ -1038,13 +1042,13 @@ const PoolDetailsPageContent = () => {
                                 userReserveQuote={userReserveQuote}
                                 baseAsset={baseAsset}
                                 quoteAsset={quoteAsset}
-                                onRemove={reload}
+                                onRemove={onLiquidityChanged}
                             />
                         )}
 
                         {activeTab === 'lock' && (
                             <VStack gap="4" w="full">
-                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Stake LP Tokens in Reward Programs</Text>
+                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Stake LP Shares to boost your rewards</Text>
 
                                 <VStack w="full" gap="4">
                                     <Box w="full">

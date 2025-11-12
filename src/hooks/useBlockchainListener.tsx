@@ -7,8 +7,12 @@ import {
     CURRENT_WALLET_BALANCE_EVENT,
     ORDER_BOOK_CHANGED_EVENT,
     ORDER_EXECUTED_EVENT,
+    SUPPLY_CHANGED_EVENT,
     TendermintEvent
 } from "@/types/events";
+import {parseCoins} from "@cosmjs/amino";
+import {coins} from "@cosmjs/stargate";
+import {getChainNativeAssetDenom} from "@/constants/assets";
 
 const BLOCK_SUBSCRIPTION_ID = 1;
 const TX_RECIPIENT_SUBSCRIPTION_ID = 2;
@@ -55,6 +59,25 @@ const isOrderExecutedEvent = (event: TendermintEvent) => {
     return event.type.includes('bze.tradebin.OrderExecutedEvent');
 };
 
+const isCoinbaseEvent = (event: TendermintEvent) => {
+    return event.type.includes('coinbase');
+};
+
+const isBurnEvent = (event: TendermintEvent) => {
+    return event.type.includes('burn');
+};
+
+const getMintedAmount = (event: TendermintEvent) => {
+    const defaultCoin = coins(0, getChainNativeAssetDenom());
+    try {
+        const amountAttribute = event.attributes.find(attribute => attribute.key === 'amount');
+        return amountAttribute ? parseCoins(amountAttribute.value) : defaultCoin
+    }catch (e) {
+        console.error("Failed to parse minted amount from coinbase event", e)
+        return defaultCoin
+    }
+};
+
 export function useBlockchainListener() {
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectAttemptsRef = useRef(0);
@@ -77,6 +100,29 @@ export function useBlockchainListener() {
                 blockchainEventManager.emit(CURRENT_WALLET_BALANCE_EVENT)
                 continue;
             }
+
+            if (isBurnEvent(event)) {
+                blockchainEventManager.emit(SUPPLY_CHANGED_EVENT)
+                continue;
+            }
+
+            if (isCoinbaseEvent(event)) {
+                //every block a new mint event is emitted for newly minted coins from the native asset. These coins are
+                //the rewards for validators and delegators (inflation).
+                //avoid emitting a supply changed event for the native asset because it will be emitted for every block.
+                const mintedAmount = getMintedAmount(event);
+                for (const coin of mintedAmount) {
+                    if (coin.denom !== getChainNativeAssetDenom()) {
+                        console.log(`Minted ${coin.amount} ${coin.denom}`)
+                        // if at least 1 coin was minted that is not the native asset, we should emit ONLY ONE
+                        // supply changed event.
+                        blockchainEventManager.emit(SUPPLY_CHANGED_EVENT)
+                        break;
+                    }
+                }
+                continue;
+            }
+
             //add more events not related to markets here, before the market id is extracted
 
             const marketId = getMarketId(event)

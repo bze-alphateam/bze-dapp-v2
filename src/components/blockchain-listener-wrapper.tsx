@@ -4,7 +4,7 @@ import { useBlockchainListener } from '@/hooks/useBlockchainListener';
 import {useEffect} from "react";
 import {useAssetsContext} from "@/hooks/useAssets";
 import {blockchainEventManager} from "@/service/blockchain_event_manager";
-import {CURRENT_WALLET_BALANCE_EVENT, ORDER_EXECUTED_EVENT} from "@/types/events";
+import {CURRENT_WALLET_BALANCE_EVENT, ORDER_EXECUTED_EVENT, SUPPLY_CHANGED_EVENT} from "@/types/events";
 import {addDebounce, addMultipleDebounce} from "@/utils/debounce";
 import {CONNECTION_TYPE_NONE, CONNECTION_TYPE_POLLING, CONNECTION_TYPE_WS} from "@/types/settings";
 
@@ -12,7 +12,7 @@ const POLLING_INTERVAL = 10 * 1000;
 
 export function BlockchainListenerWrapper() {
     const {isConnected} = useBlockchainListener();
-    const {updateBalances, updateMarketsData, updateConnectionType} = useAssetsContext()
+    const {updateBalances, updateMarketsData, updateConnectionType, updateAssets} = useAssetsContext()
 
     useEffect(() => {
         //will call this to trigger the connection type change to NONE after (polling_interval * 2) seconds
@@ -37,6 +37,7 @@ export function BlockchainListenerWrapper() {
                 //update the state
                 updateBalances()
                 updateMarketsData()
+                updateAssets()
 
                 //reset the fallback debounce time
                 //this will start the fallback again, resetting the timer when it should trigger
@@ -46,6 +47,11 @@ export function BlockchainListenerWrapper() {
             // use WS EVENTS
             removeFallback();
             updateConnectionType(CONNECTION_TYPE_WS);
+
+            const updateAssetsUnsubscribe = blockchainEventManager.subscribe(SUPPLY_CHANGED_EVENT, () => {
+                addDebounce('refresh-assets-func', 100, updateAssets)
+            })
+
             //on balance change refresh balances
             const balanceUnsubscribe = blockchainEventManager.subscribe(CURRENT_WALLET_BALANCE_EVENT, () => {
                 //use debounce to avoid multiple calls to updateBalances
@@ -59,7 +65,8 @@ export function BlockchainListenerWrapper() {
 
             unsubscribers.push(
                 balanceUnsubscribe,
-                marketUnsubscribe
+                marketUnsubscribe,
+                updateAssetsUnsubscribe,
             )
         }
 
@@ -71,7 +78,7 @@ export function BlockchainListenerWrapper() {
             removeFallback()
             unsubscribers.forEach(unsubscribe => unsubscribe())
         };
-    }, [isConnected, updateBalances, updateMarketsData, updateConnectionType]);
+    }, [isConnected, updateBalances, updateMarketsData, updateConnectionType, updateAssets]);
 
     return null; // This component renders nothing, just runs the hook
 }

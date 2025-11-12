@@ -68,8 +68,7 @@ export function useLiquidityPool(poolId: string) {
         setPool(pool)
         setPoolData(getPoolData(pool, usdPricesMap))
         setIsLoading(false)
-        //eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [poolId, usdPricesMap])
 
     const userShares = useMemo(() => {
         if (!pool) return toBigNumber(0)

@@ -18,3 +18,4 @@ export type EventCallback = (event?: InternalEvent) => void;
 export const CURRENT_WALLET_BALANCE_EVENT = "current_wallet_balance";
 export const ORDER_EXECUTED_EVENT = "order_executed";
 export const ORDER_BOOK_CHANGED_EVENT = "order_book_changed";
+export const SUPPLY_CHANGED_EVENT = "supply_changed";
