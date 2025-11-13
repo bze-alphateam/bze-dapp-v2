@@ -3,10 +3,8 @@ import {
     StakingRewardSDKType
 } from "@bze/bzejs/bze/rewards/store";
 import {
-    Alert,
     Badge, Box,
     Card,
-    Grid,
     Heading,
     HStack,
     Progress,
