@@ -9,12 +9,14 @@ import {
     Grid,
     Heading,
     HStack,
+    ProgressBar,
+    ProgressRoot,
     Separator,
     Skeleton,
     Text,
     VStack
 } from "@chakra-ui/react";
-import {LuClock, LuCoins, LuLock, LuShield, LuTrendingUp} from "react-icons/lu";
+import {LuClock, LuCoins, LuLock, LuPercent, LuShield, LuTrendingUp} from "react-icons/lu";
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useAsset} from "@/hooks/useAssets";
 import {calculateRewardsStakingApr, calculateRewardsStakingPendingRewards} from "@/utils/staking";
@@ -131,6 +133,38 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
         return stakingAsset?.verified && prizeAsset?.verified
     }, [stakingAsset, prizeAsset])
 
+    const progressPercentage = useMemo(() => {
+        if (!stakingReward || stakingReward.duration === 0) {
+            return 0
+        }
+        return (stakingReward.payouts / stakingReward.duration) * 100
+    }, [stakingReward])
+
+    const userStakePercentage = useMemo(() => {
+        if (!userStake || !stakingReward) {
+            return new BigNumber(0)
+        }
+        const userAmount = new BigNumber(userStake.amount)
+        const totalStaked = new BigNumber(stakingReward.staked_amount)
+
+        if (totalStaked.isZero()) {
+            return new BigNumber(0)
+        }
+
+        return userAmount.dividedBy(totalStaked).multipliedBy(100)
+    }, [userStake, stakingReward])
+
+    const userDailyReward = useMemo(() => {
+        if (!userStake || !stakingReward || userStakePercentage.isZero()) {
+            return ""
+        }
+
+        const dailyAmount = uAmountToBigNumberAmount(stakingReward.prize_amount, prizeAsset?.decimals || 0)
+        const userShare = dailyAmount.multipliedBy(userStakePercentage).dividedBy(100)
+
+        return `${shortNumberFormat(userShare)} ${prizeAsset?.ticker}`
+    }, [userStake, stakingReward, userStakePercentage, prizeAsset])
+
     useEffect(() => {
         if (stakingReward && !stakingAssetIsLoading && !prizeAssetIsLoading) {
             setIsLoading(false)
@@ -245,6 +279,36 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
 
                 <Card.Body pt="0">
                     <VStack align="stretch" gap="3">
+                        {/* Remaining Days Progress */}
+                        <Box
+                            bgGradient="to-r"
+                            gradientFrom="purple.500/10"
+                            gradientTo="purple.600/10"
+                            borderWidth="1px"
+                            borderColor="purple.500/30"
+                            borderRadius="lg"
+                            p="3"
+                        >
+                            <VStack align="stretch" gap="2">
+                                <HStack justify="space-between">
+                                    <HStack gap="1.5">
+                                        <LuClock size={14} />
+                                        <Text fontSize="xs" fontWeight="medium">Remaining Days</Text>
+                                    </HStack>
+                                    <Text fontSize="sm" fontWeight="bold">
+                                        {remainingDays} / {stakingReward?.duration} days
+                                    </Text>
+                                </HStack>
+                                <ProgressRoot
+                                    value={progressPercentage}
+                                    size="sm"
+                                    colorPalette="purple"
+                                >
+                                    <ProgressBar />
+                                </ProgressRoot>
+                            </VStack>
+                        </Box>
+
                         {/* User Participation Badges */}
                         {(hasUserStake || hasUnbonding) && (
                             <HStack gap="2" flexWrap="wrap">
@@ -280,10 +344,18 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                             >
                                 <VStack align="stretch" gap="2">
                                     <HStack justify="space-between" width="full">
-                                        <Text fontSize="xs" fontWeight="medium">Your Stake</Text>
-                                        <Text fontSize="md" fontWeight="bold">
-                                            {yourStake}
-                                        </Text>
+                                        <HStack gap="1.5">
+                                            <LuPercent size={14} />
+                                            <Text fontSize="xs" fontWeight="medium">Your Stake</Text>
+                                        </HStack>
+                                        <HStack gap="2">
+                                            <Text fontSize="md" fontWeight="bold">
+                                                {yourStake}
+                                            </Text>
+                                            <Badge colorPalette="blue" variant="subtle" size="sm">
+                                                {userStakePercentage.toFixed(2)}%
+                                            </Badge>
+                                        </HStack>
                                     </HStack>
                                     <Separator />
                                     <HStack justify="space-between" width="full">
@@ -332,18 +404,17 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                             <Separator />
                             <HStack justify="space-between" py="1">
                                 <HStack gap="2" color="fg.muted">
-                                    <LuClock size={14} />
-                                    <Text fontSize="xs">Remaining Days</Text>
-                                </HStack>
-                                <Text fontWeight="semibold">{remainingDays} days</Text>
-                            </HStack>
-                            <Separator />
-                            <HStack justify="space-between" py="1">
-                                <HStack gap="2" color="fg.muted">
                                     <LuCoins size={14} />
                                     <Text fontSize="xs">Daily Distribution</Text>
                                 </HStack>
-                                <Text fontWeight="semibold">{dailyDistribution}</Text>
+                                <VStack align="end" gap="0.5">
+                                    <Text fontWeight="semibold">{dailyDistribution}</Text>
+                                    {hasUserStake && userDailyReward && (
+                                        <Text fontSize="2xs" color="green.600" fontWeight="medium">
+                                            You earn: {userDailyReward}
+                                        </Text>
+                                    )}
+                                </VStack>
                             </HStack>
                             <Separator />
                             <HStack justify="space-between" py="1">
