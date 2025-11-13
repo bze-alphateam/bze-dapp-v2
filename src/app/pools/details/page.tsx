@@ -846,7 +846,7 @@ const UserPosition = ({
             <VStack gap={{ base: "4", md: "6" }}>
                 <HStack w="full" justify="space-between">
                     <Text fontSize="lg" fontWeight="bold" color="fg.emphasized">Your Shares</Text>
-                    <Badge variant="surface" colorPalette={userShares.gt(0) ? 'green' : 'yellow'}>{userShares.gt(0) ? 'Active' : 'Inactive'}</Badge>
+                    <Badge variant="surface" colorPalette={lockedLpShares.length > 0 ? 'purple' : userShares.gt(0) ? 'green' : 'yellow'}>{lockedLpShares.length > 0 ? 'Boosted' : userShares.gt(0) ? 'Active' : 'Inactive'}</Badge>
                 </HStack>
 
                 <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
@@ -911,7 +911,7 @@ const UserPosition = ({
                                 disabled={isUnstaking}
                                 loading={isUnstaking}
                             >
-                                Unstake
+                                Unlock
                             </Button>
                         </HStack>
                     </Box>
