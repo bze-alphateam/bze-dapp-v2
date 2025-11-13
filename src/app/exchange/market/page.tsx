@@ -664,23 +664,22 @@ const TradingPageContent = () => {
                                 <LuArrowLeft />Markets
                             </Button>
                             <Box h="4" w="1px" bg="border" />
-                            <HStack gap={3}>
+                            <HStack gap={2}>
                                 <LPTokenLogo
                                     baseAssetLogo={baseAsset?.logo || ''}
                                     quoteAssetLogo={quoteAsset?.logo || ''}
                                     baseAssetSymbol={baseAsset?.ticker || ''}
                                     quoteAssetSymbol={quoteAsset?.ticker || ''}
-                                    size="10"
+                                    size="8"
                                 />
-                                <VStack align="start" gap={1}>
-                                    <HStack>
-                                        <Text fontSize="xl" fontWeight="bold">{marketTicker}</Text>
-                                        <Badge colorPalette={(marketData?.change || 0) > 0 ? 'green' : 'red'} variant="subtle">
+                                <VStack align="start" gap={0}>
+                                    <HStack gap={2}>
+                                        <Text fontSize="lg" fontWeight="bold">{marketTicker}</Text>
+                                        <Badge colorPalette={(marketData?.change || 0) > 0 ? 'green' : 'red'} variant="subtle" size="sm">
                                             {marketData?.change || 0}%
                                         </Badge>
                                     </HStack>
-                                <VStack align="start" gap={-1}>
-                                    <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
+                                    <Text fontSize="xl" fontWeight="bold" color={priceColor}>
                                         {lastPrice} {quoteAsset?.ticker}
                                     </Text>
                                     {shouldShowUsdValues && (
@@ -688,7 +687,6 @@ const TradingPageContent = () => {
                                             ${quoteUsdValue(marketData?.last_price)}
                                         </Text>
                                     )}
-                                </VStack>
                                 </VStack>
                             </HStack>
                         </HStack>
