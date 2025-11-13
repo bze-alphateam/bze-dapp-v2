@@ -2,17 +2,18 @@ import {useCallback, useEffect, useMemo, useState} from "react";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {getLiquidityPool, getLiquidityPools} from "@/query/liquidity_pools";
 import {LiquidityPoolData} from "@/types/liquidity_pool";
-import {toBigNumber} from "@/utils/amount";
+import {toBigNumber, uAmountToAmount} from "@/utils/amount";
 import {useAssetsContext} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
+import {Asset} from "@/types/asset";
 
-const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>): LiquidityPoolData => {
+const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>, baseAsset?: Asset, quoteAsset?: Asset): LiquidityPoolData => {
     const basePrice = prices.get(pool.base) || toBigNumber(0)
     const quotePrice = prices.get(pool.quote) || toBigNumber(0)
     const isComplete = basePrice.gt(0) && quotePrice.gt(0)
 
     return {
-        usdValue: basePrice.multipliedBy(pool.reserve_base).plus(quotePrice.multipliedBy(pool.reserve_quote)),
+        usdValue: basePrice.multipliedBy(uAmountToAmount(pool.reserve_base, baseAsset?.decimals || 0)).plus(quotePrice.multipliedBy(uAmountToAmount(pool.reserve_quote, quoteAsset?.decimals || 0))),
         usdVolume: toBigNumber(0), //TODO: get volume from Aggregator
         isComplete: isComplete,
         apr: '0', //TODO: calculate APR
@@ -25,20 +26,20 @@ export function useLiquidityPools() {
     const [pools, setPools] = useState<LiquidityPoolSDKType[]>([])
     const [poolsData, setPoolsData] = useState<Map<string, LiquidityPoolData>>(new Map())
 
-    const {usdPricesMap, isLoadingPrices} = useAssetsContext()
+    const {usdPricesMap, isLoadingPrices, assetsMap} = useAssetsContext()
 
     const load = useCallback(async () => {
         const [pools] = await Promise.all([getLiquidityPools()])
         const poolsData = new Map<string, LiquidityPoolData>()
 
         pools.map(pool => {
-            poolsData.set(pool.id, getPoolData(pool, usdPricesMap))
+            poolsData.set(pool.id, getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote)))
         })
 
         setPoolsData(poolsData)
         setPools(pools)
         setIsLoading(false)
-    }, [usdPricesMap])
+    }, [usdPricesMap, assetsMap])
 
     useEffect(() => {
         load()
@@ -66,9 +67,9 @@ export function useLiquidityPool(poolId: string) {
         const [pool] = await Promise.all([getLiquidityPool(poolId)])
         if (!pool) return;
         setPool(pool)
-        setPoolData(getPoolData(pool, usdPricesMap))
+        setPoolData(getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote)))
         setIsLoading(false)
-    }, [poolId, usdPricesMap])
+    }, [poolId, usdPricesMap, assetsMap])
 
     const userShares = useMemo(() => {
         if (!pool) return toBigNumber(0)
