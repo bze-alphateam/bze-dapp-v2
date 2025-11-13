@@ -131,158 +131,282 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                 borderWidth={hasUserStake ? "2px" : "1px"}
                 borderColor={hasUserStake ? "blue.500" : (hasUnbonding ? "orange.500" : "border")}
                 cursor="pointer"
-                _hover={{ bg: "bg.muted" }}
+                transition="all 0.2s"
+                _hover={{
+                    bg: "bg.muted",
+                    transform: "translateY(-2px)",
+                    shadow: "lg"
+                }}
                 onClick={onBoxClick}
+                shadow="sm"
             >
-                <Card.Header>
-                    <HStack justify="space-between" align="start">
-                        <VStack align="start" gap="2">
-                            <HStack>
-                                <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
-                                <VStack align="start" gap="1">
-                                    <Heading size="md">{stakingAsset?.ticker} Staking Reward #{rewardNumber}</Heading>
-                                    <HStack>
-                                        <Badge colorPalette={stakingAsset?.verified && prizeAsset?.verified ? 'green' : 'orange'} variant="subtle">
+                <Card.Header pb="4">
+                    <HStack justify="space-between" align="start" gap="4">
+                        <VStack align="start" gap="3" flex="1">
+                            <HStack gap="3">
+                                <Box
+                                    p="2"
+                                    bg="bg.subtle"
+                                    borderRadius="lg"
+                                    borderWidth="1px"
+                                    borderColor="border"
+                                >
+                                    <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
+                                </Box>
+                                <VStack align="start" gap="1.5">
+                                    <Heading size="lg">{stakingAsset?.ticker} Staking #{rewardNumber}</Heading>
+                                    <HStack flexWrap="wrap" gap="2">
+                                        <Badge
+                                            colorPalette={stakingAsset?.verified && prizeAsset?.verified ? 'green' : 'orange'}
+                                            variant="subtle"
+                                            size="sm"
+                                        >
                                             <HStack gap="1">
                                                 <LuShield size={12} />
                                                 <Text>{stakingAsset?.verified && prizeAsset?.verified ? 'Verified' : 'Unverified'}</Text>
                                             </HStack>
                                         </Badge>
                                         {hasUserStake && (
-                                            <Badge colorPalette={'blue'} variant="subtle">
+                                            <Badge colorPalette={'blue'} variant="solid" size="sm">
                                                 {'Active'}
                                             </Badge>
                                         )}
                                         {hasUnbonding && (
-                                            <Badge colorPalette={'orange'} variant="subtle">
+                                            <Badge colorPalette={'orange'} variant="solid" size="sm">
                                                 {'Unstaking'}
                                             </Badge>
                                         )}
                                     </HStack>
-                                    {calculatedApr !== '' &&
-                                        <Box display={{base: 'block', md: 'none'}}>
-                                            <HStack gap="2">
-                                                <Text fontSize="2xs" color="green.500">
-                                                    APR
-                                                </Text>
-                                                <Text fontSize={{sm: 'lg', md: "xl"}} fontWeight="bold" color="green.500">
-                                                    {calculatedApr}
-                                                </Text>
-                                            </HStack>
-                                        </Box>
-                                    }
                                 </VStack>
                             </HStack>
+                            {calculatedApr !== '' &&
+                                <Box display={{base: 'block', md: 'none'}} width="full">
+                                    <Box
+                                        bg="green.50"
+                                        borderWidth="1px"
+                                        borderColor="green.200"
+                                        borderRadius="lg"
+                                        px="4"
+                                        py="3"
+                                    >
+                                        <HStack justify="space-between" align="center">
+                                            <HStack gap="2">
+                                                <LuTrendingUp size={18} color="var(--chakra-colors-green-600)" />
+                                                <Text fontSize="sm" fontWeight="semibold" color="green.700">
+                                                    APR
+                                                </Text>
+                                            </HStack>
+                                            <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                                                {calculatedApr}
+                                            </Text>
+                                        </HStack>
+                                    </Box>
+                                </Box>
+                            }
                         </VStack>
                         {calculatedApr !== '' &&
                             <Box display={{base: 'none', md: 'block'}}>
-                                <HStack gap="2">
-                                    <Text fontSize="2xs" color="green.500">
-                                        APR
-                                    </Text>
-                                    <Text fontSize={{sm: 'lg', md: "xl"}} fontWeight="bold" color="green.500">
-                                        {calculatedApr}
-                                    </Text>
-                                </HStack>
+                                <Box
+                                    bg="green.50"
+                                    borderWidth="1px"
+                                    borderColor="green.200"
+                                    borderRadius="xl"
+                                    px="5"
+                                    py="4"
+                                    minW="140px"
+                                >
+                                    <VStack gap="1" align="center">
+                                        <HStack gap="1.5">
+                                            <LuTrendingUp size={16} color="var(--chakra-colors-green-600)" />
+                                            <Text fontSize="xs" fontWeight="semibold" color="green.700" textTransform="uppercase" letterSpacing="wide">
+                                                APR
+                                            </Text>
+                                        </HStack>
+                                        <Text fontSize="2xl" fontWeight="bold" color="green.600" lineHeight="1">
+                                            {calculatedApr}
+                                        </Text>
+                                    </VStack>
+                                </Box>
                             </Box>
                         }
                     </HStack>
                 </Card.Header>
 
-                <Card.Body>
-                    <VStack align="stretch" gap="3">
+                <Card.Body pt="0">
+                    <VStack align="stretch" gap="4">
                         {hasUserStake && (
-                            <Alert.Root status={"info"} variant="subtle">
-                                <Alert.Indicator />
-                                <VStack align="start" gap="2" flex="1">
+                            <Box
+                                bg="blue.50"
+                                borderWidth="1px"
+                                borderColor="blue.200"
+                                borderRadius="lg"
+                                p="4"
+                            >
+                                <VStack align="stretch" gap="3">
                                     <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Your Stake:</Text>
-                                        <VStack gap="0">
-                                            <Text fontWeight="bold">{yourStake}</Text>
-                                        </VStack>
+                                        <Text fontSize="sm" fontWeight="semibold" color="blue.700">Your Stake</Text>
+                                        <Text fontSize="lg" fontWeight="bold" color="blue.800">
+                                            {yourStake}
+                                        </Text>
                                     </HStack>
+                                    <Separator />
                                     <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Pending Rewards:</Text>
-                                        <Text fontWeight="bold" color="green.600">
+                                        <HStack gap="2">
+                                            <LuCoins size={16} color="var(--chakra-colors-green-600)" />
+                                            <Text fontSize="sm" fontWeight="semibold" color="green.700">Pending Rewards</Text>
+                                        </HStack>
+                                        <Text fontSize="lg" fontWeight="bold" color="green.600">
                                             {pendingRewards}
                                         </Text>
                                     </HStack>
                                 </VStack>
-                            </Alert.Root>
+                            </Box>
                         )}
                         {hasUnbonding && (
-                            <Alert.Root status={"warning"} variant="subtle">
-                                <Alert.Indicator />
-                                <VStack align="start" gap="2" flex="1">
-                                    <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Pending Unlock:</Text>
-                                        <Text fontWeight="bold" color="orange.500">
-                                            {pendingUnlock}
-                                        </Text>
+                            <Box
+                                bg="orange.50"
+                                borderWidth="1px"
+                                borderColor="orange.200"
+                                borderRadius="lg"
+                                p="4"
+                            >
+                                <HStack justify="space-between" width="full">
+                                    <HStack gap="2">
+                                        <LuLock size={16} color="var(--chakra-colors-orange-600)" />
+                                        <Text fontSize="sm" fontWeight="semibold" color="orange.700">Pending Unlock</Text>
                                     </HStack>
-                                </VStack>
-                            </Alert.Root>
+                                    <Text fontSize="lg" fontWeight="bold" color="orange.600">
+                                        {pendingUnlock}
+                                    </Text>
+                                </HStack>
+                            </Box>
                         )}
 
-                        <Grid templateColumns="1fr 1fr" gap="4">
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuClock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Unlock Duration</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{stakingReward?.lock} days</Text>
-                            </VStack>
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuClock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Remaining days</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{remainingDays} days</Text>
-                            </VStack>
+                        <Grid templateColumns={{base: "1fr", sm: "1fr 1fr"}} gap="3">
+                            <Box
+                                bg="bg.subtle"
+                                borderWidth="1px"
+                                borderColor="border"
+                                borderRadius="lg"
+                                p="3"
+                            >
+                                <VStack align="start" gap="2">
+                                    <HStack gap="2">
+                                        <LuClock size={16} color="var(--chakra-colors-gray-500)" />
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Unlock Duration</Text>
+                                    </HStack>
+                                    <Text fontWeight="semibold" fontSize="lg">{stakingReward?.lock} days</Text>
+                                </VStack>
+                            </Box>
+                            <Box
+                                bg="bg.subtle"
+                                borderWidth="1px"
+                                borderColor="border"
+                                borderRadius="lg"
+                                p="3"
+                            >
+                                <VStack align="start" gap="2">
+                                    <HStack gap="2">
+                                        <LuClock size={16} color="var(--chakra-colors-gray-500)" />
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Remaining Days</Text>
+                                    </HStack>
+                                    <Text fontWeight="semibold" fontSize="lg">{remainingDays} days</Text>
+                                </VStack>
+                            </Box>
 
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuCoins size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Daily Distribution</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{dailyDistribution}</Text>
-                            </VStack>
+                            <Box
+                                bg="bg.subtle"
+                                borderWidth="1px"
+                                borderColor="border"
+                                borderRadius="lg"
+                                p="3"
+                            >
+                                <VStack align="start" gap="2">
+                                    <HStack gap="2">
+                                        <LuCoins size={16} color="var(--chakra-colors-gray-500)" />
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Daily Distribution</Text>
+                                    </HStack>
+                                    <Text fontWeight="semibold" fontSize="lg">{dailyDistribution}</Text>
+                                </VStack>
+                            </Box>
 
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuTrendingUp size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Min. Staking</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{minStake}</Text>
-                            </VStack>
+                            <Box
+                                bg="bg.subtle"
+                                borderWidth="1px"
+                                borderColor="border"
+                                borderRadius="lg"
+                                p="3"
+                            >
+                                <VStack align="start" gap="2">
+                                    <HStack gap="2">
+                                        <LuTrendingUp size={16} color="var(--chakra-colors-gray-500)" />
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Min. Staking</Text>
+                                    </HStack>
+                                    <Text fontWeight="semibold" fontSize="lg">{minStake}</Text>
+                                </VStack>
+                            </Box>
 
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuLock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Total Staked</Text>
-                                </HStack>
-                                <Text fontWeight="medium">{totalStaked}</Text>
-                            </VStack>
+                            <Box
+                                bg="bg.subtle"
+                                borderWidth="1px"
+                                borderColor="border"
+                                borderRadius="lg"
+                                p="3"
+                                gridColumn={{base: "1", sm: "1 / -1"}}
+                            >
+                                <VStack align="start" gap="2">
+                                    <HStack gap="2">
+                                        <LuLock size={16} color="var(--chakra-colors-gray-500)" />
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Total Staked</Text>
+                                    </HStack>
+                                    <Text fontWeight="semibold" fontSize="lg">{totalStaked}</Text>
+                                </VStack>
+                            </Box>
                         </Grid>
 
                         <Separator />
 
-                        <HStack justify="space-between" width="full">
-                            <HStack>
-                                <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
-                                <VStack align="start" gap="0">
-                                    <Text fontSize="sm" color="gray.600">Stake</Text>
-                                    <Text fontWeight="medium">{stakingAsset?.ticker}</Text>
+                        <Box
+                            bg="bg.subtle"
+                            borderRadius="lg"
+                            p="4"
+                        >
+                            <HStack justify="space-around" width="full">
+                                <VStack gap="2">
+                                    <Box
+                                        p="2"
+                                        bg="bg"
+                                        borderRadius="lg"
+                                        borderWidth="1px"
+                                        borderColor="border"
+                                    >
+                                        <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
+                                    </Box>
+                                    <VStack align="center" gap="0">
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Stake</Text>
+                                        <Text fontWeight="bold" fontSize="md">{stakingAsset?.ticker}</Text>
+                                    </VStack>
+                                </VStack>
+                                <Box alignSelf="center" color="gray.400" fontSize="2xl" fontWeight="light">
+                                    →
+                                </Box>
+                                <VStack gap="2">
+                                    <Box
+                                        p="2"
+                                        bg="bg"
+                                        borderRadius="lg"
+                                        borderWidth="1px"
+                                        borderColor="border"
+                                    >
+                                        <TokenLogo src={prizeAsset?.logo} symbol={prizeAsset?.ticker ?? ''}/>
+                                    </Box>
+                                    <VStack align="center" gap="0">
+                                        <Text fontSize="xs" color="gray.600" fontWeight="medium">Earn</Text>
+                                        <Text fontWeight="bold" fontSize="md">{prizeAsset?.ticker}</Text>
+                                    </VStack>
                                 </VStack>
                             </HStack>
-                            <HStack>
-                                <TokenLogo src={prizeAsset?.logo} symbol={prizeAsset?.ticker ?? ''}/>
-                                <VStack align="start" gap="0">
-                                    <Text fontSize="sm" color="gray.600">Earn</Text>
-                                    <Text fontWeight="medium">{prizeAsset?.ticker}</Text>
-                                </VStack>
-                            </HStack>
-                        </HStack>
+                        </Box>
                     </VStack>
                 </Card.Body>
             </Card.Root>
