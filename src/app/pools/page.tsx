@@ -17,6 +17,7 @@ import {
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
 import {TokenLogo} from "@/components/ui/token_logo";
+import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useLiquidityPools} from "@/hooks/useLiquidityPools";
 import {useNavigation} from "@/hooks/useNavigation";
@@ -69,27 +70,13 @@ const DesktopLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidit
     >
         <Box as="td" p={4}>
             <HStack gap={3}>
-                <HStack gap={0}>
-                    <TokenLogo
-                        src={baseAsset?.logo}
-                        symbol={baseAsset?.ticker || ''}
-                        size="8"
-                        circular={true}
-                    />
-                    <Box
-                        ml={-2}
-                        alignItems="center"
-                        justifyContent="center"
-                        position="relative"
-                    >
-                        <TokenLogo
-                            src={quoteAsset?.logo}
-                            symbol={quoteAsset?.ticker || ''}
-                            size="8"
-                            circular={true}
-                        />
-                    </Box>
-                </HStack>
+                <LPTokenLogo
+                    baseAssetLogo={baseAsset?.logo || ''}
+                    quoteAssetLogo={quoteAsset?.logo || ''}
+                    baseAssetSymbol={baseAsset?.ticker || ''}
+                    quoteAssetSymbol={quoteAsset?.ticker || ''}
+                    size="8"
+                />
                 <VStack gap={0} align="start">
                     <Text fontWeight="600" fontSize="md">
                         {baseAsset?.ticker}/{quoteAsset?.ticker}
@@ -165,27 +152,13 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidity
             <VStack gap={3} align="stretch">
                 <HStack justify="space-between" align="center">
                     <HStack gap={2}>
-                        <HStack gap={0}>
-                            <TokenLogo
-                                src={baseAsset?.logo}
-                                symbol={baseAsset?.ticker || ''}
-                                size="8"
-                                circular={true}
-                            />
-                            <Box
-                                ml={-2}
-                                alignItems="center"
-                                justifyContent="center"
-                                position="relative"
-                            >
-                                <TokenLogo
-                                    src={quoteAsset?.logo}
-                                    symbol={quoteAsset?.ticker || ''}
-                                    size="8"
-                                    circular={true}
-                                />
-                            </Box>
-                        </HStack>
+                        <LPTokenLogo
+                            baseAssetLogo={baseAsset?.logo || ''}
+                            quoteAssetLogo={quoteAsset?.logo || ''}
+                            baseAssetSymbol={baseAsset?.ticker || ''}
+                            quoteAssetSymbol={quoteAsset?.ticker || ''}
+                            size="8"
+                        />
                         <VStack gap={0} align="start">
                             <HStack>
                                 <Text fontWeight="600" fontSize="lg">
