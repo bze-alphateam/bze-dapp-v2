@@ -1170,9 +1170,25 @@ const UserPosition = ({
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
-                        <VStack gap="1">
-                            <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
-                            <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
+                        <VStack gap="2">
+                            <HStack gap="2">
+                                <TokenLogo
+                                    src={baseAsset?.logo}
+                                    symbol={baseAsset?.ticker || ''}
+                                    size="6"
+                                    circular={true}
+                                />
+                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
+                            </HStack>
+                            <HStack gap="2">
+                                <TokenLogo
+                                    src={quoteAsset?.logo}
+                                    symbol={quoteAsset?.ticker || ''}
+                                    size="6"
+                                    circular={true}
+                                />
+                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
+                            </HStack>
                         </VStack>
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
