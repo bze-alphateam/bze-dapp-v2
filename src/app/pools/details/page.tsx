@@ -12,9 +12,8 @@ import {
     Grid,
     Badge,
     Separator,
-    NativeSelectRoot,
-    NativeSelectField,
-    Slider, Skeleton,
+    Slider,
+    Skeleton,
 } from '@chakra-ui/react';
 import {
     LuArrowLeft,
@@ -22,7 +21,10 @@ import {
     LuMinus,
     LuLock,
     LuTrendingUp,
-    LuInfo, LuSettings,
+    LuInfo,
+    LuSettings,
+    LuCoins,
+    LuClock,
 } from 'react-icons/lu';
 import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
@@ -34,6 +36,7 @@ import {useAssetPrice} from "@/hooks/usePrices";
 import {amountToBigNumberUAmount, amountToUAmount, prettyAmount, toBigNumber, uAmountToAmount} from "@/utils/amount";
 import BigNumber from "bignumber.js";
 import {sanitizeNumberInput, toPercentage} from "@/utils/number";
+import {removeLeadingZeros} from "@/utils/strings";
 import {useBalance} from "@/hooks/useBalances";
 import {useBZETx} from "@/hooks/useTx";
 import {useToast} from "@/hooks/useToast";
@@ -49,65 +52,6 @@ import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {PrettyBalance} from "@/types/balance";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards-staking-modals";
-
-type UserPosition = {
-    shares: string;
-    shareOfPool: string;
-    asset0Amount: string;
-    asset1Amount: string;
-    earnedFees: string;
-    lockedShares: string;
-    lockExpiry?: Date;
-};
-
-type LockingProgram = {
-    id: string;
-    duration: string;
-    multiplier: string;
-    apr: string;
-    description: string;
-};
-
-const mockUserPosition: UserPosition = {
-    shares: '1,234.56',
-    shareOfPool: '1.96%',
-    asset0Amount: '2,467.83',
-    asset1Amount: '1,233.92',
-    earnedFees: '$73.82',
-    lockedShares: '567.89',
-    lockExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-};
-
-const lockingPrograms: LockingProgram[] = [
-    {
-        id: '30d',
-        duration: '30 days',
-        multiplier: '1.2x',
-        apr: '29.4%',
-        description: 'Flexible staking with 7-day unstaking period',
-    },
-    {
-        id: '90d',
-        duration: '90 days',
-        multiplier: '1.5x',
-        apr: '36.8%',
-        description: 'Higher rewards with 14-day unstaking period',
-    },
-    {
-        id: '180d',
-        duration: '180 days',
-        multiplier: '2.0x',
-        apr: '49.0%',
-        description: 'Premium rewards with 21-day unstaking period',
-    },
-    {
-        id: '365d',
-        duration: '1 year',
-        multiplier: '3.0x',
-        apr: '73.5%',
-        description: 'Maximum rewards with 30-day unstaking period',
-    },
-];
 
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
@@ -726,6 +670,367 @@ const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote
     )
 }
 
+interface LockTabProps {
+    pool?: LiquidityPoolSDKType;
+    userShares: BigNumber;
+    rewardsMap?: Map<string, StakingRewardSDKType>;
+    addressData?: AddressRewardsStaking;
+    onLockSuccess?: () => void;
+}
+
+const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: LockTabProps) => {
+    const [selectedRewardId, setSelectedRewardId] = useState('');
+    const [lockAmount, setLockAmount] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const { address } = useChain(getChainName());
+    const { tx } = useBZETx();
+    const { toast } = useToast();
+    const { denomTicker, denomDecimals } = useAssets();
+
+    // Filter staking rewards that match the pool's LP denom
+    const eligibleRewards = useMemo(() => {
+        if (!pool?.lp_denom || !rewardsMap) return [];
+
+        const rewards: StakingRewardSDKType[] = [];
+        rewardsMap.forEach((reward) => {
+            if (reward.duration <= reward.payouts) {
+                return
+            }
+            if (reward.staking_denom === pool.lp_denom) {
+                rewards.push(reward);
+            }
+        });
+
+        // Sort by remaining days (active first, then by remaining days descending)
+        return rewards.sort((a, b) => {
+            const aRemaining = a.duration - a.payouts;
+            const bRemaining = b.duration - b.payouts;
+            if (aRemaining === 0 && bRemaining > 0) return 1;
+            if (bRemaining === 0 && aRemaining > 0) return -1;
+            return bRemaining - aRemaining;
+        });
+    }, [pool?.lp_denom, rewardsMap]);
+
+    const selectedReward = useMemo(() => {
+        if (!selectedRewardId || !rewardsMap) return undefined;
+        return rewardsMap.get(selectedRewardId);
+    }, [selectedRewardId, rewardsMap]);
+
+    const userSharesAmount = useMemo(() => {
+        return uAmountToAmount(userShares, LP_ASSETS_DECIMALS);
+    }, [userShares]);
+
+    const estimatedDailyRewards = useMemo(() => {
+        if (!selectedReward || !lockAmount || lockAmount === '0') return null;
+
+        const lockUAmount = amountToBigNumberUAmount(lockAmount, LP_ASSETS_DECIMALS);
+        const totalStaked = toBigNumber(selectedReward.staked_amount).plus(lockUAmount);
+
+        if (totalStaked.lte(0)) return null;
+
+        const dailyPrize = toBigNumber(selectedReward.prize_amount);
+        const userShare = dailyPrize.multipliedBy(lockUAmount).dividedBy(totalStaked);
+
+        return {
+            amount: uAmountToAmount(userShare, denomDecimals(selectedReward.prize_denom)),
+            ticker: denomTicker(selectedReward.prize_denom),
+        };
+    }, [selectedReward, lockAmount, denomDecimals, denomTicker]);
+
+    const remainingDays = useCallback((reward: StakingRewardSDKType) => {
+        return reward.duration - reward.payouts;
+    }, []);
+
+    const isRewardActive = useCallback((reward: StakingRewardSDKType) => {
+        return remainingDays(reward) > 0;
+    }, [remainingDays]);
+
+    const userActiveStake = useMemo(() => {
+        if (!selectedRewardId || !addressData) return undefined;
+        return addressData.active.get(selectedRewardId);
+    }, [selectedRewardId, addressData]);
+
+    const handleLock = useCallback(async () => {
+        if (!pool || !address || !selectedReward) {
+            toast.error('Please connect your wallet and select a staking reward');
+            return;
+        }
+
+        if (!lockAmount || lockAmount === '0') {
+            toast.error('Please enter an amount to lock');
+            return;
+        }
+
+        const lockUAmount = amountToBigNumberUAmount(lockAmount, LP_ASSETS_DECIMALS);
+        if (lockUAmount.isNaN() || lockUAmount.lte(0)) {
+            toast.error('Invalid lock amount provided');
+            return;
+        }
+
+        if (lockUAmount.gt(userShares)) {
+            toast.error('You don\'t have enough LP shares');
+            return;
+        }
+
+        const minStake = toBigNumber(selectedReward.min_stake);
+        if (!userActiveStake && lockUAmount.lt(minStake)) {
+            toast.error(`Minimum stake is ${uAmountToAmount(minStake, LP_ASSETS_DECIMALS)} LP shares`);
+            return;
+        }
+
+        if (!isRewardActive(selectedReward)) {
+            toast.error('This staking reward has ended');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        const { joinStaking } = bze.rewards.MessageComposer.withTypeUrl;
+        const msg = joinStaking({
+            creator: address,
+            rewardId: selectedReward.reward_id,
+            amount: lockUAmount.toFixed(0),
+        });
+
+        await tx([msg]);
+
+        setIsSubmitting(false);
+        setLockAmount('');
+        setSelectedRewardId('');
+        if (onLockSuccess) onLockSuccess();
+    }, [pool, address, selectedReward, lockAmount, userShares, userActiveStake, isRewardActive, toast, tx, onLockSuccess]);
+
+    if (eligibleRewards.length === 0) {
+        return (
+            <VStack gap="4" w="full">
+                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Lock LP Shares for Extra Rewards</Text>
+                <Box
+                    w="full"
+                    bg="bg.panel"
+                    p="6"
+                    rounded="lg"
+                    borderWidth="1px"
+                    borderColor="border"
+                    textAlign="center"
+                >
+                    <VStack gap="3">
+                        <LuInfo size={32} />
+                        <Text color="fg.muted">No extra rewards available for this pool at the moment.</Text>
+                        <Text fontSize="sm" color="fg.muted">Check back later for new rewards boost opportunities!</Text>
+                    </VStack>
+                </Box>
+            </VStack>
+        );
+    }
+
+    return (
+        <VStack gap="4" w="full">
+            <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Lock LP Shares for Extra Rewards</Text>
+
+            <VStack w="full" gap="4">
+                {/* Amount Input */}
+                <Box w="full">
+                    <HStack justify="space-between" mb="2">
+                        <Text fontSize="sm" color="fg.muted">Amount of LP Shares to Lock</Text>
+                        <Text fontSize="xs" color="fg.muted">Available: {prettyAmount(userSharesAmount)}</Text>
+                    </HStack>
+                    <HStack>
+                        <Input
+                            placeholder="0.0"
+                            value={lockAmount}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLockAmount(sanitizeNumberInput(e.target.value))}
+                            flex="1"
+                            disabled={isSubmitting || !selectedRewardId}
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setLockAmount(userSharesAmount)}
+                            disabled={isSubmitting || !selectedRewardId || userShares.lte(0)}
+                        >
+                            MAX
+                        </Button>
+                    </HStack>
+                </Box>
+
+                {/* Staking Rewards Selection */}
+                <Box w="full">
+                    <Text fontSize="sm" color="fg.muted" mb="3">Select a Staking Reward</Text>
+                    <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap="3" w="full">
+                        {eligibleRewards.map((reward) => {
+                            const isSelected = selectedRewardId === reward.reward_id;
+                            const isActive = isRewardActive(reward);
+                            const remaining = remainingDays(reward);
+                            const dailyDist = uAmountToAmount(reward.prize_amount, denomDecimals(reward.prize_denom));
+                            const prizeTicker = denomTicker(reward.prize_denom);
+
+                            return (
+                                <Box
+                                    key={reward.reward_id}
+                                    p="4"
+                                    bg={isSelected ? "purple.50" : "bg.panel"}
+                                    _dark={{
+                                        bg: isSelected ? "purple.900/30" : "bg.panel",
+                                        borderColor: isSelected ? "purple.500" : "border",
+                                    }}
+                                    rounded="lg"
+                                    borderWidth="2px"
+                                    borderColor={isSelected ? "purple.500" : "border"}
+                                    cursor={isActive ? "pointer" : "not-allowed"}
+                                    opacity={isActive ? 1 : 0.6}
+                                    transition="all 0.2s"
+                                    onClick={() => isActive && setSelectedRewardId(reward.reward_id)}
+                                    _hover={isActive ? {
+                                        borderColor: "purple.400",
+                                        transform: "translateY(-2px)",
+                                        shadow: "md",
+                                    } : {}}
+                                >
+                                    <VStack align="start" gap="3" w="full">
+                                        <HStack justify="space-between" w="full">
+                                            <HStack gap="2">
+                                                <Box
+                                                    w="4"
+                                                    h="4"
+                                                    rounded="full"
+                                                    borderWidth="2px"
+                                                    borderColor={isSelected ? "purple.500" : "border"}
+                                                    bg={isSelected ? "purple.500" : "transparent"}
+                                                    display="flex"
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                >
+                                                    {isSelected && (
+                                                        <Box w="2" h="2" rounded="full" bg="white" />
+                                                    )}
+                                                </Box>
+                                                <Text fontWeight="bold" fontSize="sm" color="fg.emphasized">
+                                                    Reward #{removeLeadingZeros(reward.reward_id)}
+                                                </Text>
+                                            </HStack>
+                                            <Badge
+                                                colorPalette={isActive ? "green" : "gray"}
+                                                variant="subtle"
+                                                size="sm"
+                                            >
+                                                {isActive ? "Active" : "Ended"}
+                                            </Badge>
+                                        </HStack>
+
+                                        <Separator />
+
+                                        <VStack align="stretch" gap="2" w="full" fontSize="xs">
+                                            <HStack justify="space-between">
+                                                <HStack gap="1.5" color="fg.muted">
+                                                    <LuCoins size={12} />
+                                                    <Text>Daily Distribution</Text>
+                                                </HStack>
+                                                <Text fontWeight="semibold" color="fg.emphasized">
+                                                    {prettyAmount(dailyDist)} {prizeTicker}
+                                                </Text>
+                                            </HStack>
+
+                                            <HStack justify="space-between">
+                                                <HStack gap="1.5" color="fg.muted">
+                                                    <LuLock size={12} />
+                                                    <Text>Unlock Period</Text>
+                                                </HStack>
+                                                <Text fontWeight="semibold" color="fg.emphasized">
+                                                    {reward.lock} days
+                                                </Text>
+                                            </HStack>
+
+                                            <HStack justify="space-between">
+                                                <HStack gap="1.5" color="fg.muted">
+                                                    <LuClock size={12} />
+                                                    <Text>Remaining Days</Text>
+                                                </HStack>
+                                                <Text fontWeight="semibold" color={isActive ? "fg.emphasized" : "fg.muted"}>
+                                                    {remaining} / {reward.duration}
+                                                </Text>
+                                            </HStack>
+                                        </VStack>
+                                    </VStack>
+                                </Box>
+                            );
+                        })}
+                    </Grid>
+                </Box>
+
+                {/* Estimated Rewards & Warning */}
+                {lockAmount && lockAmount !== '0' && selectedReward && estimatedDailyRewards && (
+                    <VStack gap="3" w="full">
+                        <Box
+                            w="full"
+                            bg="green.50"
+                            _dark={{ bg: "green.900/20", borderColor: "green.600" }}
+                            p="4"
+                            rounded="lg"
+                            borderWidth="1px"
+                            borderColor="green.200"
+                        >
+                            <VStack align="stretch" gap="2">
+                                <HStack gap="2">
+                                    <Box color="green.500">
+                                        <LuTrendingUp size={18} />
+                                    </Box>
+                                    <Text fontSize="sm" fontWeight="semibold" color="green.700" _dark={{ color: "green.300" }}>
+                                        Estimated Daily Rewards
+                                    </Text>
+                                </HStack>
+                                <Text fontSize="2xl" fontWeight="bold" color="green.600">
+                                    {prettyAmount(estimatedDailyRewards.amount)} {estimatedDailyRewards.ticker}
+                                </Text>
+                            </VStack>
+                        </Box>
+
+                        {selectedReward.lock > 0 && (
+                            <Box
+                                w="full"
+                                bg="orange.50"
+                                _dark={{ bg: "orange.900/20", borderColor: "orange.600" }}
+                                p="4"
+                                rounded="lg"
+                                borderWidth="1px"
+                                borderColor="orange.200"
+                            >
+                                <HStack>
+                                    <Box color="orange.500">
+                                        <LuInfo size={18} />
+                                    </Box>
+                                    <VStack align="start" gap="1" flex="1">
+                                        <Text fontSize="sm" fontWeight="semibold" color="orange.700" _dark={{ color: "orange.300" }}>
+                                            Unlocking Period: {selectedReward.lock} days
+                                        </Text>
+                                        <Text fontSize="xs" color="orange.600" _dark={{ color: "orange.400" }}>
+                                            {`When you unlock your shares, you'll need to wait ${selectedReward.lock} days before receiving them back. You can unlock anytime, but the unlocking period always applies.`}
+                                        </Text>
+                                    </VStack>
+                                </HStack>
+                            </Box>
+                        )}
+                    </VStack>
+                )}
+            </VStack>
+
+            <Button
+                w="full"
+                colorPalette="purple"
+                size="lg"
+                onClick={handleLock}
+                disabled={!selectedRewardId || !lockAmount || lockAmount === '0' || isSubmitting || userShares.lte(0)}
+                loading={isSubmitting}
+            >
+                <HStack gap="2">
+                    <LuLock size={18} />
+                    <Text>Lock LP Shares</Text>
+                </HStack>
+            </Button>
+        </VStack>
+    );
+};
+
 interface UserPositionProps {
     userShares: BigNumber;
     userReserveBase: BigNumber;
@@ -935,9 +1240,6 @@ const UserPosition = ({
 }
 
 const PoolDetailsPageContent = () => {
-    const [selectedLockProgram, setSelectedLockProgram] = useState('');
-    const [lockAmount, setLockAmount] = useState('');
-
     const [activeTab, setActiveTab] = useState<'add' | 'remove' | 'lock'>('add');
 
     const {toPoolsPage, idParam} = useNavigationWithParams()
@@ -1196,103 +1498,13 @@ const PoolDetailsPageContent = () => {
                         )}
 
                         {activeTab === 'lock' && (
-                            <VStack gap="4" w="full">
-                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Lock LP Shares to boost your rewards</Text>
-
-                                <VStack w="full" gap="4">
-                                    <Box w="full">
-                                        <Text fontSize="sm" color="fg.muted" mb="2">Select Staking Program</Text>
-                                        <NativeSelectRoot>
-                                            <NativeSelectField
-                                                value={selectedLockProgram}
-                                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedLockProgram(e.target.value)}
-                                                placeholder="Choose staking program..."
-                                            >
-                                                <option value="">Choose staking program...</option>
-                                                {lockingPrograms.map((program) => (
-                                                    <option key={program.id} value={program.id}>
-                                                        {program.duration} - {program.multiplier} rewards ({program.apr} APR)
-                                                    </option>
-                                                ))}
-                                            </NativeSelectField>
-                                        </NativeSelectRoot>
-                                    </Box>
-
-                                    {selectedLockProgram && (
-                                        <Box w="full" bg="bg.panel" p={{ base: "3", md: "4" }} rounded="lg" borderWidth="1px" borderColor="border">
-                                            <VStack gap={{ base: "3", md: "4" }}>
-                                                {lockingPrograms
-                                                    .filter(p => p.id === selectedLockProgram)
-                                                    .map(program => (
-                                                        <VStack key={program.id} gap={{ base: "3", md: "4" }} w="full">
-                                                            <Grid templateColumns={{ base: '1fr', sm: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
-                                                                <VStack align="center" gap="2">
-                                                                    <Text fontSize="xs" color="fg.muted" fontWeight="medium">Program Duration</Text>
-                                                                    <Text fontSize="sm" fontWeight="semibold" color="fg.emphasized">{program.duration}</Text>
-                                                                </VStack>
-                                                                <VStack align="center" gap="2">
-                                                                    <Text fontSize="xs" color="fg.muted" fontWeight="medium">Reward Multiplier</Text>
-                                                                    <Text fontSize="sm" fontWeight="semibold" color="green.500">{program.multiplier}</Text>
-                                                                </VStack>
-                                                                <VStack align="center" gap="2">
-                                                                    <Text fontSize="xs" color="fg.muted" fontWeight="medium">Boosted APR</Text>
-                                                                    <Text fontSize="sm" fontWeight="semibold" color="green.500">{program.apr}</Text>
-                                                                </VStack>
-                                                            </Grid>
-                                                            <Box
-                                                                w="full"
-                                                                bg="yellow.50"
-                                                                _dark={{ bg: "yellow.900/20", borderColor: "yellow.600" }}
-                                                                p="3"
-                                                                rounded="md"
-                                                                borderWidth="1px"
-                                                                borderColor="yellow.200"
-                                                            >
-                                                                <HStack>
-                                                                    <Box color="orange.500">
-                                                                        <LuInfo size={16} />
-                                                                    </Box>
-                                                                    <Text
-                                                                        fontSize="xs"
-                                                                        color="yellow.800"
-                                                                        _dark={{ color: "yellow.200" }}
-                                                                    >
-                                                                        {program.description}. You can unstake anytime, but there&#39;s an unstaking period before you receive your tokens.
-                                                                    </Text>
-                                                                </HStack>
-                                                            </Box>
-                                                        </VStack>
-                                                    ))}
-                                            </VStack>
-                                        </Box>
-                                    )}
-
-                                    <Box w="full">
-                                        <HStack justify="space-between" mb="2">
-                                            <Text fontSize="sm" color="fg.muted">Amount to Stake</Text>
-                                            <Text fontSize="xs" color="fg.muted">Available: {mockUserPosition.shares} LP tokens</Text>
-                                        </HStack>
-                                        <HStack>
-                                            <Input
-                                                placeholder="0.0"
-                                                value={lockAmount}
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLockAmount(e.target.value)}
-                                                flex="1"
-                                            />
-                                            <Button variant="outline" size="sm">MAX</Button>
-                                        </HStack>
-                                    </Box>
-                                </VStack>
-
-                                <Button
-                                    w="full"
-                                    colorPalette="purple"
-                                    size="lg"
-                                    disabled={!selectedLockProgram || !lockAmount}
-                                >
-                                    Stake LP Tokens
-                                </Button>
-                            </VStack>
+                            <LockTab
+                                pool={pool}
+                                userShares={userShares}
+                                rewardsMap={rewardsMap}
+                                addressData={addressData}
+                                onLockSuccess={onLiquidityChanged}
+                            />
                         )}
                     </VStack>
                 </Box>
