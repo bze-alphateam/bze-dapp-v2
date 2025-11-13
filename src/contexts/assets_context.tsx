@@ -108,7 +108,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setBalancesMap(newMap);
     }, []);
     const doUpdatePrices = useCallback(async (m: Map<string, MarketData>, a: Map<string, Asset>) => {
-        if (a.size === 0 || m.size === 0) return;
+        if (a.size === 0) return;
         setIsLoadingPrices(true)
 
         const getLastPrice = async (base: Asset, quote: Asset, fallback?: () => Promise<number>): Promise<BigNumber> => {
@@ -141,6 +141,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         const usdcDenom = getUSDCDenom()
         const usdcAsset = a.get(usdcDenom)
         if (!bzeAsset || !usdcAsset) {
+            console.error("Failed to find BZE or USDC asset in assets map")
             setIsLoadingPrices(false)
             return toBigNumber(0)
         }
