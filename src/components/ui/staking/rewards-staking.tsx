@@ -18,7 +18,9 @@ import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useAsset} from "@/hooks/useAssets";
 import {calculateRewardsStakingApr, calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {TokenLogo} from "@/components/ui/token_logo";
+import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {shortNumberFormat} from "@/utils/formatter";
+import {isLpDenom} from "@/utils/denom";
 import {prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import BigNumber from "bignumber.js";
 import {useAssetPrice} from "@/hooks/usePrices";
@@ -39,6 +41,27 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
     const {asset: prizeAsset, isLoading: prizeAssetIsLoading} = useAsset(stakingReward?.prize_denom ?? '')
     const {uAmountUsdValue: stakingAssetValue, hasPrice: stakingAssetHasPrice} = useAssetPrice(stakingReward?.staking_denom ?? "")
     const {uAmountUsdValue: prizeAssetValue, hasPrice: prizeAssetHasPrice} = useAssetPrice(stakingReward?.prize_denom ?? "")
+
+    // Check if staking asset is LP token and fetch base/quote assets
+    const isStakingLp = useMemo(() => isLpDenom(stakingReward?.staking_denom ?? ''), [stakingReward?.staking_denom])
+    const isPrizeLp = useMemo(() => isLpDenom(stakingReward?.prize_denom ?? ''), [stakingReward?.prize_denom])
+
+    const stakingLpDenoms = useMemo(() => {
+        if (!isStakingLp || !stakingReward?.staking_denom) return { base: '', quote: '' }
+        const split = stakingReward.staking_denom.split('_')
+        return split.length === 3 ? { base: split[1], quote: split[2] } : { base: '', quote: '' }
+    }, [isStakingLp, stakingReward?.staking_denom])
+
+    const prizeLpDenoms = useMemo(() => {
+        if (!isPrizeLp || !stakingReward?.prize_denom) return { base: '', quote: '' }
+        const split = stakingReward.prize_denom.split('_')
+        return split.length === 3 ? { base: split[1], quote: split[2] } : { base: '', quote: '' }
+    }, [isPrizeLp, stakingReward?.prize_denom])
+
+    const {asset: stakingBaseAsset} = useAsset(stakingLpDenoms.base)
+    const {asset: stakingQuoteAsset} = useAsset(stakingLpDenoms.quote)
+    const {asset: prizeBaseAsset} = useAsset(prizeLpDenoms.base)
+    const {asset: prizeQuoteAsset} = useAsset(prizeLpDenoms.quote)
 
     const onBoxClick = useCallback(() => {
         if (onClick && stakingReward) {
@@ -207,7 +230,17 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                     borderWidth="1px"
                                     borderColor="border"
                                 >
-                                    <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
+                                    {isStakingLp && stakingBaseAsset && stakingQuoteAsset ? (
+                                        <LPTokenLogo
+                                            baseAssetLogo={stakingBaseAsset.logo}
+                                            quoteAssetLogo={stakingQuoteAsset.logo}
+                                            baseAssetSymbol={stakingBaseAsset.ticker}
+                                            quoteAssetSymbol={stakingQuoteAsset.ticker}
+                                            size="8"
+                                        />
+                                    ) : (
+                                        <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''}/>
+                                    )}
                                 </Box>
                                 <VStack align="start" gap="1">
                                     <Heading size="md">{stakingAsset?.ticker} Staking #{rewardNumber}</Heading>
@@ -429,7 +462,17 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                     borderWidth="1px"
                                     borderColor="border"
                                 >
-                                    <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''} size="5"/>
+                                    {isStakingLp && stakingBaseAsset && stakingQuoteAsset ? (
+                                        <LPTokenLogo
+                                            baseAssetLogo={stakingBaseAsset.logo}
+                                            quoteAssetLogo={stakingQuoteAsset.logo}
+                                            baseAssetSymbol={stakingBaseAsset.ticker}
+                                            quoteAssetSymbol={stakingQuoteAsset.ticker}
+                                            size="5"
+                                        />
+                                    ) : (
+                                        <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''} size="5"/>
+                                    )}
                                 </Box>
                                 <VStack align="start" gap="0">
                                     <Text fontSize="2xs" color="fg.muted">Stake</Text>
@@ -445,7 +488,17 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                     borderWidth="1px"
                                     borderColor="border"
                                 >
-                                    <TokenLogo src={prizeAsset?.logo} symbol={prizeAsset?.ticker ?? ''} size="5"/>
+                                    {isPrizeLp && prizeBaseAsset && prizeQuoteAsset ? (
+                                        <LPTokenLogo
+                                            baseAssetLogo={prizeBaseAsset.logo}
+                                            quoteAssetLogo={prizeQuoteAsset.logo}
+                                            baseAssetSymbol={prizeBaseAsset.ticker}
+                                            quoteAssetSymbol={prizeQuoteAsset.ticker}
+                                            size="5"
+                                        />
+                                    ) : (
+                                        <TokenLogo src={prizeAsset?.logo} symbol={prizeAsset?.ticker ?? ''} size="5"/>
+                                    )}
                                 </Box>
                                 <VStack align="start" gap="0">
                                     <Text fontSize="2xs" color="fg.muted">Earn</Text>

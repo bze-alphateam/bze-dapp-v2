@@ -67,8 +67,8 @@ export const getChainAssets = async (): Promise<ChainAssets> => {
             continue;
         }
 
-        lpAsset.name = `LP ${baseAsset.ticker}/${quoteAsset.ticker} Shares`
-        lpAsset.ticker = `LP/${baseAsset.ticker}/${quoteAsset.ticker}`
+        lpAsset.name = `${baseAsset.ticker}/${quoteAsset.ticker} LP Shares`
+        lpAsset.ticker = `${baseAsset.ticker}/${quoteAsset.ticker} LP`
         lpAsset.verified = true
         lpAsset.decimals = LP_ASSETS_DECIMALS
 

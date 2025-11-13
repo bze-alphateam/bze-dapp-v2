@@ -30,6 +30,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {Asset, LP_ASSETS_DECIMALS} from "@/types/asset";
 import {TokenLogo} from "@/components/ui/token_logo";
+import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {useLiquidityPool} from "@/hooks/useLiquidityPools";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {useAssetPrice} from "@/hooks/usePrices";
@@ -1157,14 +1158,37 @@ const UserPosition = ({
                 <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                         <Text fontSize="sm" color="fg.muted" textAlign="center">LP Shares</Text>
+                        <LPTokenLogo
+                            baseAssetLogo={baseAsset?.logo || ''}
+                            quoteAssetLogo={quoteAsset?.logo || ''}
+                            baseAssetSymbol={baseAsset?.ticker || ''}
+                            quoteAssetSymbol={quoteAsset?.ticker || ''}
+                            size="10"
+                        />
                         <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(uAmountToAmount(userShares, LP_ASSETS_DECIMALS))}</Text>
                         <Text fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</Text>
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
-                        <VStack gap="1">
-                            <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
-                            <Text fontSize="sm" color="fg.emphasized">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
+                        <VStack gap="2">
+                            <HStack gap="2">
+                                <TokenLogo
+                                    src={baseAsset?.logo}
+                                    symbol={baseAsset?.ticker || ''}
+                                    size="6"
+                                    circular={true}
+                                />
+                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
+                            </HStack>
+                            <HStack gap="2">
+                                <TokenLogo
+                                    src={quoteAsset?.logo}
+                                    symbol={quoteAsset?.ticker || ''}
+                                    size="6"
+                                    circular={true}
+                                />
+                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
+                            </HStack>
                         </VStack>
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
