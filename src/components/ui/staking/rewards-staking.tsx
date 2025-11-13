@@ -120,12 +120,25 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
         return stakingReward.duration - stakingReward.payouts
     }, [stakingReward])
 
-    const isStakingActive = useMemo(() => {
+    const stakingStatus = useMemo(() => {
         if (!stakingReward) {
-            return false
+            return 'waiting'
         }
-        // Active if it has stakers and still has days remaining
-        return new BigNumber(stakingReward.staked_amount).gt(0) && remainingDays > 0
+
+        const hasStakers = new BigNumber(stakingReward.staked_amount).gt(0)
+
+        // Finished: all payouts done (remaining days = 0)
+        if (remainingDays === 0) {
+            return 'finished'
+        }
+
+        // Active: has stakers and still has days remaining
+        if (hasStakers && remainingDays > 0) {
+            return 'active'
+        }
+
+        // Waiting: has days remaining but no stakers yet
+        return 'waiting'
     }, [stakingReward, remainingDays])
 
     const areAssetsVerified = useMemo(() => {
@@ -202,11 +215,17 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                     <Heading size="md">{stakingAsset?.ticker} Staking #{rewardNumber}</Heading>
                                     <HStack flexWrap="wrap" gap="1.5" fontSize="xs">
                                         <Badge
-                                            colorPalette={isStakingActive ? 'green' : 'gray'}
+                                            colorPalette={
+                                                stakingStatus === 'active' ? 'green' :
+                                                stakingStatus === 'finished' ? 'blue' :
+                                                'gray'
+                                            }
                                             variant="subtle"
                                             size="sm"
                                         >
-                                            {isStakingActive ? 'Rolling Rewards' : 'Waiting Stakers'}
+                                            {stakingStatus === 'active' ? 'Rolling Rewards' :
+                                             stakingStatus === 'finished' ? 'Completed' :
+                                             'Waiting Stakers'}
                                         </Badge>
                                         {areAssetsVerified && (
                                             <Badge colorPalette="green" variant="outline" size="sm">
