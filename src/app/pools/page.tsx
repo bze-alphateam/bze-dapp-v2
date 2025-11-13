@@ -16,7 +16,6 @@ import {
     NativeSelectField,
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
-import {TokenLogo} from "@/components/ui/token_logo";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useLiquidityPools} from "@/hooks/useLiquidityPools";
@@ -25,17 +24,6 @@ import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {toBigNumber} from "@/utils/amount";
 
-// Define Pool type first
-// type Pool = {
-//     id: number
-//     asset1: { ticker: string; logo: string }
-//     asset2: { ticker: string; logo: string }
-//     volume24h: number
-//     totalLiquidity: number
-//     apr: number
-//     isUserPool: boolean
-//     userLiquidity?: number
-// }
 
 type SortField = 'volume24h' | 'totalLiquidity' | 'apr'
 type SortOrder = 'asc' | 'desc'
