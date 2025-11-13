@@ -111,6 +111,14 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
         return removeLeadingZeros(stakingReward?.reward_id ?? '000')
     }, [stakingReward])
 
+    const remainingDays = useMemo(() => {
+        if (!stakingReward) {
+            return 0
+        }
+
+        return stakingReward.duration - stakingReward.payouts
+    }, [stakingReward])
+
     useEffect(() => {
         if (stakingReward && !stakingAssetIsLoading && !prizeAssetIsLoading) {
             setIsLoading(false)
@@ -223,6 +231,13 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                     <Text fontSize="sm" color="gray.600">Unlock Duration</Text>
                                 </HStack>
                                 <Text fontWeight="medium">{stakingReward?.lock} days</Text>
+                            </VStack>
+                            <VStack align="start" gap="2">
+                                <HStack>
+                                    <LuClock size={16} color="var(--chakra-colors-gray-500)" />
+                                    <Text fontSize="sm" color="gray.600">Remaining days</Text>
+                                </HStack>
+                                <Text fontWeight="medium">{remainingDays} days</Text>
                             </VStack>
 
                             <VStack align="start" gap="2">
