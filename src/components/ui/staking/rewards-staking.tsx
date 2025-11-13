@@ -297,60 +297,6 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
 
                 <Card.Body pt="0">
                     <VStack align="stretch" gap="3">
-                        {/* Remaining Days Progress */}
-                        <Box
-                            bgGradient="to-r"
-                            gradientFrom="purple.500/10"
-                            gradientTo="purple.600/10"
-                            borderWidth="1px"
-                            borderColor="purple.500/30"
-                            borderRadius="lg"
-                            p="3"
-                        >
-                            <VStack align="stretch" gap="2">
-                                <HStack justify="space-between">
-                                    <HStack gap="1.5">
-                                        <LuClock size={14} />
-                                        <Text fontSize="xs" fontWeight="medium">Remaining Days</Text>
-                                    </HStack>
-                                    <Text fontSize="sm" fontWeight="bold">
-                                        {remainingDays} / {stakingReward?.duration} days
-                                    </Text>
-                                </HStack>
-                                <Progress.Root
-                                    value={progressPercentage}
-                                    size="sm"
-                                    colorPalette="purple"
-                                >
-                                    <Progress.Track>
-                                        <Progress.Range />
-                                    </Progress.Track>
-                                </Progress.Root>
-                            </VStack>
-                        </Box>
-
-                        {/* User Participation Badges */}
-                        {(hasUserStake || hasUnbonding) && (
-                            <HStack gap="2" flexWrap="wrap">
-                                {hasUserStake && (
-                                    <Badge colorPalette="blue" variant="solid" size="md">
-                                        <HStack gap="1">
-                                            <LuCoins size={12} />
-                                            <Text>You're Staking</Text>
-                                        </HStack>
-                                    </Badge>
-                                )}
-                                {hasUnbonding && (
-                                    <Badge colorPalette="orange" variant="solid" size="md">
-                                        <HStack gap="1">
-                                            <LuLock size={12} />
-                                            <Text>Unlocking</Text>
-                                        </HStack>
-                                    </Badge>
-                                )}
-                            </HStack>
-                        )}
-
                         {/* User Stake Info */}
                         {hasUserStake && (
                             <Box
@@ -452,6 +398,28 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                 </HStack>
                                 <Text fontWeight="semibold">{totalStaked}</Text>
                             </HStack>
+                            <Separator />
+                            {/* Remaining Days Progress */}
+                            <VStack align="stretch" gap="1.5" py="1">
+                                <HStack justify="space-between">
+                                    <HStack gap="2" color="fg.muted">
+                                        <LuClock size={14} />
+                                        <Text fontSize="xs">Remaining Days</Text>
+                                    </HStack>
+                                    <Text fontSize="xs" fontWeight="semibold">
+                                        {remainingDays} / {stakingReward?.duration}
+                                    </Text>
+                                </HStack>
+                                <Progress.Root
+                                    value={progressPercentage}
+                                    size="xs"
+                                    colorPalette="gray"
+                                >
+                                    <Progress.Track>
+                                        <Progress.Range />
+                                    </Progress.Track>
+                                </Progress.Root>
+                            </VStack>
                         </VStack>
 
                         <Separator />
