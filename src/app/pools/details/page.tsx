@@ -694,6 +694,9 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
 
         const rewards: StakingRewardSDKType[] = [];
         rewardsMap.forEach((reward) => {
+            if (reward.duration <= reward.payouts) {
+                return
+            }
             if (reward.staking_denom === pool.lp_denom) {
                 rewards.push(reward);
             }
@@ -798,16 +801,6 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
         if (onLockSuccess) onLockSuccess();
     }, [pool, address, selectedReward, lockAmount, userShares, userActiveStake, isRewardActive, toast, tx, onLockSuccess]);
 
-    const calculateApr = useCallback((reward: StakingRewardSDKType) => {
-        const dailyPrize = toBigNumber(reward.prize_amount);
-        const totalStaked = toBigNumber(reward.staked_amount);
-
-        if (totalStaked.lte(0)) return 'N/A';
-
-        const apr = dailyPrize.dividedBy(totalStaked).multipliedBy(365).multipliedBy(100);
-        return `${apr.toFixed(2)}%`;
-    }, []);
-
     if (eligibleRewards.length === 0) {
         return (
             <VStack gap="4" w="full">
@@ -823,8 +816,8 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
                 >
                     <VStack gap="3">
                         <LuInfo size={32} />
-                        <Text color="fg.muted">No staking rewards available for this pool at the moment.</Text>
-                        <Text fontSize="sm" color="fg.muted">Check back later for new staking opportunities!</Text>
+                        <Text color="fg.muted">No extra rewards available for this pool at the moment.</Text>
+                        <Text fontSize="sm" color="fg.muted">Check back later for new rewards boost opportunities!</Text>
                     </VStack>
                 </Box>
             </VStack>
@@ -869,7 +862,6 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
                             const isSelected = selectedRewardId === reward.reward_id;
                             const isActive = isRewardActive(reward);
                             const remaining = remainingDays(reward);
-                            const apr = calculateApr(reward);
                             const dailyDist = uAmountToAmount(reward.prize_amount, denomDecimals(reward.prize_denom));
                             const prizeTicker = denomTicker(reward.prize_denom);
 
@@ -958,16 +950,6 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
                                                     {remaining} / {reward.duration}
                                                 </Text>
                                             </HStack>
-
-                                            <HStack justify="space-between">
-                                                <HStack gap="1.5" color="fg.muted">
-                                                    <LuTrendingUp size={12} />
-                                                    <Text>APR</Text>
-                                                </HStack>
-                                                <Text fontWeight="bold" color="green.500">
-                                                    {apr}
-                                                </Text>
-                                            </HStack>
                                         </VStack>
                                     </VStack>
                                 </Box>
@@ -1003,29 +985,31 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
                             </VStack>
                         </Box>
 
-                        <Box
-                            w="full"
-                            bg="orange.50"
-                            _dark={{ bg: "orange.900/20", borderColor: "orange.600" }}
-                            p="4"
-                            rounded="lg"
-                            borderWidth="1px"
-                            borderColor="orange.200"
-                        >
-                            <HStack>
-                                <Box color="orange.500">
-                                    <LuInfo size={18} />
-                                </Box>
-                                <VStack align="start" gap="1" flex="1">
-                                    <Text fontSize="sm" fontWeight="semibold" color="orange.700" _dark={{ color: "orange.300" }}>
-                                        Unlocking Period: {selectedReward.lock} days
-                                    </Text>
-                                    <Text fontSize="xs" color="orange.600" _dark={{ color: "orange.400" }}>
-                                        When you unlock your shares, you'll need to wait {selectedReward.lock} days before receiving them back. You can unlock anytime, but the unlocking period always applies.
-                                    </Text>
-                                </VStack>
-                            </HStack>
-                        </Box>
+                        {selectedReward.lock > 0 && (
+                            <Box
+                                w="full"
+                                bg="orange.50"
+                                _dark={{ bg: "orange.900/20", borderColor: "orange.600" }}
+                                p="4"
+                                rounded="lg"
+                                borderWidth="1px"
+                                borderColor="orange.200"
+                            >
+                                <HStack>
+                                    <Box color="orange.500">
+                                        <LuInfo size={18} />
+                                    </Box>
+                                    <VStack align="start" gap="1" flex="1">
+                                        <Text fontSize="sm" fontWeight="semibold" color="orange.700" _dark={{ color: "orange.300" }}>
+                                            Unlocking Period: {selectedReward.lock} days
+                                        </Text>
+                                        <Text fontSize="xs" color="orange.600" _dark={{ color: "orange.400" }}>
+                                            {`When you unlock your shares, you'll need to wait ${selectedReward.lock} days before receiving them back. You can unlock anytime, but the unlocking period always applies.`}
+                                        </Text>
+                                    </VStack>
+                                </HStack>
+                            </Box>
+                        )}
                     </VStack>
                 )}
             </VStack>
