@@ -1,6 +1,6 @@
 "use client";
 
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {getAddressStakingRewards, getStakingRewards} from "@/query/rewards";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {useChain} from "@interchain-kit/react";
@@ -9,15 +9,21 @@ import {AddressRewardsStaking} from "@/types/staking";
 
 export function useRewardsStakingData() {
     const [isLoading, setIsLoading] = useState(true)
-    const [rewards, setRewards] = useState<StakingRewardSDKType[]>([])
-    const [addressData, setAddressData] = useState<AddressRewardsStaking|undefined>()
+    const [rewardsMap, setRewardsMap] = useState<Map<string, StakingRewardSDKType>>(new Map())
+    const [addressData, setAddressData] = useState<AddressRewardsStaking | undefined>()
 
     const {address} = useChain(getChainName())
 
+    const rewards = useMemo(() =>
+            Array.from(rewardsMap.values()).sort((a: StakingRewardSDKType) => a.payouts >= a.duration ? 1 : -1),
+        [rewardsMap]
+    )
+
     const fetchStakingRewards = useCallback(async () => {
         const all = await getStakingRewards();
-        const sorted = all.list.sort((a: StakingRewardSDKType) => a.payouts >= a.duration ? 1 : -1);
-        setRewards(sorted);
+        const newMap = new Map<string, StakingRewardSDKType>();
+        all.list.forEach(item => newMap.set(item.reward_id, item));
+        setRewardsMap(newMap);
     }, [])
 
     const fetchAddressRewardsStaking = useCallback(async () => {
@@ -42,5 +48,6 @@ export function useRewardsStakingData() {
         rewards,
         reload: load,
         addressData,
+        rewardsMap,
     }
 }

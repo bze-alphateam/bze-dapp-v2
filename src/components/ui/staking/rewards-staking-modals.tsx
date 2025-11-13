@@ -30,12 +30,16 @@ import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {useToast} from "@/hooks/useToast";
-import {useEpochs} from "@/hooks/useEpochs";
+import {RewardsStakingUnlockAlerts} from "@/components/ui/staking/rewards-staking-alerts";
+import {PrettyBalance} from "@/types/balance";
+import { EncodeObject } from "interchainjs/types";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
 const MODAL_TYPE_UNSTAKE = 'unstake';
 const MODAL_TYPE_CLAIM = 'claim';
+
+const {joinStaking, claimStakingRewards, exitStaking} = bze.rewards.MessageComposer.withTypeUrl;
 
 interface RewardsStakingActionModalProps {
     onClose: () => void;
@@ -45,7 +49,13 @@ interface RewardsStakingActionModalProps {
     onActionPerformed?: () => void;
 }
 
-export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, userUnlocking, onActionPerformed}: RewardsStakingActionModalProps) => {
+export const RewardsStakingActionModal = ({
+                                              onClose,
+                                              stakingReward,
+                                              userStake,
+                                              userUnlocking,
+                                              onActionPerformed
+                                          }: RewardsStakingActionModalProps) => {
     const [modalType, setModalType] = useState(MODAL_TYPE_ACTIONS);
     const [stakeAmount, setStakeAmount] = useState('');
     const [formError, setFormError] = useState('')
@@ -58,7 +68,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
     const {address} = useChain(getChainName())
     const {tx, progressTrack} = useBZETx()
     const {toast} = useToast()
-    const {getHourEpochInfo} = useEpochs()
 
     const actionsModalTitle = useMemo(() => {
         if (!stakingReward) return 'Actions';
@@ -127,35 +136,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
 
         return `Claim your ${denomTicker(stakingReward.prize_denom)} rewards`
     }, [stakingReward, denomTicker])
-    const pendingUnlock = useMemo(() => {
-        if (!userUnlocking || !stakingAsset) return [];
 
-        const currentHour = getHourEpochInfo()
-        if (!currentHour) {
-            return []
-        }
-
-        const result = [];
-        for (const unlock of userUnlocking) {
-            const remainingHours = unlock.unlockEpoch.minus(currentHour.current_epoch)
-            const days = Math.floor(remainingHours.dividedBy(24).toNumber())
-            const unlockAmount = prettyAmount(uAmountToAmount(unlock?.amount, stakingAsset?.decimals || 0))
-            const item = {
-                amount: unlockAmount,
-                title: `${unlockAmount} ${stakingAsset?.ticker} unlocking in 1 hour`
-            };
-            if (days >= 2) {
-                item.title = `${unlockAmount} ${stakingAsset?.ticker} unlocking in ${days} days`;
-            } else if (remainingHours.gt(1)) {
-                item.title = `${unlockAmount} ${stakingAsset?.ticker} unlocking in ${remainingHours.toNumber()} hours`;
-            }
-
-            result.push(item)
-        }
-
-        return result;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userUnlocking, stakingAsset])
     const userStakingAssetBalance = useMemo(() => {
         if (!stakingAssetBalance || !stakingAsset) return '0';
 
@@ -215,7 +196,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
         }
 
         setIsSubmitting(true)
-        const {joinStaking} = bze.rewards.MessageComposer.withTypeUrl;
         const msg = joinStaking({
             creator: address,
             rewardId: stakingReward.reward_id,
@@ -244,7 +224,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
         }
 
         setIsSubmitting(true)
-        const {exitStaking} = bze.rewards.MessageComposer.withTypeUrl;
         const msg = exitStaking({
             creator: address,
             rewardId: stakingReward.reward_id,
@@ -271,7 +250,6 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
             return;
         }
 
-        const {claimStakingRewards} = bze.rewards.MessageComposer.withTypeUrl;
         setIsSubmitting(true)
         const msg = claimStakingRewards({
             creator: address,
@@ -323,7 +301,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                             <VStack gap="4">
                                 <Text color="gray.600">{'Stake your tokens and receive daily rewards.'}</Text>
                                 <Alert.Root status={"info"} variant="subtle">
-                                    <Alert.Indicator />
+                                    <Alert.Indicator/>
                                     <VStack align="start" gap="2" flex="1">
                                         {hasUserStake && (
                                             <HStack justify="space-between" width="full">
@@ -349,20 +327,19 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         )}
                                     </VStack>
                                 </Alert.Root>
-                                {pendingUnlock.length > 0 && pendingUnlock.map((item, index) => (
-                                    <Alert.Root status={"warning"} variant="subtle" key={index}>
-                                        <Alert.Indicator />
-                                        <Alert.Title fontSize="sm">{item.title}</Alert.Title>
-                                    </Alert.Root>
-                                ))}
-                                <Stack direction={{ base: 'column', sm: 'row' }} width="full" gap="3">
+
+                                <RewardsStakingUnlockAlerts userUnlocking={userUnlocking}
+                                                            ticker={stakingAsset?.ticker || 'coins'}
+                                                            decimals={stakingAsset?.decimals || 0}/>
+
+                                <Stack direction={{base: 'column', sm: 'row'}} width="full" gap="3">
                                     <Button
                                         flex="1"
                                         colorPalette="blue"
                                         onClick={() => openModal('stake')}
                                     >
                                         <HStack gap="2">
-                                            <LuLock size={16} />
+                                            <LuLock size={16}/>
                                             <Text>Stake</Text>
                                         </HStack>
                                     </Button>
@@ -374,7 +351,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         onClick={() => openModal('unstake')}
                                     >
                                         <HStack gap="2">
-                                            <LuLockOpen size={16} />
+                                            <LuLockOpen size={16}/>
                                             <Text>Unstake</Text>
                                         </HStack>
                                     </Button>
@@ -386,7 +363,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         onClick={() => openModal('claim')}
                                     >
                                         <HStack gap="2">
-                                            <LuGift size={16} />
+                                            <LuGift size={16}/>
                                             <Text>Claim</Text>
                                         </HStack>
                                     </Button>
@@ -414,7 +391,9 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                         />
                                         <Button variant="outline"
                                                 size="sm"
-                                                onClick={() => {setStakeAmount(userStakingAssetBalance)}}
+                                                onClick={() => {
+                                                    setStakeAmount(userStakingAssetBalance)
+                                                }}
                                                 disabled={stakingAssetBalance.amount.isZero() || isSubmitting}
                                         >
                                             Max
@@ -424,7 +403,7 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                                 </Field.Root>
                                 {stakeAmount && (
                                     <Alert.Root status="success" variant="subtle">
-                                        <Alert.Indicator />
+                                        <Alert.Indicator/>
                                         <VStack align="start" gap="2" flex="1">
                                             <Alert.Title>Estimated Daily Rewards:</Alert.Title>
                                             <Text fontSize="lg" fontWeight="bold" color="green.600">
@@ -453,11 +432,12 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                         {modalType === MODAL_TYPE_UNSTAKE && userStake && (
                             <VStack gap="4">
                                 <Alert.Root status="warning" variant="subtle">
-                                    <Alert.Indicator />
+                                    <Alert.Indicator/>
                                     <VStack align="start" gap="1" flex="1">
                                         <Alert.Title>Unstaking Notice</Alert.Title>
                                         <Alert.Description>
-                                            Your funds will be locked for {stakingReward?.lock || 0} days. You will receive them after the lock period ends.
+                                            Your funds will be locked for {stakingReward?.lock || 0} days. You will
+                                            receive them after the lock period ends.
                                         </Alert.Description>
                                     </VStack>
                                 </Alert.Root>
@@ -500,5 +480,113 @@ export const RewardsStakingActionModal = ({onClose, stakingReward, userStake, us
                 </Card.Root>
             </Box>
         </Skeleton>
+    )
+}
+
+interface RewardsStakingPendingRewardsModalProps {
+    onClose: () => void;
+    onClaimSuccess?: () => void;
+    pendingRewardsIds?: string[];
+    pendingRewards?: PrettyBalance[];
+}
+
+export const RewardsStakingPendingRewardsModal = ({
+                                                      onClose,
+                                                      pendingRewardsIds,
+                                                      pendingRewards,
+                                                      onClaimSuccess
+                                                  }: RewardsStakingPendingRewardsModalProps) => {
+    const [isClaiming, setIsClaiming] = useState(false)
+
+    const {denomTicker} = useAssets()
+    const {toast} = useToast()
+    const {tx, progressTrack} = useBZETx()
+    const {address} = useChain(getChainName())
+
+    const canClaim = useMemo(() => {
+        if (!pendingRewardsIds || !pendingRewards) return false;
+
+        for (const reward of pendingRewards) {
+            if (reward.amount.gt(0)) return true;
+        }
+
+        return false;
+    }, [pendingRewardsIds, pendingRewards])
+
+    const claimRewards = useCallback(async () => {
+        if (!canClaim) {
+            toast.error('No rewards to claim')
+            return
+        }
+
+        const msgs: EncodeObject[] = [];
+        pendingRewardsIds?.forEach(rewardId => {
+            msgs.push(claimStakingRewards({
+                rewardId: rewardId,
+                creator: address ?? ''
+            }))
+        })
+
+        setIsClaiming(true)
+        await tx(msgs)
+        setIsClaiming(false)
+        onClaimSuccess?.()
+    }, [address, canClaim, onClaimSuccess, pendingRewardsIds, toast, tx])
+
+    return (
+        <Box
+            position="fixed"
+            inset="0"
+            bg="blackAlpha.600"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            zIndex="modal"
+        >
+            <Card.Root maxW="md" w="full" mx="4">
+                <Card.Header>
+                    <HStack justify="space-between" align="center">
+                        <Heading size="lg">
+                            Claim rewards
+                        </Heading>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={onClose}
+                        >
+                            ✕
+                        </Button>
+                    </HStack>
+                </Card.Header>
+
+                <Card.Body>
+                    <VStack gap="4">
+                        {canClaim && (<Text>Available rewards to claim:</Text>)}
+                        <VStack gap="2">
+                            {canClaim && pendingRewards?.map((reward, index) => (
+                                <Text fontSize="2xl" fontWeight="bold" color="green.600" key={index}>
+                                    {prettyAmount(reward.amount)} {denomTicker(reward.denom)}
+                                </Text>
+                            ))}
+                            {!canClaim && (
+                                <Text fontSize="lg" fontWeight="bold" color="gray.600">
+                                    No rewards to claim
+                                </Text>
+                            )}
+                        </VStack>
+                        <Button
+                            colorPalette="green"
+                            width="full"
+                            disabled={!canClaim}
+                            loading={isClaiming}
+                            loadingText={progressTrack || 'Claiming rewards...'}
+                            onClick={claimRewards}
+                        >
+                            Claim Rewards
+                        </Button>
+                    </VStack>
+                </Card.Body>
+            </Card.Root>
+        </Box>
     )
 }

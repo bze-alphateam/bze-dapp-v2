@@ -29,7 +29,7 @@ import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {Asset, LP_ASSETS_DECIMALS} from "@/types/asset";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {useLiquidityPool} from "@/hooks/useLiquidityPools";
-import {useAsset} from "@/hooks/useAssets";
+import {useAsset, useAssets} from "@/hooks/useAssets";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {amountToBigNumberUAmount, amountToUAmount, prettyAmount, toBigNumber, uAmountToAmount} from "@/utils/amount";
 import BigNumber from "bignumber.js";
@@ -41,6 +41,14 @@ import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
+import {AddressRewardsStaking, ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
+import {RewardsStakingUnlockAlerts} from "@/components/ui/staking/rewards-staking-alerts";
+import {useRewardsStakingData} from "@/hooks/useRewardsStakingData";
+import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
+import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
+import {PrettyBalance} from "@/types/balance";
+import {useAssetsValue} from "@/hooks/useAssetsValue";
+import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards-staking-modals";
 
 type UserPosition = {
     shares: string;
@@ -725,8 +733,113 @@ interface UserPositionProps {
     userSharesPercentage: BigNumber|string;
     baseAsset: Asset;
     quoteAsset: Asset;
+    pool?: LiquidityPoolSDKType;
+    addressRewardsStaking?: AddressRewardsStaking;
+    rewardsMap?: Map<string, StakingRewardSDKType>;
+    onChange?: () => void;
 }
-const UserPosition = ({userShares, userSharesPercentage, userReserveBase, userReserveQuote,  baseAsset, quoteAsset} : UserPositionProps) => {
+const UserPosition = ({
+                          userShares,
+                          userSharesPercentage,
+                          userReserveBase,
+                          userReserveQuote,
+                          baseAsset,
+                          quoteAsset,
+                          addressRewardsStaking,
+                          pool,
+                          rewardsMap,
+                          onChange,
+                      } : UserPositionProps) => {
+
+    const [showRewardsModal, setShowRewardsModal] = useState(false);
+    const [isUnstaking, setIsUnstaking] = useState(false);
+
+    const {denomTicker, denomDecimals} = useAssets()
+    const {totalUsdValue} = useAssetsValue()
+    const {tx} = useBZETx()
+    const {toast} = useToast()
+    const {address} = useChain(getChainName())
+
+    const lpSharesPendingUnlock = useMemo(() => {
+        const result: ExtendedPendingUnlockParticipantSDKType[] = [];
+        if (!addressRewardsStaking || !rewardsMap || !pool?.lp_denom) return result;
+
+        //search for unlocks of the pool lp_denom
+        addressRewardsStaking.unlocking.forEach((item, key) => {
+            const stakingReward = rewardsMap.get(key)
+            if (!stakingReward) return;
+            if (stakingReward.staking_denom !== pool.lp_denom) return;
+
+            result.push(...item);
+        })
+
+        return result;
+    }, [addressRewardsStaking, rewardsMap, pool?.lp_denom])
+    const lockedLpShares = useMemo(() => {
+        if (!addressRewardsStaking || !rewardsMap || !pool?.lp_denom) return [];
+
+        const result: {stakeAmount: string, earnings: string, lockDays: number, rewardId: string, pendingReward: PrettyBalance}[] = [];
+        addressRewardsStaking.active.forEach((item, key) => {
+            const stakingReward = rewardsMap.get(key)
+            if (!stakingReward) return;
+            if (stakingReward.staking_denom !== pool.lp_denom) return;
+
+            const incomePerStakedCoin = new BigNumber(stakingReward.prize_amount).dividedBy(new BigNumber(stakingReward.staked_amount))
+            const dailyReward = incomePerStakedCoin.multipliedBy(item.amount)
+
+            result.push({
+                stakeAmount: uAmountToAmount(item.amount, LP_ASSETS_DECIMALS),
+                earnings: `${uAmountToAmount(dailyReward, denomDecimals(stakingReward.prize_denom))} ${denomTicker(stakingReward.prize_denom)}`,
+                lockDays: stakingReward.lock,
+                rewardId: item.reward_id,
+                pendingReward: {
+                    amount: calculateRewardsStakingPendingRewards(stakingReward, item),
+                    denom: stakingReward.prize_denom
+                }
+            });
+        })
+
+        return result;
+    }, [addressRewardsStaking, denomDecimals, denomTicker, pool?.lp_denom, rewardsMap])
+    const extraRewards = useMemo(() => {
+        if (lockedLpShares.length === 0) return [];
+
+        const balances: PrettyBalance[] = [];
+        lockedLpShares.forEach(item => {
+            balances.push(item.pendingReward)
+        })
+
+        return balances;
+    }, [lockedLpShares])
+    const extraRewardsInUsd = useMemo(() => {
+        if (extraRewards.length === 0) return '0';
+
+        return prettyAmount(totalUsdValue(extraRewards));
+    }, [extraRewards, totalUsdValue])
+
+    const onRewardsClaimSuccess = useCallback(() => {
+        if (onChange) onChange();
+        setShowRewardsModal(false);
+    }, [onChange])
+
+    const unstakeShares = useCallback(async (rewardId: string) => {
+        const reward = rewardsMap?.get(rewardId);
+        if (!reward) {
+            toast.error('Reward not found. Reload the page and try again.');
+            return;
+        }
+
+        const {exitStaking} = bze.rewards.MessageComposer.withTypeUrl;
+        const msg = exitStaking({
+            rewardId: reward.reward_id,
+            creator: address ?? '',
+        })
+
+        setIsUnstaking(true);
+        await tx([msg]);
+        setIsUnstaking(false);
+        if (onChange) onChange();
+    }, [address, onChange, rewardsMap, toast, tx])
 
     return (
         <Box w="full" bg="bg.surface" p={{ base: "4", md: "6" }} rounded="xl" borderWidth="1px" borderColor="border">
@@ -751,15 +864,16 @@ const UserPosition = ({userShares, userSharesPercentage, userReserveBase, userRe
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Extra Rewards</Text>
-                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">{mockUserPosition.earnedFees}</Text>
-                        <Button size="sm" variant="outline" colorPalette="green">
+                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">${extraRewardsInUsd}</Text>
+                        <Button size="sm" variant="outline" colorPalette="green" onClick={() => setShowRewardsModal(true)}>
                             Claim
                         </Button>
                     </VStack>
                 </Grid>
 
-                {mockUserPosition.lockedShares !== '0' && (
+                {lockedLpShares && lockedLpShares.length > 0 && lockedLpShares.map((item, index) => (
                     <Box
+                        key={index}
                         w="full"
                         bg="purple.50"
                         _dark={{ bg: "purple.900/20", borderColor: "purple.600" }}
@@ -779,21 +893,41 @@ const UserPosition = ({userShares, userSharesPercentage, userReserveBase, userRe
                                     color="purple.700"
                                     _dark={{ color: "purple.300" }}
                                 >
-                                    Staked Position: {mockUserPosition.lockedShares} LP tokens
+                                    Locked: {item.stakeAmount} LP shares
                                 </Text>
                                 <Text
                                     fontSize="xs"
                                     color="purple.600"
                                     _dark={{ color: "purple.400" }}
                                 >
-                                    Earning boosted rewards • Can unstake anytime
+                                    Earning {item.earnings} daily • Unlock period: {item.lockDays} {item.lockDays === 1 ? 'day' : 'days'}
                                 </Text>
                             </VStack>
-                            <Button size="xs" variant="outline" colorPalette="purple">
+                            <Button
+                                size="xs"
+                                variant="outline"
+                                colorPalette="purple"
+                                onClick={() => unstakeShares(item.rewardId)}
+                                disabled={isUnstaking}
+                                loading={isUnstaking}
+                            >
                                 Unstake
                             </Button>
                         </HStack>
                     </Box>
+                ))}
+                {lpSharesPendingUnlock && lpSharesPendingUnlock.length > 0 && (
+                    <VStack w="full" gap={"2"}>
+                        <RewardsStakingUnlockAlerts ticker={'LP Shares'} decimals={LP_ASSETS_DECIMALS} userUnlocking={lpSharesPendingUnlock}/>
+                    </VStack>
+                )}
+                {showRewardsModal && (
+                    <RewardsStakingPendingRewardsModal
+                        onClose={() => setShowRewardsModal(false)}
+                        pendingRewards={extraRewards}
+                        pendingRewardsIds={lockedLpShares.map(item => item.rewardId)}
+                        onClaimSuccess={onRewardsClaimSuccess}
+                    />
                 )}
             </VStack>
         </Box>
@@ -823,6 +957,7 @@ const PoolDetailsPageContent = () => {
     const {asset: quoteAsset, isLoading: isLoadingQuoteAsset} = useAsset(pool?.quote || '')
     const {isUSDC: baseAssetIsUsdc, totalUsdValue: baseAssetTotalUsdcValue, isLoading: baseAssetPriceLoading} = useAssetPrice(pool?.base || '')
     const {isUSDC: quoteAssetIsUsdc, totalUsdValue: quoteAssetTotalUsdcValue, isLoading: quoteAssetPriceLoading} = useAssetPrice(pool?.quote || '')
+    const {rewardsMap, addressData, reload: reloadStakingData} = useRewardsStakingData()
 
     const poolBaseReservesAmount = useMemo(() => {
         if (!pool || !baseAsset) return '0';
@@ -848,7 +983,8 @@ const PoolDetailsPageContent = () => {
 
     const onLiquidityChanged = useCallback(() => {
         reload()
-    }, [reload])
+        reloadStakingData()
+    }, [reload, reloadStakingData])
 
     // Custom tabs
     const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
@@ -990,7 +1126,20 @@ const PoolDetailsPageContent = () => {
                 </Box>
 
                 {/* User Position */}
-                {baseAsset && quoteAsset && (<UserPosition userShares={userShares} userReserveBase={userReserveBase} userReserveQuote={userReserveQuote} userSharesPercentage={userSharesPercentage} baseAsset={baseAsset} quoteAsset={quoteAsset} />)}
+                {baseAsset && quoteAsset && (
+                    <UserPosition
+                        userShares={userShares}
+                        userReserveBase={userReserveBase}
+                        userReserveQuote={userReserveQuote}
+                        userSharesPercentage={userSharesPercentage}
+                        baseAsset={baseAsset}
+                        quoteAsset={quoteAsset}
+                        pool={pool}
+                        addressRewardsStaking={addressData}
+                        rewardsMap={rewardsMap}
+                        onChange={onLiquidityChanged}
+                    />
+                )}
 
                 {/* Actions Tabs */}
                 <Box w="full" bg="bg.surface" p={{ base: "4", md: "6" }} rounded="xl" borderWidth="1px" borderColor="border">
@@ -1048,7 +1197,7 @@ const PoolDetailsPageContent = () => {
 
                         {activeTab === 'lock' && (
                             <VStack gap="4" w="full">
-                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Stake LP Shares to boost your rewards</Text>
+                                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Lock LP Shares to boost your rewards</Text>
 
                                 <VStack w="full" gap="4">
                                     <Box w="full">

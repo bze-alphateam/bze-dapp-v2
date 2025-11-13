@@ -61,7 +61,7 @@ export async function getStakingRewardParticipantByAddress(address: string): Pro
         const client = await getRestClient();
         return client.bze.rewards.stakingRewardParticipant(QueryGetStakingRewardParticipantRequestFromPartial({
             address: address,
-            pagination: PageRequest.fromPartial({limit: BigInt(100)})
+            pagination: PageRequest.fromPartial({limit: BigInt(500)})
         }));
     } catch (e) {
         console.error(e);
