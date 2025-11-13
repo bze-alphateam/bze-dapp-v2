@@ -1,18 +1,15 @@
 import {
-    Alert,
     Badge,
     Box, Button,
     Card,
-    Grid,
     Heading,
     HStack,
-    Image,
     Separator,
     Skeleton, Stack,
     Text,
     VStack
 } from "@chakra-ui/react";
-import {LuClock, LuCoins, LuGift, LuLock, LuLockOpen, LuShield, LuTrendingUp} from "react-icons/lu";
+import {LuClock, LuCoins, LuGift, LuInfinity, LuLock, LuLockOpen, LuShield, LuTrendingUp} from "react-icons/lu";
 import React, {useMemo, useState} from "react";
 import {NativeStakingData} from "@/types/staking";
 import {useAssets} from "@/hooks/useAssets";
@@ -24,6 +21,7 @@ import {cosmos} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {useSDKTx} from "@/hooks/useTx";
+import {TokenLogo} from "@/components/ui/token_logo";
 
 interface NativeStakingCardProps {
     stakingData: NativeStakingData|undefined;
@@ -109,163 +107,249 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
             <Skeleton asChild loading={isLoading}>
             <Card.Root
                 borderWidth={hasUserStake ? "2px" : "1px"}
-                borderColor={hasUserStake ? "blue.500" : "purple.500"}
+                borderColor={hasUserStake ? "blue.500" : (hasUnbonding ? "orange.500" : "purple.500")}
                 cursor="pointer"
-                _hover={{ bg: "bg.muted" }}
+                transition="all 0.2s"
+                _hover={{
+                    bg: "bg.muted",
+                    transform: "translateY(-2px)",
+                    shadow: "lg"
+                }}
                 onClick={() => openModal('actions')}
+                shadow="sm"
             >
-                <Card.Header>
-                    <HStack justify="space-between" align="start">
-                        <VStack align="start" gap="2">
-                            <HStack>
-                                <Image
-                                    src={'/images/bze_alternative_512x512.png'}
-                                    alt={nativeAsset?.name}
-                                    boxSize="8"
-                                    borderRadius="full"
-                                />
+                <Card.Header pb="3">
+                    <HStack justify="space-between" align="start" gap="4">
+                        <VStack align="start" gap="2" flex="1">
+                            <HStack gap="3">
+                                <Box
+                                    p="2"
+                                    bg="bg.subtle"
+                                    borderRadius="lg"
+                                    borderWidth="1px"
+                                    borderColor="border"
+                                >
+                                    <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''}/>
+                                </Box>
                                 <VStack align="start" gap="1">
-                                    <Heading size="md">{'BZE Native Staking'}</Heading>
-                                    <HStack>
-                                        <Badge colorPalette={'green'} variant="subtle">
+                                    <Heading size="md">BZE Native Staking</Heading>
+                                    <HStack flexWrap="wrap" gap="1.5" fontSize="xs">
+                                        <Badge
+                                            colorPalette="purple"
+                                            variant="solid"
+                                            size="sm"
+                                        >
+                                            Native
+                                        </Badge>
+                                        <Badge colorPalette="green" variant="outline" size="sm">
                                             <HStack gap="1">
-                                                <LuShield size={12} />
-                                                <Text>{'Verified'}</Text>
+                                                <LuShield size={10} />
+                                                <Text>Verified</Text>
                                             </HStack>
                                         </Badge>
-                                        <Badge colorPalette="purple" variant="subtle">Native</Badge>
-                                        {hasUserStake && (
-                                            <Badge colorPalette={'blue'} variant="subtle">
-                                                {'Active'}
-                                            </Badge>
-                                        )}
-                                        {hasUnbonding && (
-                                            <Badge colorPalette={'orange'} variant="subtle">
-                                                {'Unstaking'}
-                                            </Badge>
-                                        )}
                                     </HStack>
-                                    <Box display={{ base: 'flex', md: 'none' }}>
-                                        <HStack gap="2">
-                                            <Text fontSize="2xs" color="green.500">
-                                                APR
-                                            </Text>
-                                            <Text fontSize={{sm: 'lg', md: "xl"}}  fontWeight="bold" color="green.500">
-                                                ~{stakingData?.averageApr}%
-                                            </Text>
-                                        </HStack>
-                                    </Box>
                                 </VStack>
                             </HStack>
+                            <Box display={{base: 'block', md: 'none'}} width="full">
+                                <Box
+                                    bgGradient="to-r"
+                                    gradientFrom="green.500/10"
+                                    gradientTo="green.600/10"
+                                    borderWidth="1px"
+                                    borderColor="green.500/30"
+                                    borderRadius="lg"
+                                    px="3"
+                                    py="2"
+                                >
+                                    <HStack justify="space-between" align="center">
+                                        <HStack gap="1.5">
+                                            <LuTrendingUp size={16} />
+                                            <Text fontSize="xs" fontWeight="semibold">
+                                                APR
+                                            </Text>
+                                        </HStack>
+                                        <Text fontSize="xl" fontWeight="bold" color="green.600">
+                                            ~{stakingData?.averageApr}%
+                                        </Text>
+                                    </HStack>
+                                </Box>
+                            </Box>
                         </VStack>
-                        <Box display={{ base: 'none', md: 'flex' }}>
-                            <HStack gap="2">
-                                <Text fontSize="2xs" color="green.500">
-                                    APR
-                                </Text>
-                                <Text fontSize="xl" fontWeight="bold" color="green.500">
-                                    ~{stakingData?.averageApr}%
-                                </Text>
-                            </HStack>
+                        <Box display={{base: 'none', md: 'block'}}>
+                            <Box
+                                bgGradient="to-br"
+                                gradientFrom="green.500/10"
+                                gradientTo="green.600/10"
+                                borderWidth="1px"
+                                borderColor="green.500/30"
+                                borderRadius="lg"
+                                px="4"
+                                py="3"
+                                minW="120px"
+                            >
+                                <VStack gap="0.5" align="center">
+                                    <HStack gap="1">
+                                        <LuTrendingUp size={14} />
+                                        <Text fontSize="2xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="wide">
+                                            APR
+                                        </Text>
+                                    </HStack>
+                                    <Text fontSize="xl" fontWeight="bold" color="green.600" lineHeight="1">
+                                        ~{stakingData?.averageApr}%
+                                    </Text>
+                                </VStack>
+                            </Box>
                         </Box>
                     </HStack>
                 </Card.Header>
 
-                <Card.Body>
+                <Card.Body pt="0">
                     <VStack align="stretch" gap="3">
+                        {/* User Stake Info */}
                         {hasUserStake && (
-                            <Alert.Root status={"info"} variant="subtle">
-                                <Alert.Indicator />
-                                <VStack align="start" gap="2" flex="1">
+                            <Box
+                                bgGradient="to-r"
+                                gradientFrom="blue.500/10"
+                                gradientTo="blue.600/10"
+                                borderWidth="1px"
+                                borderColor="blue.500/30"
+                                borderRadius="lg"
+                                p="3"
+                            >
+                                <VStack align="stretch" gap="2">
                                     <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Your Stake:</Text>
-                                        <VStack gap="0">
-                                            <Text fontWeight="bold">{yourStake}</Text>
-                                        </VStack>
+                                        <Text fontSize="xs" fontWeight="medium">Your Stake</Text>
+                                        <Text fontSize="md" fontWeight="bold">
+                                            {yourStake}
+                                        </Text>
                                     </HStack>
+                                    <Separator />
                                     <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Pending Rewards:</Text>
-                                        <Text fontWeight="bold" color="green.600">
+                                        <HStack gap="1.5">
+                                            <LuCoins size={14} />
+                                            <Text fontSize="xs" fontWeight="medium">Pending Rewards</Text>
+                                        </HStack>
+                                        <Text fontSize="md" fontWeight="bold" color="green.600">
                                             {pendingRewards}
                                         </Text>
                                     </HStack>
                                 </VStack>
-                            </Alert.Root>
+                            </Box>
                         )}
                         {hasUnbonding && (
-                            <Alert.Root status={"warning"} variant="subtle">
-                                <Alert.Indicator />
-                                <VStack align="start" gap="2" flex="1">
+                            <Box
+                                bgGradient="to-r"
+                                gradientFrom="orange.500/10"
+                                gradientTo="orange.600/10"
+                                borderWidth="1px"
+                                borderColor="orange.500/30"
+                                borderRadius="lg"
+                                p="3"
+                            >
+                                <VStack align="stretch" gap="2">
                                     <HStack justify="space-between" width="full">
-                                        <Text fontWeight="medium">Pending Unlock:</Text>
-                                        <Text fontWeight="bold" color="orange.500">
+                                        <HStack gap="1.5">
+                                            <LuLock size={14} />
+                                            <Text fontSize="xs" fontWeight="medium">Pending Unlock</Text>
+                                        </HStack>
+                                        <Text fontSize="md" fontWeight="bold">
                                             {pendingUnlock}
                                         </Text>
                                     </HStack>
-                                    <Alert.Title fontSize="sm">{pendingUnlockAlert}</Alert.Title>
+                                    <Text fontSize="2xs" color="fg.muted">
+                                        {pendingUnlockAlert}
+                                    </Text>
                                 </VStack>
-                            </Alert.Root>
+                            </Box>
                         )}
 
-                        <Grid templateColumns="1fr 1fr" gap="4">
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuClock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Unlock Duration</Text>
+                        {/* Compact Stats List */}
+                        <VStack align="stretch" gap="2" fontSize="sm">
+                            <HStack justify="space-between" py="1">
+                                <HStack gap="2" color="fg.muted">
+                                    <LuClock size={14} />
+                                    <Text fontSize="xs">Unlock Duration</Text>
                                 </HStack>
-                                <Text fontWeight="medium">{stakingData?.unlockDuration} days</Text>
-                            </VStack>
-
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuCoins size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Daily Distribution</Text>
+                                <Text fontWeight="semibold">{stakingData?.unlockDuration} days</Text>
+                            </HStack>
+                            <Separator />
+                            <HStack justify="space-between" py="1">
+                                <HStack gap="2" color="fg.muted">
+                                    <LuCoins size={14} />
+                                    <Text fontSize="xs">Daily Distribution</Text>
                                 </HStack>
-                                <Text fontWeight="medium">~{dailyDistribution}</Text>
-                            </VStack>
-
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuTrendingUp size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Min. Staking</Text>
+                                <Text fontWeight="semibold">~{dailyDistribution}</Text>
+                            </HStack>
+                            <Separator />
+                            <HStack justify="space-between" py="1">
+                                <HStack gap="2" color="fg.muted">
+                                    <LuTrendingUp size={14} />
+                                    <Text fontSize="xs">Min. Staking</Text>
                                 </HStack>
-                                <Text fontWeight="medium">No minimum</Text>
-                            </VStack>
-
-                            <VStack align="start" gap="2">
-                                <HStack>
-                                    <LuLock size={16} color="var(--chakra-colors-gray-500)" />
-                                    <Text fontSize="sm" color="gray.600">Total Staked</Text>
+                                <Text fontWeight="semibold">No minimum</Text>
+                            </HStack>
+                            <Separator />
+                            <HStack justify="space-between" py="1">
+                                <HStack gap="2" color="fg.muted">
+                                    <LuLock size={14} />
+                                    <Text fontSize="xs">Total Staked</Text>
                                 </HStack>
-                                <Text fontWeight="medium">{totalStaked}</Text>
-                            </VStack>
-                        </Grid>
+                                <Text fontWeight="semibold">{totalStaked}</Text>
+                            </HStack>
+                            <Separator />
+                            {/* Perpetual Rewards Message */}
+                            <Box
+                                bgGradient="to-r"
+                                gradientFrom="purple.500/10"
+                                gradientTo="purple.600/10"
+                                borderWidth="1px"
+                                borderColor="purple.500/30"
+                                borderRadius="lg"
+                                p="3"
+                                mt="1"
+                            >
+                                <HStack justify="center" gap="2">
+                                    <LuInfinity size={16} />
+                                    <Text fontSize="xs" fontWeight="medium" textAlign="center">
+                                        Rolling rewards for years ahead
+                                    </Text>
+                                </HStack>
+                            </Box>
+                        </VStack>
 
                         <Separator />
 
-                        <HStack justify="space-between" width="full">
-                            <HStack>
-                                <Image
-                                    src={'/images/bze_alternative_512x512.png'}
-                                    alt={nativeAsset?.name}
-                                    boxSize="8"
-                                    borderRadius="full"
-                                />
+                        {/* Stake -> Earn */}
+                        <HStack justify="space-between" px="2">
+                            <HStack gap="2">
+                                <Box
+                                    p="1.5"
+                                    bg="bg.subtle"
+                                    borderRadius="md"
+                                    borderWidth="1px"
+                                    borderColor="border"
+                                >
+                                    <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''} size="5"/>
+                                </Box>
                                 <VStack align="start" gap="0">
-                                    <Text fontSize="sm" color="gray.600">Stake</Text>
-                                    <Text fontWeight="medium">{nativeAsset?.ticker}</Text>
+                                    <Text fontSize="2xs" color="fg.muted">Stake</Text>
+                                    <Text fontWeight="bold" fontSize="sm">{nativeAsset?.ticker}</Text>
                                 </VStack>
                             </HStack>
-                            <HStack>
-                                <Image
-                                    src={'/images/bze_alternative_512x512.png'}
-                                    alt={nativeAsset?.name}
-                                    boxSize="8"
-                                    borderRadius="full"
-                                />
+                            <Box color="fg.muted" fontSize="lg">→</Box>
+                            <HStack gap="2">
+                                <Box
+                                    p="1.5"
+                                    bg="bg.subtle"
+                                    borderRadius="md"
+                                    borderWidth="1px"
+                                    borderColor="border"
+                                >
+                                    <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''} size="5"/>
+                                </Box>
                                 <VStack align="start" gap="0">
-                                    <Text fontSize="sm" color="gray.600">Earn</Text>
-                                    <Text fontWeight="medium">{nativeAsset?.ticker}</Text>
+                                    <Text fontSize="2xs" color="fg.muted">Earn</Text>
+                                    <Text fontWeight="bold" fontSize="sm">{nativeAsset?.ticker}</Text>
                                 </VStack>
                             </HStack>
                         </HStack>
