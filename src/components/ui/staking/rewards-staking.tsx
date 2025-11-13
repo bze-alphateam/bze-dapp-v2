@@ -9,8 +9,7 @@ import {
     Grid,
     Heading,
     HStack,
-    ProgressBar,
-    ProgressRoot,
+    Progress,
     Separator,
     Skeleton,
     Text,
@@ -299,13 +298,15 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                         {remainingDays} / {stakingReward?.duration} days
                                     </Text>
                                 </HStack>
-                                <ProgressRoot
+                                <Progress.Root
                                     value={progressPercentage}
                                     size="sm"
                                     colorPalette="purple"
                                 >
-                                    <ProgressBar />
-                                </ProgressRoot>
+                                    <Progress.Track>
+                                        <Progress.Range />
+                                    </Progress.Track>
+                                </Progress.Root>
                             </VStack>
                         </Box>
 
