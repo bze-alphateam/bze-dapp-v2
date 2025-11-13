@@ -15,7 +15,6 @@ import {
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import {useCallback, useMemo, useState} from 'react'
 import NextLink from "next/link";
-import {TokenLogo} from "@/components/ui/token_logo";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useMarkets} from "@/hooks/useMarkets";
