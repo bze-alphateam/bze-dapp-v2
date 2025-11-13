@@ -316,9 +316,6 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                             <Text fontSize="md" fontWeight="bold">
                                                 {yourStake}
                                             </Text>
-                                            <Badge colorPalette="blue" variant="subtle" size="sm">
-                                                {userStakePercentage.toFixed(2)}%
-                                            </Badge>
                                         </HStack>
                                     </HStack>
                                     <Separator />
