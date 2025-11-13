@@ -16,6 +16,7 @@ import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icon
 import {useCallback, useMemo, useState} from 'react'
 import NextLink from "next/link";
 import {TokenLogo} from "@/components/ui/token_logo";
+import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {ListingTitle} from "@/components/ui/listing/title";
 import {useMarkets} from "@/hooks/useMarkets";
 import {useAsset, useAssets} from "@/hooks/useAssets";
@@ -86,27 +87,13 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
             >
                 {/* Asset Pair */}
                 <HStack gap={3}>
-                    <HStack>
-                        <TokenLogo
-                            src={baseAsset?.logo}
-                            symbol={baseAsset?.ticker || market.base}
-                            size="8"
-                            circular={true}
-                        />
-                        <Box
-                            ml={-1}
-                            alignItems="center"
-                            justifyContent="center"
-                            position="relative"
-                        >
-                            <TokenLogo
-                                src={quoteAsset?.logo}
-                                symbol={quoteAsset?.ticker || market.quote}
-                                size="8"
-                                circular={true}
-                            />
-                        </Box>
-                    </HStack>
+                    <LPTokenLogo
+                        baseAssetLogo={baseAsset?.logo || ''}
+                        quoteAssetLogo={quoteAsset?.logo || ''}
+                        baseAssetSymbol={baseAsset?.ticker || market.base}
+                        quoteAssetSymbol={quoteAsset?.ticker || market.quote}
+                        size="8"
+                    />
                     <VStack align="start" gap={0}>
                         <HStack>
                             <Text fontWeight="bold" fontSize="md">
@@ -171,27 +158,13 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
             <VStack align="stretch" gap={3} hideFrom="md">
                 <HStack justify="space-between" align="center">
                     <HStack gap={2}>
-                        <HStack>
-                            <TokenLogo
-                                src={baseAsset?.logo}
-                                symbol={baseAsset?.ticker || market.base}
-                                size="8"
-                                circular={true}
-                            />
-                            <Box
-                                ml={-1}
-                                alignItems="center"
-                                justifyContent="center"
-                                position="relative"
-                            >
-                                <TokenLogo
-                                    src={quoteAsset?.logo}
-                                    symbol={quoteAsset?.ticker || market.quote}
-                                    size="8"
-                                    circular={true}
-                                />
-                            </Box>
-                        </HStack>
+                        <LPTokenLogo
+                            baseAssetLogo={baseAsset?.logo || ''}
+                            quoteAssetLogo={quoteAsset?.logo || ''}
+                            baseAssetSymbol={baseAsset?.ticker || market.base}
+                            quoteAssetSymbol={quoteAsset?.ticker || market.quote}
+                            size="8"
+                        />
                         <VStack align="start" gap={0}>
                             <HStack gap={1}>
                                 <Text fontWeight="bold" fontSize="sm">
