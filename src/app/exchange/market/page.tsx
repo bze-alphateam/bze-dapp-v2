@@ -22,7 +22,7 @@ import {
     amountToBigNumberUAmount,
     prettyAmount, priceToBigNumberUPrice,
     toBigNumber,
-    uAmountToAmount,
+    uAmountToAmount, uAmountToBigNumberAmount,
     uPriceToPrice
 } from "@/utils/amount";
 import {
@@ -403,14 +403,32 @@ const TradingPageContent = () => {
         }
     }, [sellPrice, sellAmount, quoteAsset, baseAsset])
 
-    const onOrderBookClick = useCallback((price: string, amount: string) => {
-        setBuyPrice(price);
-        setSellPrice(price);
+    const onOrderBookClick = useCallback((price: string, orderType: 'buy' | 'sell', index: number) => {
+        const transformedPrice = uPriceToPrice(price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0);
+        setBuyPrice(transformedPrice);
+        setSellPrice(transformedPrice);
+        let amount = toBigNumber(0)
 
-        setBuyAmount(amount);
-        setSellAmount(amount);
+        //if the buy side is clicked we can slice the buy orders up to the clicked index
+        let orders = activeOrders?.buyOrders.slice(0, index + 1) ?? [];
+        if (orderType === ORDER_TYPE_SELL && activeOrders) {
+            //if the sell order side is clicked we need to slice the sell orders from the clicked index onwards
+            orders = activeOrders.sellOrders.slice(index) ?? [];
+        }
 
-        const total = calculateTotalAmount(price, amount, quoteAsset?.decimals || 0);
+        //sum up the amounts of the orders we have in the clicked range
+        for (let i = 0; i < orders.length; i++) {
+            const order = orders[i];
+            if (order) {
+                amount = amount.plus(uAmountToBigNumberAmount(order.amount, baseAsset?.decimals || 0));
+            }
+        }
+
+        const amtStr = amount.toString()
+        setBuyAmount(amtStr);
+        setSellAmount(amtStr);
+
+        const total = calculateTotalAmount(transformedPrice, amount, quoteAsset?.decimals || 0);
         setSellTotal(total);
         setBuyTotal(total);
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -739,7 +757,7 @@ const TradingPageContent = () => {
                                     const transformedPrice = uPriceToPrice(ask.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)
                                     const transformedAmount = uAmountToAmount(ask.amount, baseAsset?.decimals || 0)
                                     return (
-                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(transformedPrice, transformedAmount)}>
+                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(ask.price, ORDER_TYPE_SELL, i)}>
                                             <Text color="red.500">{transformedPrice}</Text>
                                             <Text>{transformedAmount}</Text>
                                         </HStack>
@@ -772,7 +790,7 @@ const TradingPageContent = () => {
                                     const transformedPrice = uPriceToPrice(bid.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)
                                     const transformedAmount = uAmountToAmount(bid.amount, baseAsset?.decimals || 0)
                                     return (
-                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(transformedPrice, transformedAmount)}>
+                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(bid.price, ORDER_TYPE_BUY, i)}>
                                             <Text color="green.500">{transformedPrice}</Text>
                                             <Text>{transformedAmount}</Text>
                                         </HStack>
