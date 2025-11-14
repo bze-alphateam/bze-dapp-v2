@@ -5,8 +5,8 @@ import {Asset, ChainAssets, IBCData} from '@/types/asset';
 import {getChainAssets} from "@/service/assets_factory";
 import {Market, MarketData} from '@/types/market';
 import {createMarketId} from "@/utils/market";
-import {getMarkets} from "@/query/markets";
-import {getAllTickers, getMarketOrdersHistory} from "@/query/aggregator";
+import {getMarketHistory, getMarkets} from "@/query/markets";
+import {getAllTickers} from "@/query/aggregator";
 import {Coin} from "@bze/bzejs/cosmos/base/v1beta1/coin";
 import BigNumber from "bignumber.js";
 import {useChain} from "@interchain-kit/react";
@@ -19,6 +19,8 @@ import {EpochInfoSDKType} from "@bze/bzejs/bze/epochs/epoch";
 import {getEpochsInfo} from "@/query/epoch";
 import {CONNECTION_TYPE_NONE, ConnectionType} from "@/types/settings";
 import {toBigNumber, uPriceToBigNumberPrice} from "@/utils/amount";
+import {isLpDenom} from "@/utils/denom";
+import {addDebounce} from "@/utils/debounce";
 
 export interface AssetsContextType {
     //assets
@@ -38,7 +40,6 @@ export interface AssetsContextType {
     // assets with price 0 will be in this map
     // assets that are not in this map their USD value should not be displayed (example: USDC coin)
     usdPricesMap: Map<string, BigNumber>;
-    updatePrices: (m: Map<string, MarketData>, a: Map<string, Asset>) => void;
 
     //others
     isLoading: boolean;
@@ -107,23 +108,24 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         setBalancesMap(newMap);
     }, []);
-    const doUpdatePrices = useCallback(async (m: Map<string, MarketData>, a: Map<string, Asset>) => {
-        if (a.size === 0) return;
+    const doUpdatePrices = useCallback(async () => {
+        if (assetsMap.size === 0 || marketsMap.size === 0 || !marketsDataMap) return;
         setIsLoadingPrices(true)
-
+        console.log("Updating prices...")
         const getLastPrice = async (base: Asset, quote: Asset, fallback?: () => Promise<number>): Promise<BigNumber> => {
             const marketId = createMarketId(base.denom, quote.denom)
             //try to get price from the market data, using the last_price field (it only shows last 24h price)
-            const mData = m.get(marketId)
+            const mData = marketsDataMap.get(marketId)
             if (mData && mData.last_price > 0) {
                 return toBigNumber(mData.last_price)
             }
 
-            //if we couldn't find the last price in the market data, we'll try to get it from the trade history
-            if (mData) {
-                const tradeHistory = await getMarketOrdersHistory(marketId)
-                if (tradeHistory.length > 0) {
-                    return uPriceToBigNumberPrice(tradeHistory[0].price, quote.decimals, base.decimals)
+            const market = marketsMap.get(marketId)
+            if (market) {
+                //if we couldn't find the last price in the market data, we'll try to get it from the trade history
+                const tradeHistory = await getMarketHistory(marketId)
+                if (tradeHistory.list.length > 0) {
+                    return uPriceToBigNumberPrice(tradeHistory.list[0].price, quote.decimals, base.decimals)
                 }
             }
 
@@ -137,42 +139,26 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         }
 
         const bzeDenom = getChainNativeAssetDenom()
-        const bzeAsset = a.get(bzeDenom)
+        const bzeAsset = assetsMap.get(bzeDenom)
         const usdcDenom = getUSDCDenom()
-        const usdcAsset = a.get(usdcDenom)
+        const usdcAsset = assetsMap.get(usdcDenom)
         if (!bzeAsset || !usdcAsset) {
             console.error("Failed to find BZE or USDC asset in assets map")
             setIsLoadingPrices(false)
             return toBigNumber(0)
         }
 
-
         //1. get the USD price for BZE
         const bzeUsdPrice = await getLastPrice(bzeAsset, usdcAsset, getBZEUSDPrice)
-
         //2. get the USD price for each asset
         const pricesMap = new Map<string, BigNumber>();
         pricesMap.set(bzeDenom, bzeUsdPrice)
 
-        const existingAssets = Array.from(a.values())
+        const existingAssets = Array.from(assetsMap.values())
         for (const asset of existingAssets) {
-            if (asset.denom === bzeDenom || asset.denom === usdcDenom) continue
+            if (asset.denom === bzeDenom || asset.denom === usdcDenom || isLpDenom(asset.denom)) continue
 
-            let priceInUsd = new BigNumber(0)
-            const usdMarket = m.get(createMarketId(asset.denom, usdcDenom))
-            if (usdMarket) {
-                priceInUsd = await getLastPrice(asset, usdcAsset)
-            }
-
-            const bzeMarket = m.get(createMarketId(asset.denom, bzeDenom))
-            if (!bzeMarket || !bzeUsdPrice.gt(0)) {
-                // we dont have a BZE market, or BZE price is zero (BZE price should always be positive, but just in
-                // case) -> use the USD price (might be 0)
-                pricesMap.set(asset.denom, priceInUsd)
-                continue
-            }
-
-            const priceInBze = await getLastPrice(asset, bzeAsset)
+            const [priceInUsd, priceInBze] = await Promise.all([getLastPrice(asset, usdcAsset), getLastPrice(asset, bzeAsset)])
             if (!priceInBze.gt(0)) {
                 //we dont have a price in BZE on the BZE market -> use the USD price (might be 0)
                 pricesMap.set(asset.denom, priceInUsd)
@@ -192,7 +178,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         setUsdPricesMap(pricesMap)
         setIsLoadingPrices(false)
-    }, []);
+    }, [marketsDataMap, assetsMap, marketsMap]);
     const doUpdateEpochs = useCallback((newEpochs: EpochInfoSDKType[]) => {
         const newMap = new Map<string, EpochInfoSDKType>();
         newEpochs.forEach(epoch => {
@@ -234,22 +220,22 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         //initial context loading
         const init = async () => {
             const [assets, markets, tickers, epochsInfo] = await Promise.all([getChainAssets(), getMarkets(), getAllTickers(), getEpochsInfo()])
-            const updatedAssets = doUpdateAssets(assets)
+            doUpdateAssets(assets)
             doUpdateMarkets(markets)
-            const updatedMarketData = doUpdateMarketsData(tickers)
-
-            await doUpdatePrices(updatedMarketData, updatedAssets)
+            doUpdateMarketsData(tickers)
             doUpdateEpochs(epochsInfo.epochs)
 
             setIsLoading(false)
         }
 
         init();
-    }, [doUpdateAssets, doUpdateMarkets, doUpdateMarketsData, doUpdatePrices, doUpdateEpochs])
+        //eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     useEffect(() => {
-        doUpdatePrices(marketsDataMap, assetsMap)
-    }, [marketsDataMap, assetsMap, doUpdatePrices]);
+        addDebounce('do-update-prices', 500, doUpdatePrices)
+        //eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [marketsMap, marketsDataMap, assetsMap]);
 
     useEffect(() => {
         if (!address) {
@@ -283,7 +269,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             isLoadingPrices,
             epochs,
             updateEpochs,
-            updatePrices: doUpdatePrices,
             connectionType,
             updateConnectionType,
         }}>
