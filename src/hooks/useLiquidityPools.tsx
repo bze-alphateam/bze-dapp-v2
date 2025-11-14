@@ -1,6 +1,4 @@
-import {useCallback, useEffect, useMemo, useState} from "react";
-import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {LiquidityPoolData} from "@/types/liquidity_pool";
+import {useCallback, useMemo} from "react";
 import {toBigNumber} from "@/utils/amount";
 import {useAssetsContext} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
@@ -18,9 +16,10 @@ export function useLiquidityPools() {
 }
 
 export function useLiquidityPool(poolId: string) {
-    const [pool, setPool] = useState<LiquidityPoolSDKType>()
-    const [poolData, setPoolData] = useState<LiquidityPoolData>()
     const {balancesMap, assetsMap, poolsMap, poolsDataMap, isLoading} = useAssetsContext()
+
+    const pool = useMemo(() => poolsMap.get(poolId), [poolsMap, poolId])
+    const poolData = useMemo(() => poolsDataMap.get(poolId), [poolsDataMap, poolId])
 
     const userShares = useMemo(() => {
         if (!pool) return toBigNumber(0)
@@ -127,12 +126,6 @@ export function useLiquidityPool(poolId: string) {
         // Truncate to integer (mimics Go's TruncateInt())
         return tokensToMint.integerValue(BigNumber.ROUND_DOWN);
     }, [pool, totalShares]);
-
-    useEffect(() => {
-        setPool(poolsMap.get(poolId))
-        setPoolData(poolsDataMap.get(poolId))
-        //eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [poolId]);
 
     return {
         isLoading: isLoading,

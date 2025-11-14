@@ -135,7 +135,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const doUpdatePrices = useCallback(async () => {
         if (assetsMap.size === 0 || marketsMap.size === 0 || !marketsDataMap) return;
         setIsLoadingPrices(true)
-        console.log("Updating prices...")
         const getLastPrice = async (base: Asset, quote: Asset, fallback?: () => Promise<number>): Promise<BigNumber> => {
             const marketId = createMarketId(base.denom, quote.denom)
             //try to get price from the market data, using the last_price field (it only shows last 24h price)
@@ -275,14 +274,14 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     }, [])
 
     useEffect(() => {
-        addDebounce('do-update-prices', 500, doUpdatePrices)
+        addDebounce('do-update-prices', 200, doUpdatePrices)
         //eslint-disable-next-line react-hooks/exhaustive-deps
     }, [marketsMap, marketsDataMap, assetsMap]);
 
     useEffect(() => {
-        addDebounce('do-update-lps', 500, () => {doUpdateLiquidityPools(Array.from(poolsMap.values()))})
+        addDebounce('do-update-lps', 200, () => {updateLiquidityPools()})
         //eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [assetsMap, usdPricesMap]);
+    }, [usdPricesMap, assetsMap]);
 
     useEffect(() => {
         if (!address) {
