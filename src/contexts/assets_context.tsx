@@ -18,9 +18,12 @@ import {getBZEUSDPrice} from "@/query/prices";
 import {EpochInfoSDKType} from "@bze/bzejs/bze/epochs/epoch";
 import {getEpochsInfo} from "@/query/epoch";
 import {CONNECTION_TYPE_NONE, ConnectionType} from "@/types/settings";
-import {toBigNumber, uPriceToBigNumberPrice} from "@/utils/amount";
+import {toBigNumber, uAmountToAmount, uPriceToBigNumberPrice} from "@/utils/amount";
 import {isLpDenom} from "@/utils/denom";
 import {addDebounce} from "@/utils/debounce";
+import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
+import {LiquidityPoolData} from "@/types/liquidity_pool";
+import {getLiquidityPools} from "@/query/liquidity_pools";
 
 export interface AssetsContextType {
     //assets
@@ -33,6 +36,10 @@ export interface AssetsContextType {
     marketsDataMap: Map<string, MarketData>;
     updateMarketsData: () => Promise<Map<string, MarketData>>;
 
+    poolsMap: Map<string, LiquidityPoolSDKType>;
+    poolsDataMap: Map<string, LiquidityPoolData>;
+    updateLiquidityPools: () => Promise<void>;
+
     balancesMap: Map<string, Balance>;
     updateBalances: () => void;
 
@@ -44,6 +51,7 @@ export interface AssetsContextType {
     //others
     isLoading: boolean;
     isLoadingPrices: boolean;
+
 
     // holds a list of blockchains IBC details. It is populated from assets details.
     // WARNING: it can hold IBC details that are incomplete (missing chain.channelId or missing chain.counterparty.channelId)
@@ -62,6 +70,20 @@ interface AssetsProviderProps {
     children: ReactNode;
 }
 
+const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>, baseAsset?: Asset, quoteAsset?: Asset): LiquidityPoolData => {
+    const basePrice = prices.get(pool.base) || toBigNumber(0)
+    const quotePrice = prices.get(pool.quote) || toBigNumber(0)
+    const isComplete = basePrice.gt(0) && quotePrice.gt(0)
+
+    return {
+        usdValue: basePrice.multipliedBy(uAmountToAmount(pool.reserve_base, baseAsset?.decimals || 0)).plus(quotePrice.multipliedBy(uAmountToAmount(pool.reserve_quote, quoteAsset?.decimals || 0))),
+        usdVolume: toBigNumber(0), //TODO: get volume from Aggregator
+        isComplete: isComplete,
+        apr: '0', //TODO: calculate APR
+        usdFees: toBigNumber(0) //calculate fees
+    }
+}
+
 export function AssetsProvider({ children }: AssetsProviderProps) {
     const [assetsMap, setAssetsMap] = useState<Map<string, Asset>>(new Map());
     const [marketsMap, setMarketsMap] = useState<Map<string, Market>>(new Map());
@@ -73,6 +95,8 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const [isLoadingPrices, setIsLoadingPrices] = useState(true);
     const [epochs, setEpochs] = useState<Map<string, EpochInfoSDKType>>(new Map());
     const [connectionType, setConnectionType] = useState<ConnectionType>(CONNECTION_TYPE_NONE);
+    const [poolsMap, setPoolsMap] = useState<Map<string, LiquidityPoolSDKType>>(new Map())
+    const [poolsDataMap, setPoolsDataMap] = useState<Map<string, LiquidityPoolData>>(new Map())
 
     const {address} = useChain(getChainName());
 
@@ -187,6 +211,20 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         setEpochs(newMap);
     }, []);
+    const doUpdateLiquidityPools = useCallback((newPools: LiquidityPoolSDKType[]) => {
+        if (assetsMap.size === 0 || usdPricesMap.size === 0) return;
+
+        const poolsData = new Map<string, LiquidityPoolData>()
+        const poolsMap = new Map<string, LiquidityPoolSDKType>()
+
+        newPools.map(pool => {
+            poolsData.set(pool.id, getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote)))
+            poolsMap.set(pool.id, pool)
+        })
+
+        setPoolsDataMap(poolsData)
+        setPoolsMap(poolsMap)
+    }, [assetsMap, usdPricesMap])
 
     const updateAssets = useCallback(async () => {
         const newAssets = await getChainAssets()
@@ -214,16 +252,22 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const updateConnectionType = useCallback((conn: ConnectionType) => {
         setConnectionType(conn)
     }, [])
+    const updateLiquidityPools = useCallback(async () => {
+        const [pools] = await Promise.all([getLiquidityPools()])
+
+        doUpdateLiquidityPools(pools)
+    }, [doUpdateLiquidityPools])
 
     useEffect(() => {
         setIsLoading(true)
         //initial context loading
         const init = async () => {
-            const [assets, markets, tickers, epochsInfo] = await Promise.all([getChainAssets(), getMarkets(), getAllTickers(), getEpochsInfo()])
+            const [assets, markets, tickers, epochsInfo, pools] = await Promise.all([getChainAssets(), getMarkets(), getAllTickers(), getEpochsInfo(), getLiquidityPools()])
             doUpdateAssets(assets)
             doUpdateMarkets(markets)
             doUpdateMarketsData(tickers)
             doUpdateEpochs(epochsInfo.epochs)
+            doUpdateLiquidityPools(pools)
 
             setIsLoading(false)
         }
@@ -271,6 +315,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             updateEpochs,
             connectionType,
             updateConnectionType,
+            updateLiquidityPools,
+            poolsMap,
+            poolsDataMap,
         }}>
             {children}
         </AssetsContext.Provider>

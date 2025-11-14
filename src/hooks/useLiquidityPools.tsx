@@ -1,75 +1,26 @@
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {getLiquidityPool, getLiquidityPools} from "@/query/liquidity_pools";
 import {LiquidityPoolData} from "@/types/liquidity_pool";
-import {toBigNumber, uAmountToAmount} from "@/utils/amount";
+import {toBigNumber} from "@/utils/amount";
 import {useAssetsContext} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
-import {Asset} from "@/types/asset";
-
-const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>, baseAsset?: Asset, quoteAsset?: Asset): LiquidityPoolData => {
-    const basePrice = prices.get(pool.base) || toBigNumber(0)
-    const quotePrice = prices.get(pool.quote) || toBigNumber(0)
-    const isComplete = basePrice.gt(0) && quotePrice.gt(0)
-
-    return {
-        usdValue: basePrice.multipliedBy(uAmountToAmount(pool.reserve_base, baseAsset?.decimals || 0)).plus(quotePrice.multipliedBy(uAmountToAmount(pool.reserve_quote, quoteAsset?.decimals || 0))),
-        usdVolume: toBigNumber(0), //TODO: get volume from Aggregator
-        isComplete: isComplete,
-        apr: '0', //TODO: calculate APR
-        usdFees: toBigNumber(0) //calculate fees
-    }
-}
 
 export function useLiquidityPools() {
-    const [isLoading, setIsLoading] = useState(true)
-    const [pools, setPools] = useState<LiquidityPoolSDKType[]>([])
-    const [poolsData, setPoolsData] = useState<Map<string, LiquidityPoolData>>(new Map())
+    const {poolsMap, poolsDataMap, isLoading} = useAssetsContext()
 
-    const {usdPricesMap, isLoadingPrices, assetsMap} = useAssetsContext()
-
-    const load = useCallback(async () => {
-        const [pools] = await Promise.all([getLiquidityPools()])
-        const poolsData = new Map<string, LiquidityPoolData>()
-
-        pools.map(pool => {
-            poolsData.set(pool.id, getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote)))
-        })
-
-        setPoolsData(poolsData)
-        setPools(pools)
-        setIsLoading(false)
-    }, [usdPricesMap, assetsMap])
-
-    useEffect(() => {
-        load()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    const pools = useMemo(() => Array.from(poolsMap.values()), [poolsMap])
 
     return {
         pools,
-        isLoading: isLoading || isLoadingPrices,
-        poolsData,
-        reload: load,
+        isLoading: isLoading,
+        poolsData: poolsDataMap,
     }
 }
 
 export function useLiquidityPool(poolId: string) {
-    const [isLoading, setIsLoading] = useState(true)
     const [pool, setPool] = useState<LiquidityPoolSDKType>()
     const [poolData, setPoolData] = useState<LiquidityPoolData>()
-
-    const {usdPricesMap, isLoadingPrices, balancesMap, assetsMap} = useAssetsContext()
-
-    const load = useCallback(async () => {
-        if (!poolId || poolId === '') return;
-
-        const [pool] = await Promise.all([getLiquidityPool(poolId)])
-        if (!pool) return;
-        setPool(pool)
-        setPoolData(getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote)))
-        setIsLoading(false)
-    }, [poolId, usdPricesMap, assetsMap])
+    const {balancesMap, assetsMap, poolsMap, poolsDataMap, isLoading} = useAssetsContext()
 
     const userShares = useMemo(() => {
         if (!pool) return toBigNumber(0)
@@ -178,15 +129,15 @@ export function useLiquidityPool(poolId: string) {
     }, [pool, totalShares]);
 
     useEffect(() => {
-        load();
+        setPool(poolsMap.get(poolId))
+        setPoolData(poolsDataMap.get(poolId))
         //eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [poolId, usdPricesMap]);
+    }, [poolId]);
 
     return {
-        isLoading: isLoading || isLoadingPrices,
+        isLoading: isLoading,
         pool,
         poolData,
-        reload: load,
         userShares,
         totalShares,
         userSharesPercentage,

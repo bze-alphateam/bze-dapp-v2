@@ -1277,7 +1277,6 @@ const PoolDetailsPageContent = () => {
         userReserveQuote,
         calculateOppositeAmount,
         calculateSharesFromAmounts,
-        reload,
     } = useLiquidityPool(idParam ?? '')
     const {asset: baseAsset, isLoading: isLoadingBaseAsset} = useAsset(pool?.base || '')
     const {asset: quoteAsset, isLoading: isLoadingQuoteAsset} = useAsset(pool?.quote || '')
@@ -1308,9 +1307,8 @@ const PoolDetailsPageContent = () => {
     const hasPoolData = useMemo(() => poolData !== undefined, [poolData]);
 
     const onLiquidityChanged = useCallback(() => {
-        reload()
         reloadStakingData()
-    }, [reload, reloadStakingData])
+    }, [reloadStakingData])
 
     // Custom tabs
     const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
