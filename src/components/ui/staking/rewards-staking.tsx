@@ -95,7 +95,7 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
 
         const apr = calculateRewardsStakingApr(prizeAmount, stakedAmount)
 
-        return `~${apr.toString()}%`
+        return `≈${apr.toString()}%`
     }, [prizeAsset?.decimals, prizeAssetHasPrice, prizeAssetValue, stakingAsset?.decimals, stakingAssetHasPrice, stakingAssetValue, stakingReward])
     const dailyDistribution = useMemo(() => {
         return `${shortNumberFormat(uAmountToBigNumberAmount(stakingReward?.prize_amount, prizeAsset?.decimals || 0))} ${prizeAsset?.ticker}`

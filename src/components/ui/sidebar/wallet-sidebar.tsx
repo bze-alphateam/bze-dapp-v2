@@ -27,7 +27,7 @@ import {AssetBalance, useBalances} from "@/hooks/useBalances";
 import {useIBCChains} from "@/hooks/useAssets";
 import {isIbcDenom, isLpDenom} from "@/utils/denom";
 
-import {amountToUAmount, prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {amountToUAmount, prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import {getChainNativeAssetDenom} from "@/constants/assets";
 import {sanitizeNumberInput} from "@/utils/number";
 import {validateBZEBech32Address} from "@/utils/address";
@@ -137,7 +137,7 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
     // Create collections for selects
     const coinsCollection = createListCollection({
         items: balances.map(item => ({
-            label: `${item.ticker} - ${uAmountToBigNumberAmount(item.amount, item?.decimals ?? 0)}`,
+            label: `${item.ticker} - ${shortNumberFormat(uAmountToBigNumberAmount(item.amount, item?.decimals ?? 0))}`,
             value: item.ticker,
             logo: item.logo
         }))
@@ -297,6 +297,33 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
                         </Select.Positioner>
                     </Portal>
                 </Select.Root>
+
+                {selectedCoin && (
+                    <Box
+                        mt="2"
+                        p="2"
+                        bg="bg.muted"
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderColor="border.subtle"
+                    >
+                        <HStack justify="space-between">
+                            <Text fontSize="xs" color="fg.muted">
+                                Available:
+                            </Text>
+                            <VStack gap="0" align="end">
+                                <Text fontSize="sm" fontWeight="medium">
+                                    {uAmountToAmount(selectedCoin.amount, selectedCoin.decimals)} {selectedCoin.ticker}
+                                </Text>
+                                {selectedCoin.USDValue.gt(0) && (
+                                    <Text fontSize="xs" color="fg.muted">
+                                        ≈ ${shortNumberFormat(selectedCoin.USDValue)}
+                                    </Text>
+                                )}
+                            </VStack>
+                        </HStack>
+                    </Box>
+                )}
             </Box>
 
             <Box>

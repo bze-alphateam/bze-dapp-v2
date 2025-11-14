@@ -169,7 +169,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                             </Text>
                                         </HStack>
                                         <Text fontSize="xl" fontWeight="bold" color="green.600">
-                                            ~{stakingData?.averageApr}%
+                                            ≈{stakingData?.averageApr}%
                                         </Text>
                                     </HStack>
                                 </Box>
@@ -195,7 +195,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                         </Text>
                                     </HStack>
                                     <Text fontSize="xl" fontWeight="bold" color="green.600" lineHeight="1">
-                                        ~{stakingData?.averageApr}%
+                                        ≈{stakingData?.averageApr}%
                                     </Text>
                                 </VStack>
                             </Box>
@@ -278,7 +278,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                     <LuCoins size={14} />
                                     <Text fontSize="xs">Daily Distribution</Text>
                                 </HStack>
-                                <Text fontWeight="semibold">~{dailyDistribution}</Text>
+                                <Text fontWeight="semibold">≈{dailyDistribution}</Text>
                             </HStack>
                             <Separator />
                             <HStack justify="space-between" py="1">

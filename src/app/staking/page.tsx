@@ -214,7 +214,7 @@ const StakingPage = () => {
                             <VStack align="start">
                                 <Text color="gray.600">Total Value Staked</Text>
                                 <Skeleton asChild loading={summaryLoading}>
-                                    <Text fontSize="2xl" fontWeight="bold">~${shortNumberFormat(stakedUsdValue)}</Text>
+                                    <Text fontSize="2xl" fontWeight="bold">≈${shortNumberFormat(stakedUsdValue)}</Text>
                                 </Skeleton>
                                 {/*<Text fontSize="sm" color="green.500">+12.5% this month</Text>*/}
                             </VStack>
