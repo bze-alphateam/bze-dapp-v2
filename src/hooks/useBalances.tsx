@@ -15,6 +15,10 @@ export function useBalances() {
 
     const balances = useMemo(() => Array.from(balancesMap.values()), [balancesMap])
 
+    const getBalanceByDenom = useCallback((denom: string) => {
+        return balancesMap.get(denom) || { denom, amount: BigNumber(0) }
+    }, [balancesMap])
+
     const getAssetsBalances = useCallback(() => {
         const result: AssetBalance[] = []
         balances.map(bal => {
@@ -45,7 +49,8 @@ export function useBalances() {
     return {
         isLoading,
         balances,
-        getAssetsBalances
+        getAssetsBalances,
+        getBalanceByDenom
     }
 }
 

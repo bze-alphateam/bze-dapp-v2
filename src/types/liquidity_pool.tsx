@@ -7,3 +7,8 @@ export interface LiquidityPoolData {
     isComplete: boolean; //is false when one of the assets doesn't have a USD price
     apr: string,
 }
+
+export interface UserPoolData {
+    userLiquidityUsd: BigNumber;
+    userSharesPercentage: number;
+}

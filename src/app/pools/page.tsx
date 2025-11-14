@@ -23,29 +23,34 @@ import {useNavigation} from "@/hooks/useNavigation";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {toBigNumber} from "@/utils/amount";
+import {useBalances} from "@/hooks/useBalances";
+import {calculateUserPoolData} from "@/utils/liquidity_pool";
+import {shortNumberFormat} from "@/utils/formatter";
+import {LiquidityPoolData} from "@/types/liquidity_pool";
 
 
 type SortField = 'volume24h' | 'totalLiquidity' | 'apr'
 type SortOrder = 'asc' | 'desc'
 
-const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
-        return `$${(amount / 1000000).toFixed(1)}M`
-    }
-    if (amount >= 1000) {
-        return `$${(amount / 1000).toFixed(1)}K`
-    }
-    return `$${amount.toFixed(2)}`
+interface LiquidityPoolCardProps {
+    pool: LiquidityPoolSDKType;
+    isUserPool?: boolean;
+    poolData?: LiquidityPoolData;
 }
 
-const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`
-}
-
-const DesktopLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: LiquidityPoolSDKType; isUserPool?: boolean }) => {
+const DesktopLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: LiquidityPoolCardProps) => {
     const {asset: baseAsset} = useAsset(pool.base)
     const {asset: quoteAsset} = useAsset(pool.quote)
+    const {asset: lpAsset} = useAsset(pool.lp_denom)
     const {toLpPage} = useNavigation()
+    const {getBalanceByDenom} = useBalances()
+
+    const balance = useMemo(() => getBalanceByDenom(pool.lp_denom), [getBalanceByDenom, pool.lp_denom])
+    const userPoolData = useMemo(() => calculateUserPoolData(balance, lpAsset, poolData), [balance, lpAsset, poolData])
+
+    const volume24h = useMemo(() => toBigNumber(poolData?.usdVolume || 0), [poolData])
+    const totalLiquidity = useMemo(() => toBigNumber(poolData?.usdValue || 0), [poolData])
+    const apr = useMemo(() => parseFloat(poolData?.apr || '0'), [poolData])
 
     return (<Box
         key={pool.id}
@@ -78,26 +83,26 @@ const DesktopLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidit
         {isUserPool && (
             <Box as="td" p={4}>
                 <Text fontWeight="600" fontSize="md" color="colorPalette.600">
-                    {formatCurrency(232)}
+                    ${shortNumberFormat(userPoolData.userLiquidityUsd)}
                 </Text>
             </Box>
         )}
         <Box as="td" p={4}>
             <Text fontWeight="600" fontSize="md">
-                {formatCurrency(321)}
+                ${shortNumberFormat(volume24h)}
             </Text>
         </Box>
         <Box as="td" p={4}>
             <Text fontWeight="600" fontSize="md">
-                {formatCurrency(332)}
+                ${shortNumberFormat(totalLiquidity)}
             </Text>
         </Box>
         <Box as="td" p={4}>
             <Badge
-                colorPalette={0 > 15 ? 'green' : 0 > 10 ? 'yellow' : 'blue'}
+                colorPalette={apr > 15 ? 'green' : apr > 10 ? 'yellow' : 'blue'}
                 size="sm"
             >
-                {formatPercentage(32)}
+                {apr}%
             </Badge>
         </Box>
         <Box as="td" p={4}>
@@ -115,11 +120,19 @@ const DesktopLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidit
     </Box>)
 }
 
-const MobileLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: LiquidityPoolSDKType; isUserPool?: boolean }) => {
-
+const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: LiquidityPoolCardProps) => {
     const {asset: baseAsset} = useAsset(pool.base)
     const {asset: quoteAsset} = useAsset(pool.quote)
+    const {asset: lpAsset} = useAsset(pool.lp_denom)
     const {toLpPage} = useNavigation()
+    const {getBalanceByDenom} = useBalances()
+
+    const balance = useMemo(() => getBalanceByDenom(pool.lp_denom), [getBalanceByDenom, pool.lp_denom])
+    const userPoolData = useMemo(() => calculateUserPoolData(balance, lpAsset, poolData), [balance, lpAsset, poolData])
+
+    const volume24h = useMemo(() => toBigNumber(poolData?.usdVolume || 0), [poolData])
+    const totalLiquidity = useMemo(() => toBigNumber(poolData?.usdValue || 0), [poolData])
+    const apr = useMemo(() => parseFloat(poolData?.apr || '0'), [poolData])
 
     return (
         <Box
@@ -159,10 +172,10 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidity
                         </VStack>
                     </HStack>
                     <Badge
-                        colorPalette={0 > 15 ? 'green' : 0 > 10 ? 'yellow' : 'blue'}
+                        colorPalette={apr > 15 ? 'green' : apr > 10 ? 'yellow' : 'blue'}
                         size="lg"
                     >
-                        {formatPercentage(10)}
+                        {apr}
                     </Badge>
                 </HStack>
 
@@ -173,7 +186,7 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidity
                                 My Liquidity
                             </Text>
                             <Text fontWeight="600" fontSize="sm" color="blue.600">
-                                {formatCurrency(123)}
+                                ${shortNumberFormat(userPoolData.userLiquidityUsd)}
                             </Text>
                         </HStack>
                     </Box>
@@ -185,7 +198,7 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidity
                             24h Volume
                         </Text>
                         <Text fontWeight="600" fontSize="md">
-                            {formatCurrency(1232)}
+                            ${shortNumberFormat(volume24h)}
                         </Text>
                     </VStack>
                     <VStack gap={1} align="end">
@@ -193,7 +206,7 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false }: { pool: Liquidity
                             Total Liquidity
                         </Text>
                         <Text fontWeight="600" fontSize="md">
-                            {formatCurrency(123332)}
+                            ${shortNumberFormat(totalLiquidity)}
                         </Text>
                     </VStack>
                 </HStack>
@@ -222,6 +235,7 @@ export default function LiquidityPoolsPage() {
 
     const {pools, poolsData} = useLiquidityPools()
     const {denomTicker} = useAssets()
+    const {getBalanceByDenom} = useBalances()
 
     const sortOptions = [
         { value: 'totalLiquidity-desc', label: 'Total Liquidity (High to Low)' },
@@ -286,13 +300,20 @@ export default function LiquidityPoolsPage() {
             )
         })
 
-        // Separate user pools and other pools, then combine with user pools first
-        // const userPools = sorted.filter(pool => pool.isUserPool)
-        const otherPools = filtered
+        // Separate user pools and other pools based on LP token balance
+        const userPools = filtered.filter(pool => {
+            const balance = getBalanceByDenom(pool.lp_denom)
+            return balance && balance.amount.gt(0)
+        })
 
-        return { otherPools, userPools: [] as LiquidityPoolSDKType[] }
+        const otherPools = filtered.filter(pool => {
+            const balance = getBalanceByDenom(pool.lp_denom)
+            return !balance || balance.amount.isZero()
+        })
+
+        return { otherPools, userPools }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchTerm, sortedPools])
+    }, [searchTerm, sortedPools, getBalanceByDenom])
 
     const SortIcon = useCallback(({ field }: { field: SortField }) => {
         if (sortField !== field) return null
@@ -386,96 +407,12 @@ export default function LiquidityPoolsPage() {
                                             </Box>
                                             <Box as="tbody">
                                                 {filteredAndSortedPools.userPools.map((pool) => (
-                                                    // <Box
-                                                    //     key={pool.id}
-                                                    //     as="tr"
-                                                    //     cursor="pointer"
-                                                    //     onClick={() => handlePoolClick(pool.id)}
-                                                    //     _hover={{
-                                                    //         bg: "blue.50",
-                                                    //         _dark: { bg: "blue.900" }
-                                                    // }}
-                                                    //     transition="background-color 0.2s"
-                                                    //     borderRadius="lg"
-                                                    //     // bg="blue.25"
-                                                    //     // _dark={{ bg: "blue.950" }}
-                                                    // >
-                                                    //     <Box as="td" p={4}>
-                                                    //         <HStack gap={3}>
-                                                    //             <HStack gap={0}>
-                                                    //                 <TokenLogo
-                                                    //                     src={pool.asset1.logo}
-                                                    //                     symbol={pool.asset1.ticker}
-                                                    //                     size="8"
-                                                    //                     circular={true}
-                                                    //                 />
-                                                    //                 <Box
-                                                    //                     ml={-2}
-                                                    //                     alignItems="center"
-                                                    //                     justifyContent="center"
-                                                    //                     position="relative"
-                                                    //                 >
-                                                    //                     <TokenLogo
-                                                    //                         src={pool.asset2.logo}
-                                                    //                         symbol={pool.asset2.ticker}
-                                                    //                         size="8"
-                                                    //                         circular={true}
-                                                    //                     />
-                                                    //                 </Box>
-                                                    //             </HStack>
-                                                    //             <VStack gap={0} align="start">
-                                                    //                 <HStack>
-                                                    //                     <Text fontWeight="600" fontSize="md">
-                                                    //                         {pool.asset1.ticker}/{pool.asset2.ticker}
-                                                    //                     </Text>
-                                                    //                     <Badge colorPalette="blue" size="sm">
-                                                    //                         My Pool
-                                                    //                     </Badge>
-                                                    //                 </HStack>
-                                                    //                 <Text fontSize="sm" color="fg.muted">
-                                                    //                     {pool.asset1.ticker}-{pool.asset2.ticker} LP
-                                                    //                 </Text>
-                                                    //             </VStack>
-                                                    //         </HStack>
-                                                    //     </Box>
-                                                    //     <Box as="td" p={4}>
-                                                    //         <Text fontWeight="600" fontSize="md" color="colorPalette.600">
-                                                    //             {pool.userLiquidity ? formatCurrency(pool.userLiquidity) : '-'}
-                                                    //         </Text>
-                                                    //     </Box>
-                                                    //     <Box as="td" p={4}>
-                                                    //         <Text fontWeight="600" fontSize="md">
-                                                    //             {formatCurrency(pool.volume24h)}
-                                                    //         </Text>
-                                                    //     </Box>
-                                                    //     <Box as="td" p={4}>
-                                                    //         <Text fontWeight="600" fontSize="md">
-                                                    //             {formatCurrency(pool.totalLiquidity)}
-                                                    //         </Text>
-                                                    //     </Box>
-                                                    //     <Box as="td" p={4}>
-                                                    //         <Badge
-                                                    //             colorPalette={pool.apr > 15 ? 'green' : pool.apr > 10 ? 'yellow' : 'blue'}
-                                                    //             size="sm"
-                                                    //         >
-                                                    //             {formatPercentage(pool.apr)}
-                                                    //         </Badge>
-                                                    //     </Box>
-                                                    //     <Box as="td" p={4}>
-                                                    //         <Button
-                                                    //             size="sm"
-                                                    //             variant="solid"
-                                                    //             colorPalette="blue"
-                                                    //             onClick={(e) => {
-                                                    //                 e.stopPropagation()
-                                                    //                 handlePoolClick(pool.id)
-                                                    //             }}
-                                                    //         >
-                                                    //             Manage
-                                                    //         </Button>
-                                                    //     </Box>
-                                                    // </Box>
-                                                    <DesktopLiquidityPoolCard pool={pool} isUserPool={false} key={pool.id} />
+                                                    <DesktopLiquidityPoolCard
+                                                        pool={pool}
+                                                        isUserPool={true}
+                                                        key={pool.id}
+                                                        poolData={poolsData.get(pool.id)}
+                                                    />
                                                 ))}
                                             </Box>
                                         </Box>
@@ -552,7 +489,12 @@ export default function LiquidityPoolsPage() {
                                             </Box>
                                             <Box as="tbody">
                                                 {filteredAndSortedPools.otherPools.map((pool) => (
-                                                    <DesktopLiquidityPoolCard key={pool.id} pool={pool} isUserPool={false} />
+                                                    <DesktopLiquidityPoolCard
+                                                        key={pool.id}
+                                                        pool={pool}
+                                                        isUserPool={false}
+                                                        poolData={poolsData.get(pool.id)}
+                                                    />
                                                 ))}
                                             </Box>
                                         </Box>
@@ -572,7 +514,12 @@ export default function LiquidityPoolsPage() {
                                         </HStack>
                                         <VStack gap={3} w="full">
                                             {filteredAndSortedPools.userPools.map((pool) => (
-                                                <MobileLiquidityPoolCard key={pool.id} pool={pool} isUserPool={true} />
+                                                <MobileLiquidityPoolCard
+                                                    key={pool.id}
+                                                    pool={pool}
+                                                    isUserPool={true}
+                                                    poolData={poolsData.get(pool.id)}
+                                                />
                                             ))}
                                         </VStack>
                                     </VStack>
@@ -586,7 +533,12 @@ export default function LiquidityPoolsPage() {
                                         </Heading>
                                         <VStack gap={3} w="full">
                                             {filteredAndSortedPools.otherPools.map((pool) => (
-                                                <MobileLiquidityPoolCard key={pool.id} pool={pool} isUserPool={false} />
+                                                <MobileLiquidityPoolCard
+                                                    key={pool.id}
+                                                    pool={pool}
+                                                    isUserPool={false}
+                                                    poolData={poolsData.get(pool.id)}
+                                                />
                                             ))}
                                         </VStack>
                                     </VStack>
