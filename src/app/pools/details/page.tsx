@@ -34,7 +34,15 @@ import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {useLiquidityPool} from "@/hooks/useLiquidityPools";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {useAssetPrice} from "@/hooks/usePrices";
-import {amountToBigNumberUAmount, amountToUAmount, prettyAmount, toBigNumber, uAmountToAmount} from "@/utils/amount";
+import {
+    amountToBigNumberUAmount,
+    amountToUAmount,
+    prettyAmount,
+    toBigNumber,
+    uAmountToAmount,
+    uAmountToBigNumberAmount
+} from "@/utils/amount";
+import {shortNumberFormat} from "@/utils/formatter";
 import BigNumber from "bignumber.js";
 import {sanitizeNumberInput, toPercentage} from "@/utils/number";
 import {removeLeadingZeros} from "@/utils/strings";
@@ -736,8 +744,53 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
         return {
             amount: uAmountToAmount(userShare, denomDecimals(selectedReward.prize_denom)),
             ticker: denomTicker(selectedReward.prize_denom),
+            amountBN: uAmountToBigNumberAmount(userShare, denomDecimals(selectedReward.prize_denom)),
         };
     }, [selectedReward, lockAmount, denomDecimals, denomTicker]);
+
+    const { price: rewardTokenPrice } = useAssetPrice(selectedReward?.prize_denom || '');
+    const { price: lpTokenPrice } = useAssetPrice(pool?.lp_denom || '');
+
+    const estimatedDailyRewardsUsd = useMemo(() => {
+        if (!estimatedDailyRewards || !rewardTokenPrice || rewardTokenPrice.lte(0)) return null;
+        return estimatedDailyRewards.amountBN.multipliedBy(rewardTokenPrice);
+    }, [estimatedDailyRewards, rewardTokenPrice]);
+
+    const stakingAPRData = useMemo(() => {
+        if (!selectedReward || !lpTokenPrice || lpTokenPrice.lte(0) || !rewardTokenPrice || rewardTokenPrice.lte(0)) {
+            return null;
+        }
+
+        const currentStaked = toBigNumber(selectedReward.staked_amount);
+        if (currentStaked.lte(0)) return null;
+
+        const dailyPrizeUsd = toBigNumber(uAmountToAmount(selectedReward.prize_amount, denomDecimals(selectedReward.prize_denom)))
+            .multipliedBy(rewardTokenPrice);
+        const annualRewardsUsd = dailyPrizeUsd.multipliedBy(365);
+
+        // Current APR (before user's stake)
+        const currentStakedUsd = toBigNumber(uAmountToAmount(currentStaked, LP_ASSETS_DECIMALS)).multipliedBy(lpTokenPrice);
+        const currentAPR = currentStakedUsd.gt(0) ? annualRewardsUsd.dividedBy(currentStakedUsd).multipliedBy(100) : toBigNumber(0);
+
+        // New APR (after user's stake)
+        if (!lockAmount || lockAmount === '0') {
+            return { currentAPR, newAPR: null, aprChange: null };
+        }
+
+        const lockUAmount = amountToBigNumberUAmount(lockAmount, LP_ASSETS_DECIMALS);
+        const newTotalStaked = currentStaked.plus(lockUAmount);
+        const newTotalStakedUsd = toBigNumber(uAmountToAmount(newTotalStaked, LP_ASSETS_DECIMALS)).multipliedBy(lpTokenPrice);
+        const newAPR = newTotalStakedUsd.gt(0) ? annualRewardsUsd.dividedBy(newTotalStakedUsd).multipliedBy(100) : toBigNumber(0);
+
+        // Calculate percentage change in APR
+        const aprChange = currentAPR.gt(0) ? newAPR.minus(currentAPR).dividedBy(currentAPR).multipliedBy(100) : toBigNumber(0);
+
+        return {
+            currentAPR,
+            newAPR,
+            aprChange,
+        };
+    }, [selectedReward, lockAmount, lpTokenPrice, rewardTokenPrice, denomDecimals]);
 
     const remainingDays = useCallback((reward: StakingRewardSDKType) => {
         return reward.duration - reward.payouts;
@@ -983,8 +1036,53 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
                                 <Text fontSize="2xl" fontWeight="bold" color="green.600">
                                     {prettyAmount(estimatedDailyRewards.amount)} {estimatedDailyRewards.ticker}
                                 </Text>
+                                {estimatedDailyRewardsUsd && estimatedDailyRewardsUsd.gt(0) && (
+                                    <Text fontSize="md" fontWeight="medium" color="green.600" _dark={{ color: "green.400" }}>
+                                        ≈ ${shortNumberFormat(estimatedDailyRewardsUsd)}
+                                    </Text>
+                                )}
                             </VStack>
                         </Box>
+
+                        {/* Show new APR if it changes by more than 10% */}
+                        {stakingAPRData && stakingAPRData.newAPR && stakingAPRData.aprChange && Math.abs(stakingAPRData.aprChange.toNumber()) > 10 && (
+                            <Box
+                                w="full"
+                                bg="blue.50"
+                                _dark={{ bg: "blue.900/20", borderColor: "blue.600" }}
+                                p="4"
+                                rounded="lg"
+                                borderWidth="1px"
+                                borderColor="blue.200"
+                            >
+                                <VStack align="stretch" gap="2">
+                                    <HStack gap="2" justify="space-between">
+                                        <HStack gap="2">
+                                            <Box color="blue.500">
+                                                <LuTrendingUp size={18} />
+                                            </Box>
+                                            <Text fontSize="sm" fontWeight="semibold" color="blue.700" _dark={{ color: "blue.300" }}>
+                                                New Staking APR
+                                            </Text>
+                                        </HStack>
+                                        <Badge
+                                            colorPalette={stakingAPRData.aprChange.lt(0) ? "red" : "green"}
+                                            size="sm"
+                                        >
+                                            {stakingAPRData.aprChange.lt(0) ? '' : '+'}{stakingAPRData.aprChange.toFixed(1)}%
+                                        </Badge>
+                                    </HStack>
+                                    <HStack justify="space-between" align="baseline">
+                                        <Text fontSize="sm" color="blue.600" _dark={{ color: "blue.400" }}>
+                                            Current: {stakingAPRData.currentAPR.toFixed(2)}%
+                                        </Text>
+                                        <Text fontSize="lg" fontWeight="bold" color="blue.600">
+                                            New: {stakingAPRData.newAPR.toFixed(2)}%
+                                        </Text>
+                                    </HStack>
+                                </VStack>
+                            </Box>
+                        )}
 
                         {selectedReward.lock > 0 && (
                             <Box
