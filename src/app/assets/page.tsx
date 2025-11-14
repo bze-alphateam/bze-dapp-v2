@@ -1,6 +1,6 @@
 "use client"
 
-import React, {useCallback, useMemo, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useState} from 'react'
 
 import {
     Box,
@@ -221,6 +221,8 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
 }
 
 function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset, isExpanded: boolean, toggleExpanded: (denom: string) => void, pools: LiquidityPoolSDKType[] }) {
+    const [priceLoadedOnce, setPriceLoadedOnce] = useState(false)
+
     const {assetMarketsData, getAsset24hTradedVolume, assetMarkets} = useAssetMarkets(asset.denom)
     const { price, change, isLoading: priceLoading } = useAssetPrice(asset.denom)
 
@@ -306,6 +308,14 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
         return <Text fontSize="sm" color="red.200">{change}%</Text>
     }, [change])
 
+    useEffect(() => {
+        //change the state of it only if it wasn't loaded yet
+        if (priceLoadedOnce) return;
+
+        setPriceLoadedOnce(!priceLoading)
+        //eslint-disable-next-line
+    }, [priceLoading]);
+
     return (
         <Box
             key={asset.denom}
@@ -359,12 +369,12 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
 
                 <HStack gap={4}>
                     <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
-                        <Skeleton asChild loading={priceLoading}>
+                        <Skeleton asChild loading={!priceLoadedOnce}>
                             <Text fontWeight="medium" fontSize="md">
                                 ${formattedPrice}
                             </Text>
                         </Skeleton>
-                        <Skeleton asChild loading={priceLoading}>
+                        <Skeleton asChild loading={!priceLoadedOnce}>
                             <HStack gap={1} justify="flex-end">
                                 {renderChangeArrow}
                                 {renderChangeText}
