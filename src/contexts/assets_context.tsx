@@ -1,7 +1,7 @@
 'use client';
 
 import {createContext, useState, ReactNode, useEffect, useCallback} from 'react';
-import {Asset, ChainAssets, IBCData} from '@/types/asset';
+import {Asset, ChainAssets, IBCData, LP_ASSETS_DECIMALS} from '@/types/asset';
 import {getChainAssets} from "@/service/assets_factory";
 import {Market, MarketData} from '@/types/market';
 import {createMarketId} from "@/utils/market";
@@ -18,7 +18,7 @@ import {getBZEUSDPrice} from "@/query/prices";
 import {EpochInfoSDKType} from "@bze/bzejs/bze/epochs/epoch";
 import {getEpochsInfo} from "@/query/epoch";
 import {CONNECTION_TYPE_NONE, ConnectionType} from "@/types/settings";
-import {toBigNumber, uAmountToAmount, uPriceToBigNumberPrice} from "@/utils/amount";
+import {toBigNumber, uAmountToAmount, uAmountToBigNumberAmount, uPriceToBigNumberPrice} from "@/utils/amount";
 import {isLpDenom} from "@/utils/denom";
 import {addDebounce} from "@/utils/debounce";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
@@ -178,8 +178,14 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         pricesMap.set(bzeDenom, bzeUsdPrice)
 
         const existingAssets = Array.from(assetsMap.values())
+        const lpDenoms = [];
         for (const asset of existingAssets) {
-            if (asset.denom === bzeDenom || asset.denom === usdcDenom || isLpDenom(asset.denom)) continue
+            if (asset.denom === bzeDenom || asset.denom === usdcDenom) continue
+
+            if (isLpDenom(asset.denom)) {
+                lpDenoms.push(asset.denom)
+                continue
+            }
 
             const [priceInUsd, priceInBze] = await Promise.all([getLastPrice(asset, usdcAsset), getLastPrice(asset, bzeAsset)])
             if (!priceInBze.gt(0)) {
@@ -199,9 +205,32 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             pricesMap.set(asset.denom, priceInUsd.plus(priceInUsdFromBze).dividedBy(2))
         }
 
+        if (lpDenoms.length > 0 && poolsMap.size > 0) {
+            lpDenoms.forEach(denom => {
+                const denomAsset = assetsMap.get(denom)
+                if (!denomAsset) return;
+
+                const pool = poolsMap.get(denom.replace("ulp_", ""))
+                if (!pool) return;
+
+                const basePrice = pricesMap.get(pool.base) || toBigNumber(0)
+                const quotePrice = pricesMap.get(pool.quote) || toBigNumber(0)
+                if (basePrice.lte(0) || quotePrice.lte(0)) return;
+
+                const baseAsset = assetsMap.get(pool.base)
+                const quoteAsset = assetsMap.get(pool.quote)
+                if (!baseAsset || !quoteAsset) return;
+
+                const baseUsdValue = basePrice.multipliedBy(uAmountToBigNumberAmount(pool.reserve_base, baseAsset.decimals))
+                const quoteUsdValue = quotePrice.multipliedBy(uAmountToBigNumberAmount(pool.reserve_quote, quoteAsset.decimals))
+                const shareValue = baseUsdValue.plus(quoteUsdValue).dividedBy(uAmountToBigNumberAmount(denomAsset.supply, LP_ASSETS_DECIMALS))
+                pricesMap.set(denom, shareValue)
+            })
+        }
+
         setUsdPricesMap(pricesMap)
         setIsLoadingPrices(false)
-    }, [marketsDataMap, assetsMap, marketsMap]);
+    }, [marketsDataMap, assetsMap, marketsMap, poolsMap]);
     const doUpdateEpochs = useCallback((newEpochs: EpochInfoSDKType[]) => {
         const newMap = new Map<string, EpochInfoSDKType>();
         newEpochs.forEach(epoch => {
