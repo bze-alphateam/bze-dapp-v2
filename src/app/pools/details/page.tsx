@@ -1276,7 +1276,7 @@ const UserPosition = ({
                                     size="6"
                                     circular={true}
                                 />
-                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{uAmountToAmount(userReserveBase, baseAsset?.decimals || 0)} {baseAsset?.ticker}</Text>
+                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveBase, baseAsset?.decimals || 0))} {baseAsset?.ticker}</Text>
                             </HStack>
                             <HStack gap="2">
                                 <TokenLogo
@@ -1285,7 +1285,7 @@ const UserPosition = ({
                                     size="6"
                                     circular={true}
                                 />
-                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0)} {quoteAsset?.ticker}</Text>
+                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0))} {quoteAsset?.ticker}</Text>
                             </HStack>
                         </VStack>
                     </VStack>
