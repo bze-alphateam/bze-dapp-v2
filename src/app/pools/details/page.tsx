@@ -470,7 +470,7 @@ const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote
         const msg = removeLiquidity({
             creator: address,
             poolId: pool.id,
-            lpTokens: removeUAmount.toString(),
+            lpTokens: removeUAmount.toFixed(0),
             minBase: minBaseUAmount.toFixed(0),
             minQuote: minQuoteUAmount.toFixed(0),
         });
