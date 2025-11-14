@@ -212,8 +212,6 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setEpochs(newMap);
     }, []);
     const doUpdateLiquidityPools = useCallback((newPools: LiquidityPoolSDKType[]) => {
-        if (assetsMap.size === 0 || usdPricesMap.size === 0) return;
-
         const poolsData = new Map<string, LiquidityPoolData>()
         const poolsMap = new Map<string, LiquidityPoolSDKType>()
 
@@ -280,6 +278,11 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         addDebounce('do-update-prices', 500, doUpdatePrices)
         //eslint-disable-next-line react-hooks/exhaustive-deps
     }, [marketsMap, marketsDataMap, assetsMap]);
+
+    useEffect(() => {
+        addDebounce('do-update-lps', 500, () => {doUpdateLiquidityPools(Array.from(poolsMap.values()))})
+        //eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [assetsMap, usdPricesMap]);
 
     useEffect(() => {
         if (!address) {

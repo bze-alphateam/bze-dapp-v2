@@ -102,18 +102,18 @@ function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
                     <Text fontSize="xs" color="fg.muted" mb={1}>TVL</Text>
                     {hasUsdValue ? (
                         <Text fontSize="lg" fontWeight="semibold">
-                            ${formatUsdAmount(poolData.usdValue)}
+                            ${shortNumberFormat(poolData.usdValue)}
                         </Text>
                     ) : (
                         <VStack align={{ base: 'flex-start', sm: 'flex-end' }} gap={0.5}>
                             <Skeleton asChild loading={baseLoading}>
                                 <Text fontSize="sm" fontWeight="medium">
-                                    {prettyAmount(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals || 0))} {base?.ticker}
+                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals || 0))} {base?.ticker}
                                 </Text>
                             </Skeleton>
                             <Skeleton asChild loading={quoteLoading}>
                                 <Text fontSize="sm" fontWeight="medium">
-                                    {prettyAmount(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals || 0))} {quote?.ticker}
+                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals || 0))} {quote?.ticker}
                                 </Text>
                             </Skeleton>
                         </VStack>
