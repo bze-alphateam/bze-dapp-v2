@@ -23,7 +23,7 @@ import {createMarketId} from "@/utils/market";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {MarketSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {MarketData} from "@/types/market";
-import {prettyAmount, uPriceToBigNumberPrice} from "@/utils/amount";
+import {prettyAmount} from "@/utils/amount";
 import {useAssetPrice} from "@/hooks/usePrices";
 import BigNumber from "bignumber.js";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
@@ -42,8 +42,8 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
     const {totalUsdValue: quoteUsdValue, isUSDC: quoteIsUSDC} = useAssetPrice(market.quote)
 
     const displayPrice = useMemo(() => {
-        return uPriceToBigNumberPrice(marketData?.last_price || 0, quoteAsset?.decimals || 0, baseAsset?.decimals || 0).toString()
-    }, [baseAsset, quoteAsset, marketData])
+        return marketData?.last_price
+    }, [marketData])
 
     const displayVolume = useMemo(() => {
         return marketData?.quote_volume || 0
