@@ -468,8 +468,8 @@ export const RewardsStakingActionModal = ({
                                                         ≈ ${shortNumberFormat(estimatedDailyRewardsUsd)}
                                                     </Text>
                                                 )}
-                                                <Text fontSize="sm" color="gray.600">
-                                                    Lock period: {stakingReward?.lock || 0} days
+                                                <Text fontSize="sm" color="gray.600" _dark={{color: "gray.400"}}>
+                                                    Unlock period: {stakingReward?.lock || 0} days
                                                 </Text>
                                             </VStack>
                                         </Alert.Root>
