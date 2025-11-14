@@ -50,6 +50,7 @@ import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
 import {TradeViewChart} from "@/types/charts";
 import {getChartIntervalsLimit, getChartMinutes} from "@/utils/charts";
 import {LightweightChart} from "@/components/ui/trading/chart";
+import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {useConnectionType} from "@/hooks/useConnectionType";
 import {CONNECTION_TYPE_WS} from "@/types/settings";
 import {blockchainEventManager} from "@/service/blockchain_event_manager";
@@ -663,15 +664,22 @@ const TradingPageContent = () => {
                                 <LuArrowLeft />Markets
                             </Button>
                             <Box h="4" w="1px" bg="border" />
-                            <VStack align="start" gap={1}>
-                                <HStack>
-                                    <Text fontSize="xl" fontWeight="bold">{marketTicker}</Text>
-                                    <Badge colorPalette={(marketData?.change || 0) > 0 ? 'green' : 'red'} variant="subtle">
-                                        {marketData?.change || 0}%
-                                    </Badge>
-                                </HStack>
-                                <VStack align="start" gap={-1}>
-                                    <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
+                            <HStack gap={2}>
+                                <LPTokenLogo
+                                    baseAssetLogo={baseAsset?.logo || ''}
+                                    quoteAssetLogo={quoteAsset?.logo || ''}
+                                    baseAssetSymbol={baseAsset?.ticker || ''}
+                                    quoteAssetSymbol={quoteAsset?.ticker || ''}
+                                    size="8"
+                                />
+                                <VStack align="start" gap={0}>
+                                    <HStack gap={2}>
+                                        <Text fontSize="lg" fontWeight="bold">{marketTicker}</Text>
+                                        <Badge colorPalette={(marketData?.change || 0) > 0 ? 'green' : 'red'} variant="subtle" size="sm">
+                                            {marketData?.change || 0}%
+                                        </Badge>
+                                    </HStack>
+                                    <Text fontSize="xl" fontWeight="bold" color={priceColor}>
                                         {lastPrice} {quoteAsset?.ticker}
                                     </Text>
                                     {shouldShowUsdValues && (
@@ -680,7 +688,7 @@ const TradingPageContent = () => {
                                         </Text>
                                     )}
                                 </VStack>
-                            </VStack>
+                            </HStack>
                         </HStack>
 
                         <HStack gap={6} display={{ base: 'none', lg: 'flex' }}>
