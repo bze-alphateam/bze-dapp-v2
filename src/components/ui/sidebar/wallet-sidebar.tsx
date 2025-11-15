@@ -19,7 +19,7 @@ import {
     VStack,
 } from '@chakra-ui/react'
 import {LuCopy, LuExternalLink, LuX} from 'react-icons/lu'
-import {useCallback, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {getChainExplorerURL, getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
@@ -42,6 +42,7 @@ type ViewState = 'balances' | 'send'
 
 interface BalanceItemProps {
     asset: AssetBalance;
+    onClick: () => void;
 }
 
 const validateAmount = (amount: string, coin: AssetBalance|undefined, onError:(msg: string) => void) => {
@@ -62,7 +63,8 @@ const validateAmount = (amount: string, coin: AssetBalance|undefined, onError:(m
     }
 }
 
-const BalanceItem = ({asset}: BalanceItemProps) => {
+const BalanceItem = ({asset, onClick}: BalanceItemProps) => {
+    const [showSendButton, setShowSendButton] = useState(false)
     const formattedBalanceAmount = useMemo(() => {
         return prettyAmount(uAmountToBigNumberAmount(asset.amount, asset.decimals ?? 0))
     }, [asset.amount, asset.decimals])
@@ -78,11 +80,12 @@ const BalanceItem = ({asset}: BalanceItemProps) => {
             borderRadius="md"
             borderWidth="1px"
             _hover={{ bg: 'bg.muted' }}
-            cursor="pointer"
             transition="background-color 0.2s"
+            onMouseLeave={() => setShowSendButton(false)}
+            onMouseEnter={() => setShowSendButton(true)}
         >
-            <HStack justify="space-between" mb="1">
-                <HStack gap="2">
+            <HStack justify="space-between" mb="2">
+                <HStack>
                     <Image
                         src={asset.logo}
                         alt={asset.ticker}
@@ -102,6 +105,11 @@ const BalanceItem = ({asset}: BalanceItemProps) => {
                         </Badge>
                     )}
                 </HStack>
+                {showSendButton && (
+                    <HStack justify="end">
+                        <Button size='2xs' variant={'outline'} onClick={onClick}>Send</Button>
+                    </HStack>
+                )}
             </HStack>
             <HStack justify="space-between">
                 <Text fontSize="sm" fontFamily="mono">
@@ -115,7 +123,7 @@ const BalanceItem = ({asset}: BalanceItemProps) => {
     )
 }
 
-const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () => void}) => {
+const SendForm = ({balances, onClose, selectedTicker}: {balances: AssetBalance[], onClose: () => void, selectedTicker: string}) => {
     // Send form state
     const [isLoading, setIsLoading] = useState(false)
     const [selectedCoin, setSelectedCoin] = useState<AssetBalance|undefined>()
@@ -241,6 +249,12 @@ const SendForm = ({balances, onClose}: {balances: AssetBalance[], onClose: () =>
             setMemoError('')
         }
     }, [])
+
+    useEffect(() => {
+        if (selectedTicker !== '') {
+            onCoinSelectChange(selectedTicker)
+        }
+    }, [onCoinSelectChange, selectedTicker])
 
     return (
         <VStack gap="4" align="stretch">
@@ -411,6 +425,7 @@ export const WalletSidebarContent = () => {
     const [viewState, setViewState] = useState<ViewState>('balances')
     const [isDisconnecting, setIsDisconnecting] = useState(false)
     const [showCopiedTooltip, setShowCopiedTooltip] = useState(false)
+    const [clickedBalance, setClickedBalance] = useState('')
     const copyButtonRef = useRef<HTMLButtonElement>(null)
 
     const {
@@ -468,9 +483,15 @@ export const WalletSidebarContent = () => {
         setTimeout(() => setShowCopiedTooltip(false), 2000)
     }
 
-    const handleCancel = () => {
+    const handleCancel = useCallback(() => {
         setViewState('balances')
-    }
+        setClickedBalance('')
+    }, [])
+
+    const onBalanceClick = useCallback((ticker: string) => {
+        setClickedBalance(ticker)
+        setViewState('send')
+    }, [])
 
     const handleDisconnectAll = async () => {
         setIsDisconnecting(true)
@@ -510,7 +531,7 @@ export const WalletSidebarContent = () => {
                 </Text>
                 <VStack gap="2" align="stretch">
                     {sortedBalances.map((bal) => (
-                        <BalanceItem key={bal.denom} asset={bal} />
+                        <BalanceItem key={bal.denom} asset={bal} onClick={() => onBalanceClick(bal.ticker)}/>
                     ))}
                 </VStack>
             </Box>
@@ -654,7 +675,7 @@ export const WalletSidebarContent = () => {
 
             {/* Dynamic Content Based on View State */}
             {status === WalletState.Connected && viewState === 'balances' && renderBalancesView()}
-            {status === WalletState.Connected && viewState === 'send' && <SendForm balances={sortedBalances} onClose={handleCancel} />}
+            {status === WalletState.Connected && viewState === 'send' && <SendForm balances={sortedBalances} onClose={handleCancel} selectedTicker={clickedBalance}/>}
         </VStack>
     )
 }
