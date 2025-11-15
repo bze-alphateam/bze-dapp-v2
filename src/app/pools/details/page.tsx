@@ -78,7 +78,7 @@ const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: stri
             </HStack>
             <VStack align="center" gap="1">
                 <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">{prettyAmount(amount)}</Text>
-                {usdValue.gt(0) && (<Text fontSize="sm" color="fg.muted">{prettyAmount(usdValue)}</Text>)}
+                {usdValue.gt(0) && (<Text fontSize="sm" color="fg.muted">${prettyAmount(usdValue)}</Text>)}
             </VStack>
         </VStack>
     </VStack>

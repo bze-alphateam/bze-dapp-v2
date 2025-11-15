@@ -24,6 +24,7 @@ import {addDebounce} from "@/utils/debounce";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {LiquidityPoolData} from "@/types/liquidity_pool";
 import {getLiquidityPools} from "@/query/liquidity_pools";
+import {calculatePoolPrice, createPoolId, poolIdFromPoolDenom} from "@/utils/liquidity_pool";
 
 export interface AssetsContextType {
     //assets
@@ -136,6 +137,16 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         if (assetsMap.size === 0 || marketsMap.size === 0 || !marketsDataMap) return;
         setIsLoadingPrices(true)
         const getLastPrice = async (base: Asset, quote: Asset, fallback?: () => Promise<number>): Promise<BigNumber> => {
+            const lpId = createPoolId(base.denom, quote.denom)
+            const lp = poolsMap.get(lpId)
+            if (lp) {
+                //this should never be null but just in case
+                const lpPrice = calculatePoolPrice(base.denom, lp)
+                if (lpPrice) {
+                    return uPriceToBigNumberPrice(lpPrice, quote.decimals, base.decimals)
+                }
+            }
+
             const marketId = createMarketId(base.denom, quote.denom)
             //try to get price from the market data, using the last_price field (it only shows last 24h price)
             const mData = marketsDataMap.get(marketId)
@@ -210,7 +221,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
                 const denomAsset = assetsMap.get(denom)
                 if (!denomAsset) return;
 
-                const pool = poolsMap.get(denom.replace("ulp_", ""))
+                const pool = poolsMap.get(poolIdFromPoolDenom(denom))
                 if (!pool) return;
 
                 const basePrice = pricesMap.get(pool.base) || toBigNumber(0)
