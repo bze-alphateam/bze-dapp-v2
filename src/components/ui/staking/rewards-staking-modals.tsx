@@ -14,7 +14,7 @@ import {
     Text,
     VStack,
 } from "@chakra-ui/react";
-import {LuGift, LuLock, LuLockOpen, LuTrendingUp, LuPercent} from "react-icons/lu";
+import {LuGift, LuLockOpen, LuTrendingUp, LuPercent} from "react-icons/lu";
 import React, {useCallback, useMemo, useState} from "react";
 import {StakingRewardParticipantSDKType, StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {useAsset, useAssets} from "@/hooks/useAssets";
@@ -32,9 +32,14 @@ import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {useToast} from "@/hooks/useToast";
-import {RewardsStakingUnlockAlerts} from "@/components/ui/staking/rewards-staking-alerts";
+import {
+    RewardsStakingUnlockAlerts,
+    RewardStakingAlert, TYPE_BALANCE, TYPE_REWARDS,
+    TYPE_STAKING, TYPE_UNLOCK
+} from "@/components/ui/staking/rewards-staking-alerts";
 import {PrettyBalance} from "@/types/balance";
 import { EncodeObject } from "interchainjs/types";
+import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
 
 const MODAL_TYPE_ACTIONS = 'actions';
 const MODAL_TYPE_STAKE = 'stake';
@@ -354,64 +359,11 @@ export const RewardsStakingActionModal = ({
                             <VStack gap="4">
                                 <Text color="fg.muted">{'Stake your tokens and receive daily rewards.'}</Text>
                                 {hasUserStake && (
-                                    <Box
-                                        w="full"
-                                        bgGradient="to-br"
-                                        gradientFrom="blue.500/15"
-                                        gradientTo="blue.600/15"
-                                        borderWidth="1px"
-                                        borderColor="blue.500/30"
-                                        borderRadius="md"
-                                        p="3"
-                                    >
-                                        <VStack align="start" gap="0.5">
-                                            <HStack gap="1" color="blue.600">
-                                                <LuPercent size={12} />
-                                                <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Your Stake</Text>
-                                            </HStack>
-                                            <Text fontWeight="bold" fontSize="lg">{yourStake}</Text>
-                                        </VStack>
-                                    </Box>
+                                    <RewardStakingAlert type={TYPE_STAKING} text={yourStake} />
                                 )}
-
-                                <Box
-                                    bgGradient="to-br"
-                                    gradientFrom="blue.500/15"
-                                    gradientTo="blue.600/15"
-                                    borderWidth="1px"
-                                    borderColor="blue.500/30"
-                                    borderRadius="md"
-                                    p="3"
-                                    w='full'
-                                >
-                                    <VStack align="start" gap="0.5">
-                                        <HStack gap="1" color="blue.600">
-                                            <LuLock size={12} />
-                                            <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Balance</Text>
-                                        </HStack>
-                                        <Text fontWeight="bold" fontSize="lg">{userStakingAssetPrettyBalance}</Text>
-                                    </VStack>
-                                </Box>
-
+                                <RewardStakingAlert type={TYPE_BALANCE} text={userStakingAssetPrettyBalance} />
                                 {hasUserStake && (
-                                    <Box
-                                        bgGradient="to-br"
-                                        gradientFrom="purple.500/15"
-                                        gradientTo="purple.600/15"
-                                        borderWidth="1px"
-                                        borderColor="purple.500/30"
-                                        borderRadius="md"
-                                        p="3"
-                                        w='full'
-                                    >
-                                        <VStack align="start" gap="0.5">
-                                            <HStack gap="1" color="purple.600">
-                                                <LuGift size={12} />
-                                                <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Rewards</Text>
-                                            </HStack>
-                                            <Text fontWeight="bold" fontSize="lg">{pendingRewards}</Text>
-                                        </VStack>
-                                    </Box>
+                                    <RewardStakingAlert type={TYPE_REWARDS} text={pendingRewards} />
                                 )}
 
                                 <RewardsStakingUnlockAlerts userUnlocking={userUnlocking}
@@ -419,43 +371,29 @@ export const RewardsStakingActionModal = ({
                                                             decimals={stakingAsset?.decimals || 0}/>
 
                                 <Stack direction={{base: 'column', sm: 'row'}} width="full" gap="3">
-                                    <Button
-                                        flex="1"
-                                        colorPalette="blue"
+                                    <RewardsStakingButton
+                                        buttonType={TYPE_STAKING}
                                         variant='outline'
                                         onClick={() => openModal('stake')}
                                     >
-                                        <HStack gap="2">
-                                            <LuLock size={16}/>
-                                            <Text>Stake</Text>
-                                        </HStack>
-                                    </Button>
+                                        <Text>Stake</Text>
+                                    </RewardsStakingButton>
 
-                                    <Button
-                                        flex="1"
-                                        variant="outline"
-                                        colorPalette="orange"
+                                    <RewardsStakingButton
+                                        buttonType={TYPE_UNLOCK}
                                         disabled={!hasUserStake}
                                         onClick={() => openModal('unstake')}
                                     >
-                                        <HStack gap="2">
-                                            <LuLockOpen size={16}/>
-                                            <Text>Unstake</Text>
-                                        </HStack>
-                                    </Button>
+                                        <Text>Unstake</Text>
+                                    </RewardsStakingButton>
 
-                                    <Button
-                                        flex="1"
-                                        colorPalette="purple"
-                                        variant="outline"
+                                    <RewardsStakingButton
+                                        buttonType={TYPE_REWARDS}
                                         disabled={!hasPendingRewards}
                                         onClick={() => openModal('claim')}
                                     >
-                                        <HStack gap="2">
-                                            <LuGift size={16}/>
-                                            <Text>Claim</Text>
-                                        </HStack>
-                                    </Button>
+                                        <Text>Claim</Text>
+                                    </RewardsStakingButton>
                                 </Stack>
                             </VStack>
                         )}
@@ -541,18 +479,15 @@ export const RewardsStakingActionModal = ({
                                     </VStack>
                                 )}
 
-                                <Button
-                                    colorPalette="blue"
-                                    variant='outline'
-                                    width="full"
+                                <RewardsStakingButton
+                                    buttonType={TYPE_STAKING}
                                     disabled={!stakeAmount || stakingAssetBalance.amount.isZero()}
                                     loading={isSubmitting}
                                     loadingText={progressTrack}
                                     onClick={handleConfirmStake}
                                 >
-                                    <LuLock size={16}/>
                                     <Text>Confirm Stake</Text>
-                                </Button>
+                                </RewardsStakingButton>
                             </VStack>
                         )}
 
@@ -599,18 +534,15 @@ export const RewardsStakingActionModal = ({
                                     </VStack>
                                 </Box>
 
-                                <Button
-                                    colorPalette="red"
-                                    variant='outline'
-                                    width="full"
+                                <RewardsStakingButton
+                                    buttonType={TYPE_UNLOCK}
                                     disabled={!userStake}
                                     loading={isSubmitting}
                                     loadingText={progressTrack || 'Unstaking...'}
                                     onClick={handleUnstake}
                                 >
-                                    <LuLockOpen size={16}/>
                                     <Text>Confirm Unstake</Text>
-                                </Button>
+                                </RewardsStakingButton>
                             </VStack>
                         )}
 

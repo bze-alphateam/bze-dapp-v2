@@ -22,6 +22,13 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {useSDKTx} from "@/hooks/useTx";
 import {TokenLogo} from "@/components/ui/token_logo";
+import {
+    RewardStakingAlert,
+    TYPE_REWARDS,
+    TYPE_STAKING,
+    TYPE_UNLOCK
+} from "@/components/ui/staking/rewards-staking-alerts";
+import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
 
 interface NativeStakingCardProps {
     stakingData: NativeStakingData|undefined;
@@ -371,80 +378,49 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                     <Text color="gray.600">{'Secure the BeeZee network and earn rewards by staking your BZE coins.'}</Text>
 
                                     <Stack direction={{ base: 'column', sm: 'row' }} width="full" gap="3">
-                                        <Button
-                                            flex="1"
-                                            colorPalette="blue"
+                                        <RewardsStakingButton
+                                            buttonType={TYPE_STAKING}
                                             variant='outline'
                                             onClick={() => openExternalLink('https://staking.getbze.com')}
                                         >
                                             <HStack gap="2">
-                                                <LuLock size={16} />
                                                 <Text>Stake</Text>
                                             </HStack>
-                                        </Button>
+                                        </RewardsStakingButton>
 
-                                        <Button
-                                            flex="1"
-                                            colorPalette="orange"
-                                            variant="outline"
+                                        <RewardsStakingButton
+                                            buttonType={TYPE_UNLOCK}
                                             disabled={!hasUserStake}
                                             onClick={() => openExternalLink('https://staking.getbze.com')}
                                         >
                                             <HStack gap="2">
-                                                <LuLockOpen size={16} />
                                                 <Text>Unstake</Text>
                                             </HStack>
-                                        </Button>
+                                        </RewardsStakingButton>
 
-                                        <Button
-                                            flex="1"
-                                            colorPalette="purple"
-                                            variant='outline'
+                                        <RewardsStakingButton
+                                            buttonType={TYPE_REWARDS}
                                             disabled={!hasRewards}
                                             onClick={() => openModal('claim')}
                                         >
                                             <HStack gap="2">
-                                                <LuGift size={16} />
                                                 <Text>Claim</Text>
                                             </HStack>
-                                        </Button>
+                                        </RewardsStakingButton>
                                     </Stack>
                                 </VStack>
                             )}
 
                             {modalType === 'claim' && hasRewards && (
                                 <VStack gap="4">
-                                    <Box
-                                        bgGradient="to-br"
-                                        gradientFrom="purple.500/15"
-                                        gradientTo="purple.600/15"
-                                        borderWidth="1px"
-                                        borderColor="purple.500/30"
-                                        borderRadius="md"
-                                        p="4"
-                                        w="full"
-                                    >
-                                        <VStack align="start" gap="2">
-                                            <HStack gap="1" color="purple.600">
-                                                <LuGift size={14} />
-                                                <Text fontSize="sm" fontWeight="semibold" textTransform="uppercase">Rewards</Text>
-                                            </HStack>
-                                            <Text fontSize="lg" fontWeight="bold">
-                                                {pendingRewards}
-                                            </Text>
-                                        </VStack>
-                                    </Box>
-                                    <Button
-                                        variant='outline'
-                                        colorPalette="purple"
-                                        width="full"
-                                        loading={pendingClaim}
-                                        loadingText={"Claiming rewards..."}
+                                    <RewardStakingAlert type={TYPE_REWARDS} text={pendingRewards} />
+                                    <RewardsStakingButton
+                                        buttonType={TYPE_REWARDS}
                                         onClick={onClaimRewards}
+                                        disabled={pendingClaim}
                                     >
-                                        <LuGift size={16} />
                                         Claim Rewards
-                                    </Button>
+                                    </RewardsStakingButton>
                                 </VStack>
                             )}
                         </Card.Body>

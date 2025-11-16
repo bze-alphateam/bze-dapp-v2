@@ -13,7 +13,7 @@ import {
     VStack,
     SimpleGrid
 } from "@chakra-ui/react";
-import {LuClock, LuCoins, LuLock, LuLockOpen, LuPercent, LuShield, LuTrendingUp, LuGift} from "react-icons/lu";
+import {LuClock, LuCoins, LuLock, LuShield, LuTrendingUp} from "react-icons/lu";
 import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {useAsset} from "@/hooks/useAssets";
 import {calculateRewardsStakingApr, calculateRewardsStakingPendingRewards} from "@/utils/staking";
@@ -26,6 +26,12 @@ import BigNumber from "bignumber.js";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
 import {removeLeadingZeros} from "@/utils/strings";
+import {
+    RewardStakingAlert,
+    TYPE_REWARDS,
+    TYPE_STAKING,
+    TYPE_UNLOCK
+} from "@/components/ui/staking/rewards-staking-alerts";
 
 interface RewardsStakingBoxProps {
     stakingReward?: StakingRewardSDKType;
@@ -378,65 +384,17 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                             >
                                 {/* Your Stake */}
                                 {hasUserStake && (
-                                    <Box
-                                        bgGradient="to-br"
-                                        gradientFrom="blue.500/15"
-                                        gradientTo="blue.600/15"
-                                        borderWidth="1px"
-                                        borderColor="blue.500/30"
-                                        borderRadius="md"
-                                        p="3"
-                                    >
-                                        <VStack align="start" gap="0.5">
-                                            <HStack gap="1" color="blue.600">
-                                                <LuPercent size={12} />
-                                                <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Your Stake</Text>
-                                            </HStack>
-                                            <Text fontWeight="bold" fontSize="lg">{yourStake}</Text>
-                                        </VStack>
-                                    </Box>
+                                    <RewardStakingAlert type={TYPE_STAKING} text={yourStake} />
                                 )}
 
                                 {/* Pending Rewards */}
                                 {hasUserStake && (
-                                    <Box
-                                        bgGradient="to-br"
-                                        gradientFrom="purple.500/15"
-                                        gradientTo="purple.600/15"
-                                        borderWidth="1px"
-                                        borderColor="purple.500/30"
-                                        borderRadius="md"
-                                        p="3"
-                                    >
-                                        <VStack align="start" gap="0.5">
-                                            <HStack gap="1" color="purple.600">
-                                                <LuGift size={12} />
-                                                <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Rewards</Text>
-                                            </HStack>
-                                            <Text fontWeight="bold" fontSize="lg">{pendingRewards}</Text>
-                                        </VStack>
-                                    </Box>
+                                    <RewardStakingAlert type={TYPE_REWARDS} text={pendingRewards} />
                                 )}
 
                                 {/* Pending Unlock */}
                                 {hasUnbonding && (
-                                    <Box
-                                        bgGradient="to-br"
-                                        gradientFrom="orange.500/15"
-                                        gradientTo="orange.600/15"
-                                        borderWidth="1px"
-                                        borderColor="orange.500/30"
-                                        borderRadius="md"
-                                        p="3"
-                                    >
-                                        <VStack align="start" gap="0.5">
-                                            <HStack gap="1" color="orange.600">
-                                                <LuLockOpen size={12} />
-                                                <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase">Pending Unlock</Text>
-                                            </HStack>
-                                            <Text fontWeight="bold" fontSize="lg">{pendingUnlock}</Text>
-                                        </VStack>
-                                    </Box>
+                                    <RewardStakingAlert type={TYPE_UNLOCK} text={pendingUnlock} />
                                 )}
                             </SimpleGrid>
                         )}
