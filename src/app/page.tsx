@@ -174,7 +174,7 @@ const AssetSelector = memo(({
           </Card.Root>
         </Select.Trigger>
         <Select.Positioner>
-          <Select.Content maxH="400px" overflowY="auto">
+          <Select.Content maxH="400px" overflowY="auto" background={"bg.muted"}>
             <Box p="3" borderBottomWidth="1px">
               <Input
                   placeholder="Search assets..."
@@ -191,7 +191,7 @@ const AssetSelector = memo(({
                           key={assetOption.denom}
                           item={assetOption.denom}
                           cursor="pointer"
-                          _hover={{ bg: "bg.muted" }}
+                          _hover={{ bg: "bg.panel" }}
                       >
                         <Select.ItemText>
                           <HStack gap="3" py="2">
@@ -341,9 +341,7 @@ export default function SwapPage() {
     if (fromAsset.denom === toAsset.denom) return false;
 
     // Must have sufficient balance
-    if (hasInsufficientBalance) return false;
-
-    return true;
+    return !hasInsufficientBalance;
   }, [fromAmount, fromAsset, toAsset, hasInsufficientBalance]);
 
   const handleSwapAssets = () => {
