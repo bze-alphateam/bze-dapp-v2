@@ -431,8 +431,7 @@ const TradingPageContent = () => {
         const total = calculateTotalAmount(transformedPrice, amount, quoteAsset?.decimals || 0);
         setSellTotal(total);
         setBuyTotal(total);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [quoteAsset, baseAsset, activeOrders])
 
     //order submit functions
     const getMatchingOrders = useCallback((orderType: string, uPrice: BigNumber, uAmount: BigNumber): AggregatedOrderSDKType[] => {
@@ -668,69 +667,91 @@ const TradingPageContent = () => {
     }, [connectionType, marketId]);
 
     return (
-        <Container maxW="full" py={4}>
-            <VStack gap={4} align="stretch">
-                {/* Market Header */}
-                <Box p={4} bg="bg.panel" borderRadius="md" borderWidth="1px">
-                    <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
-                        <HStack>
-                            <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => toExchangePage()}
-                            >
-                                <LuArrowLeft />Markets
-                            </Button>
-                            <Box h="4" w="1px" bg="border" />
-                            <HStack gap={2}>
-                                <LPTokenLogo
-                                    baseAssetLogo={baseAsset?.logo || ''}
-                                    quoteAssetLogo={quoteAsset?.logo || ''}
-                                    baseAssetSymbol={baseAsset?.ticker || ''}
-                                    quoteAssetSymbol={quoteAsset?.ticker || ''}
-                                    size="8"
-                                />
-                                <VStack align="start" gap={0}>
-                                    <HStack gap={2}>
-                                        <Text fontSize="lg" fontWeight="bold">{marketTicker}</Text>
-                                        <Badge colorPalette={(marketData?.change || 0) > 0 ? 'green' : 'red'} variant="subtle" size="sm">
-                                            {marketData?.change || 0}%
-                                        </Badge>
-                                    </HStack>
-                                    <Text fontSize="xl" fontWeight="bold" color={priceColor}>
-                                        {lastPrice} {quoteAsset?.ticker}
-                                    </Text>
-                                    {shouldShowUsdValues && (
-                                        <Text fontSize="xs" color={priceColor}>
-                                            ${quoteUsdValue(marketData?.last_price)}
-                                        </Text>
-                                    )}
-                                </VStack>
-                            </HStack>
-                        </HStack>
+        <Box minH="100vh" bg="bg.subtle">
+            <Container maxW="full" py={6}>
+                <VStack gap={6} align="stretch">
+                    {/* Market Header */}
+                    <Box
+                        p={6}
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
 
-                        <HStack gap={6} display={{ base: 'none', lg: 'flex' }}>
-                            <VStack align="start" gap={0}>
-                                <Text fontSize="xs" color="fg.muted">24h Volume</Text>
-                                <Text fontSize="sm" fontWeight="medium">{dailyVolume} {quoteAsset?.ticker}</Text>
+                            <HStack gap={4}>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => toExchangePage()}
+                                    colorPalette="gray"
+                                >
+                                    <LuArrowLeft />
+                                    Markets
+                                </Button>
+                                <Box h="6" w="1px" bg="border.subtle" />
+                                <HStack gap={3}>
+                                    <LPTokenLogo
+                                        baseAssetLogo={baseAsset?.logo || ''}
+                                        quoteAssetLogo={quoteAsset?.logo || ''}
+                                        baseAssetSymbol={baseAsset?.ticker || ''}
+                                        quoteAssetSymbol={quoteAsset?.ticker || ''}
+                                        size="10"
+                                    />
+                                    <VStack align="start" gap={1}>
+                                        <HStack gap={2}>
+                                            <Text fontSize="xl" fontWeight="bold" letterSpacing="tight">
+                                                {marketTicker}
+                                            </Text>
+                                            <Badge
+                                                colorPalette={(marketData?.change || 0) >= 0 ? 'green' : 'red'}
+                                                variant="subtle"
+                                                fontSize="xs"
+                                            >
+                                                {marketData?.change || 0}%
+                                            </Badge>
+                                        </HStack>
+                                        <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
+                                            {lastPrice} {quoteAsset?.ticker}
+                                        </Text>
+                                        {shouldShowUsdValues && (
+                                            <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+                                                ${quoteUsdValue(marketData?.last_price)}
+                                            </Text>
+                                        )}
+                                    </VStack>
+                                </HStack>
+                            </HStack>
+
+                        <HStack gap={8} display={{ base: 'none', lg: 'flex' }}>
+                            <VStack align="start" gap={1}>
+                                <Text fontSize="xs" color="fg.muted" fontWeight="medium">24h Volume</Text>
+                                <Text fontSize="md" fontWeight="semibold">{dailyVolume} {quoteAsset?.ticker}</Text>
                                 {shouldShowUsdValues && (
                                     <Text fontSize="xs" color="fg.muted">
                                         ${quoteUsdValue(marketData?.quote_volume)}
                                     </Text>
                                 )}
                             </VStack>
-                            <VStack align="start" gap={0}>
-                                <Text fontSize="xs" color="fg.muted">24h High</Text>
-                                <Text fontSize="sm" fontWeight="medium">{marketData?.high || 0}</Text>
+                            <Box h="12" w="1px" bg="border.subtle" />
+                            <VStack align="start" gap={1}>
+                                <Text fontSize="xs" color="fg.muted" fontWeight="medium">24h High</Text>
+                                <Text fontSize="md" fontWeight="semibold" color="green.500">
+                                    {marketData?.high || 0}
+                                </Text>
                                 {shouldShowUsdValues && (
                                     <Text fontSize="xs" color="fg.muted">
                                         ${quoteUsdValue(marketData?.high)}
                                     </Text>
                                 )}
                             </VStack>
-                            <VStack align="start" gap={0}>
-                                <Text fontSize="xs" color="fg.muted">24h Low</Text>
-                                <Text fontSize="sm" fontWeight="medium">{marketData?.low || 0}</Text>
+                            <Box h="12" w="1px" bg="border.subtle" />
+                            <VStack align="start" gap={1}>
+                                <Text fontSize="xs" color="fg.muted" fontWeight="medium">24h Low</Text>
+                                <Text fontSize="md" fontWeight="semibold" color="red.500">
+                                    {marketData?.low || 0}
+                                </Text>
                                 {shouldShowUsdValues && (
                                     <Text fontSize="xs" color="fg.muted">
                                         ${quoteUsdValue(marketData?.low)}
@@ -742,10 +763,16 @@ const TradingPageContent = () => {
                 </Box>
 
                 {/* Main Trading Layout */}
-                <Grid templateColumns={{ base: '1fr', lg: '280px 1fr 320px' }} gap={4}>
+                <Grid templateColumns={{ base: '1fr', lg: '300px 1fr 360px' }} gap={4}>
                     {/* Left: Order Book */}
-                    <Box p={4} bg="bg.panel" borderRadius="md" borderWidth="1px">
-                        <Text fontWeight="bold" mb={3}>Order Book</Text>
+                    <Box
+                        p={5}
+                        bg="bg.panel"
+                        borderRadius="lg"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <Text fontWeight="bold" mb={4} fontSize="md">Order Book</Text>
                         <VStack gap={2} align="stretch">
                             {/* Asks */}
                             <Box>
@@ -771,15 +798,15 @@ const TradingPageContent = () => {
                             </Box>
 
                             {/* Current Price */}
-                            <Box py={2} bg="bg.muted" borderRadius="sm">
-                                <HStack justify="center">
-                                    <Text fontSize="md" fontWeight="bold" color={priceColor}>
+                            <Box py={3} bg="bg.muted" borderRadius="md" borderWidth="1px">
+                                <HStack justify="center" gap={2}>
+                                    <Text fontSize="lg" fontWeight="bold" color={priceColor}>
                                         {lastPrice}
                                     </Text>
                                     {isNegative ? (
-                                        <LuTrendingDown color="red" size={16} />
+                                        <LuTrendingDown color="red" size={18} />
                                     ) : (
-                                        <LuTrendingUp color="green" size={16} />
+                                        <LuTrendingUp color="green" size={18} />
                                     )}
                                 </HStack>
                             </Box>
@@ -806,12 +833,19 @@ const TradingPageContent = () => {
                     </Box>
 
                     {/* Center: Chart */}
-                    <VStack gap={3} align="stretch">
-                        <Box p={3} bg="bg.panel" borderRadius="md" borderWidth="1px" minH="400px">
-                            <HStack justify="space-between" mb={3}>
-                                <HStack>
-                                    <LuActivity color="gray" size={16} />
-                                    <Text fontWeight="medium" fontSize="sm">Price Chart</Text>
+                    <VStack gap={4} align="stretch">
+                        <Box
+                            p={5}
+                            bg="bg.panel"
+                            borderRadius="lg"
+                            borderWidth="1px"
+                            shadow="sm"
+                            minH="450px"
+                        >
+                            <HStack justify="space-between" mb={4}>
+                                <HStack gap={2}>
+                                    <LuActivity size={18} />
+                                    <Text fontWeight="semibold" fontSize="md">Price Chart</Text>
                                 </HStack>
                                 <HStack gap={1}>
                                     {timeframes.map((tf) => (
@@ -1225,6 +1259,7 @@ const TradingPageContent = () => {
                 </Grid>
             </VStack>
         </Container>
+        </Box>
     );
 };
 
