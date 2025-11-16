@@ -24,7 +24,6 @@ import {
     LuArrowLeftRight,
     LuSearch,
 } from 'react-icons/lu'
-import {ListingTitle} from "@/components/ui/listing/title";
 import {Asset} from "@/types/asset";
 import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
 import {isNativeDenom} from "@/utils/denom";
@@ -54,19 +53,19 @@ function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
 
     return (
         <Box
-            p={4}
-            bg="bg.surface"
+            p={3}
+            bg="bg.emphasized"
             borderWidth="1px"
-            borderColor="border.subtle"
-            borderRadius="lg"
+            borderColor="border"
+            borderRadius="md"
             cursor="pointer"
             onClick={() => toLpPage(pool.id)}
             transition="all 0.2s"
             _hover={{
                 bg: "bg.muted",
                 borderColor: "border.emphasized",
-                transform: "translateY(-2px)",
-                shadow: "md"
+                transform: "translateY(-1px)",
+                shadow: "sm"
             }}
         >
             <Flex
@@ -132,19 +131,19 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
 
     return (
         <Box
-            p={4}
-            bg="bg.surface"
+            p={3}
+            bg="bg.emphasized"
             borderWidth="1px"
-            borderColor="border.subtle"
-            borderRadius="lg"
+            borderColor="border"
+            borderRadius="md"
             cursor="pointer"
             onClick={() => toMarketPage(base?.denom ?? "", quote?.denom ?? "")}
             transition="all 0.2s"
             _hover={{
                 bg: "bg.muted",
                 borderColor: "border.emphasized",
-                transform: "translateY(-2px)",
-                shadow: "md"
+                transform: "translateY(-1px)",
+                shadow: "sm"
             }}
         >
             <Flex
@@ -319,12 +318,13 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
     return (
         <Box
             key={asset.denom}
-            bg="bg.surface"
+            bg="bg.panel"
             borderWidth="1px"
-            borderColor="border.subtle"
+            borderColor="border"
             borderRadius="lg"
             overflow="hidden"
             transition="all 0.2s"
+            shadow="sm"
         >
             {/* Main Asset Info */}
             <Flex
@@ -415,8 +415,9 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
             <Box
                 display={isExpanded ? 'block' : 'none'}
                 borderTopWidth="1px"
-                borderColor="border.subtle"
+                borderColor="border"
                 p={4}
+                bg="bg.subtle"
                 style={{
                     transition: 'max-height 0.3s ease-in-out',
                 }}
@@ -590,63 +591,125 @@ export default function AssetsPage() {
     }
 
     return (
-        <Container maxW="7xl" py={8}>
-            <VStack align="stretch" gap={6}>
-                {/* Header */}
-                <ListingTitle title={"Assets"} subtitle={"Explore all available tokens on the BeeZee blockchain"} />
-                {/* Stats Bar */}
-                <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap={4}>
-                    <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
-                        <Text color="fg.muted" fontSize="sm">Total Assets</Text>
-                        <Skeleton asChild loading={isLoading}>
-                            <Text fontSize="2xl" fontWeight="bold">{assetsLpExcluded.length}</Text>
-                        </Skeleton>
-                    </Box>
-                    <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
-                        <Text color="fg.muted" fontSize="sm">Native</Text>
-                        <Skeleton asChild loading={isLoading}>
-                            <Text fontSize="2xl" fontWeight="bold">
-                                {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_NATIVE).length}
-                            </Text>
-                        </Skeleton>
-                    </Box>
-                    <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
-                        <Text color="fg.muted" fontSize="sm">Factory</Text>
-                        <Skeleton asChild loading={isLoading}>
-                            <Text fontSize="2xl" fontWeight="bold">
-                                {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_FACTORY).length}
-                            </Text>
-                        </Skeleton>
-                    </Box>
-                    <Box p={4} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.subtle">
-                        <Text color="fg.muted" fontSize="sm">IBC</Text>
-                        <Skeleton asChild loading={isLoading}>
-                            <Text fontSize="2xl" fontWeight="bold">
-                                {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_IBC).length}
-                            </Text>
-                        </Skeleton>
-                    </Box>
-                </Grid>
+        <Box minH="100vh" bg="bg.subtle">
+            <Container maxW="7xl" py={12}>
+                <VStack align="stretch" gap="8">
+                    {/* Page Header */}
+                    <VStack gap={3} align="center" mb={4}>
+                        <Text fontSize="3xl" fontWeight="bold" letterSpacing="tight">
+                            Assets
+                        </Text>
+                        <Text fontSize="md" color="fg.muted">
+                            Explore all available tokens on the BeeZee blockchain
+                        </Text>
+                    </VStack>
 
-                <Box position="relative" w="full">
-                    <Input
-                        placeholder="Search assets..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        size="lg"
-                        pl={10}
-                    />
-                    <Box position="absolute" left={3} top="50%" transform="translateY(-50%)">
-                        <LuSearch color="gray" />
+                    {/* Stats Overview */}
+                    <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap="3">
+                        <Box
+                            p={4}
+                            bg="bg.panel"
+                            borderRadius="lg"
+                            borderWidth="1px"
+                            shadow="sm"
+                        >
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    Total Assets
+                                </Text>
+                                <Skeleton asChild loading={isLoading}>
+                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                        {assetsLpExcluded.length}
+                                    </Text>
+                                </Skeleton>
+                            </VStack>
+                        </Box>
+                        <Box
+                            p={4}
+                            bg="bg.panel"
+                            borderRadius="lg"
+                            borderWidth="1px"
+                            shadow="sm"
+                        >
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    Native
+                                </Text>
+                                <Skeleton asChild loading={isLoading}>
+                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                        {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_NATIVE).length}
+                                    </Text>
+                                </Skeleton>
+                            </VStack>
+                        </Box>
+                        <Box
+                            p={4}
+                            bg="bg.panel"
+                            borderRadius="lg"
+                            borderWidth="1px"
+                            shadow="sm"
+                        >
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    Factory
+                                </Text>
+                                <Skeleton asChild loading={isLoading}>
+                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                        {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_FACTORY).length}
+                                    </Text>
+                                </Skeleton>
+                            </VStack>
+                        </Box>
+                        <Box
+                            p={4}
+                            bg="bg.panel"
+                            borderRadius="lg"
+                            borderWidth="1px"
+                            shadow="sm"
+                        >
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    IBC
+                                </Text>
+                                <Skeleton asChild loading={isLoading}>
+                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                        {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_IBC).length}
+                                    </Text>
+                                </Skeleton>
+                            </VStack>
+                        </Box>
+                    </Grid>
+
+                    {/* Search Section */}
+                    <Box
+                        p={6}
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <Box position="relative" w="full" maxW="500px">
+                            <Input
+                                placeholder="Search assets..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                size="lg"
+                                pl="12"
+                                borderRadius="lg"
+                            />
+                            <Box position="absolute" left="4" top="50%" transform="translateY(-50%)" color="fg.muted">
+                                <LuSearch size={20} />
+                            </Box>
+                        </Box>
                     </Box>
-                </Box>
-                {/* Assets List */}
-                <VStack align="stretch" gap={3}>
-                    {filteredAssets().map(asset =>
-                        <AssetItem asset={asset} isExpanded={expandedAsset === asset.denom} key={asset.denom} toggleExpanded={toggleExpanded} pools={pools}/>
-                    )}
+                    {/* Assets List */}
+                    <VStack align="stretch" gap={3}>
+                        {filteredAssets().map(asset =>
+                            <AssetItem asset={asset} isExpanded={expandedAsset === asset.denom} key={asset.denom} toggleExpanded={toggleExpanded} pools={pools}/>
+                        )}
+                    </VStack>
                 </VStack>
-            </VStack>
-        </Container>
+            </Container>
+        </Box>
     )
 }
