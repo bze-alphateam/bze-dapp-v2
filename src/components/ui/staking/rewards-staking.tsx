@@ -272,7 +272,7 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
 
                         {/* APR Box - Far Right */}
                         {calculatedApr !== '' && (
-                            <Box flexShrink="0">
+                            <Box flexShrink="0" display={{base: 'none', md: 'flex'}}>
                                 <Box
                                     bgGradient="to-br"
                                     gradientFrom="green.500/15"
@@ -283,6 +283,7 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                     px={{base: '3', md: '4'}}
                                     py="2.5"
                                     minW={{base: '90px', md: '110px'}}
+                                    flex="1"
                                 >
                                     <VStack gap="0.5" align="center">
                                         <HStack gap="1" color="green.600">
@@ -295,6 +296,29 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                             </Box>
                         )}
                     </HStack>
+                    <Box display={{base: 'flex', md: 'none'}}>
+                        {calculatedApr !== '' && (
+                            <Box
+                                bgGradient="to-br"
+                                gradientFrom="green.500/15"
+                                gradientTo="green.600/15"
+                                borderWidth="1px"
+                                borderColor="green.500/30"
+                                borderRadius="lg"
+                                px={{base: '3', md: '4'}}
+                                py="2.5"
+                                w="full"
+                            >
+                                <VStack gap="0.5" align="center">
+                                    <HStack gap="1" color="green.600">
+                                        <LuTrendingUp size={12} />
+                                        <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">APR</Text>
+                                    </HStack>
+                                    <Text fontWeight="bold" fontSize={{base: 'lg', md: 'xl'}} color="green.600" lineHeight="1">{calculatedApr}</Text>
+                                </VStack>
+                            </Box>
+                        )}
+                    </Box>
                 </Card.Header>
 
                 {/* Remaining Days as separator */}
@@ -337,10 +361,10 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                                     quoteAssetLogo={stakingQuoteAsset.logo}
                                                     baseAssetSymbol={stakingBaseAsset.ticker}
                                                     quoteAssetSymbol={stakingQuoteAsset.ticker}
-                                                    size="6"
+                                                    size="8"
                                                 />
                                             ) : (
-                                                <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''} size="6"/>
+                                                <TokenLogo src={stakingAsset?.logo} symbol={stakingAsset?.ticker ?? ''} size="8"/>
                                             )}
                                         </Box>
                                         <VStack align="center" gap="0">
@@ -357,10 +381,10 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                                     quoteAssetLogo={prizeQuoteAsset.logo}
                                                     baseAssetSymbol={prizeBaseAsset.ticker}
                                                     quoteAssetSymbol={prizeQuoteAsset.ticker}
-                                                    size="6"
+                                                    size="8"
                                                 />
                                             ) : (
-                                                <TokenLogo src={prizeAsset?.logo} symbol={prizeAsset?.ticker ?? ''} size="6"/>
+                                                <TokenLogo src={prizeAsset?.logo} symbol={prizeAsset?.ticker ?? ''} size="8"/>
                                             )}
                                         </Box>
                                         <VStack align="center" gap="0">

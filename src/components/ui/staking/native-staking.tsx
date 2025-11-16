@@ -153,7 +153,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                         </HStack>
 
                         {/* APR Box - Far Right */}
-                        <Box flexShrink="0">
+                        <Box flexShrink="0" display={{base: 'none', md: 'flex'}}>
                             <Box
                                 bgGradient="to-br"
                                 gradientFrom="green.500/15"
@@ -175,6 +175,27 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                             </Box>
                         </Box>
                     </HStack>
+                    <Box flexShrink="0" display={{base: 'flex', md: 'none'}}>
+                        <Box
+                            bgGradient="to-br"
+                            gradientFrom="green.500/15"
+                            gradientTo="green.600/15"
+                            borderWidth="1px"
+                            borderColor="green.500/30"
+                            borderRadius="lg"
+                            px={{base: '3', md: '4'}}
+                            py="2.5"
+                            w="full"
+                        >
+                            <VStack gap="0.5" align="center">
+                                <HStack gap="1" color="green.600">
+                                    <LuTrendingUp size={12} />
+                                    <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">APR</Text>
+                                </HStack>
+                                <Text fontWeight="bold" fontSize={{base: 'lg', md: 'xl'}} color="green.600" lineHeight="1">≈{stakingData?.averageApr}%</Text>
+                            </VStack>
+                        </Box>
+                    </Box>
                 </Card.Header>
 
                 {/* Perpetual indicator as separator */}
@@ -200,7 +221,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                 <HStack gap={{base: '3', md: '4'}} justify="center" flexWrap="wrap">
                                     <VStack gap="1" align="center">
                                         <Box p="1.5" bg="bg.panel" borderRadius="md" borderWidth="1px">
-                                            <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''} size="6"/>
+                                            <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''} size="8"/>
                                         </Box>
                                         <VStack align="center" gap="0">
                                             <Text fontSize="xs" color="fg.muted">Stake</Text>
@@ -210,7 +231,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                     <Box color="fg.muted" fontSize="xl" display="flex" alignItems="center">→</Box>
                                     <VStack gap="1" align="center">
                                         <Box p="1.5" bg="bg.panel" borderRadius="md" borderWidth="1px">
-                                            <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''} size="6"/>
+                                            <TokenLogo src={'/images/bze_alternative_512x512.png'} symbol={nativeAsset?.ticker ?? ''} size="8"/>
                                         </Box>
                                         <VStack align="center" gap="0">
                                             <Text fontSize="xs" color="fg.muted">Earn</Text>
