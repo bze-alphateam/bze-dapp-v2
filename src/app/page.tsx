@@ -26,12 +26,14 @@ import {
   LuChevronUp,
   LuArrowRight, LuInfo,
 } from 'react-icons/lu';
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useEffect } from 'react';
 import {TokenLogo} from "@/components/ui/token_logo";
 import { useAssets } from '@/hooks/useAssets';
 import { useBalances } from '@/hooks/useBalances';
+import { useLiquidityPools } from '@/hooks/useLiquidityPools';
 import {prettyAmount, uAmountToBigNumberAmount} from '@/utils/amount';
 import BigNumber from 'bignumber.js';
+import { ammRouter } from '@/service/amm_router';
 
 interface Route {
   type: 'LP' | 'OrderBook';
@@ -243,6 +245,14 @@ AssetSelector.displayName = 'AssetSelector';
 export default function SwapPage() {
   const { assetsLpExcluded } = useAssets();
   const { getBalanceByDenom } = useBalances();
+  const { pools } = useLiquidityPools();
+
+  // Update AMM router whenever pools change
+  useEffect(() => {
+    if (pools && pools.length > 0) {
+      ammRouter.updatePools(pools);
+    }
+  }, [pools]);
 
   // Get assets with balance information for display
   const assetsWithBalanceInfo = useMemo(() => {
@@ -318,6 +328,23 @@ export default function SwapPage() {
     if (amount.isNaN() || amount.lte(0)) return false;
     return amount.gt(fromAsset.balance);
   }, [fromAsset, fromAmount]);
+
+  // Determine if swap can be submitted
+  const canSubmit = useMemo(() => {
+    // Must have valid amount
+    if (!fromAmount) return false;
+    const amount = parseFloat(fromAmount);
+    if (isNaN(amount) || amount <= 0) return false;
+
+    // Must have selected different assets
+    if (!fromAsset || !toAsset) return false;
+    if (fromAsset.denom === toAsset.denom) return false;
+
+    // Must have sufficient balance
+    if (hasInsufficientBalance) return false;
+
+    return true;
+  }, [fromAmount, fromAsset, toAsset, hasInsufficientBalance]);
 
   const handleSwapAssets = () => {
     const temp = fromAsset;
@@ -600,7 +627,7 @@ export default function SwapPage() {
                 {/* Swap Button */}
                 <Button
                     size="lg"
-                    disabled={!fromAmount || parseFloat(fromAmount) <= 0}
+                    disabled={!canSubmit}
                     mt="2"
                 >
                   {!fromAmount ? 'Enter Amount' : 'Swap'}
