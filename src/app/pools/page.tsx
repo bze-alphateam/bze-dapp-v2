@@ -10,14 +10,12 @@ import {
     VStack,
     Text,
     Button,
-    Flex,
     Badge,
     NativeSelectRoot,
-    NativeSelectField,
+    NativeSelectField, Spacer,
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {ListingTitle} from "@/components/ui/listing/title";
 import {useLiquidityPools} from "@/hooks/useLiquidityPools";
 import {useNavigation} from "@/hooks/useNavigation";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
@@ -52,72 +50,100 @@ const DesktopLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquid
     const totalLiquidity = useMemo(() => toBigNumber(poolData?.usdValue || 0), [poolData])
     const apr = useMemo(() => parseFloat(poolData?.apr || '0'), [poolData])
 
-    return (<Box
-        key={pool.id}
-        as="tr"
-        cursor="pointer"
-        onClick={() => toLpPage(pool.id)}
-        _hover={{ bg: "bg.muted" }}
-        transition="background-color 0.2s"
-        borderRadius="lg"
-    >
-        <Box as="td" p={4}>
-            <HStack gap={3}>
-                <LPTokenLogo
-                    baseAssetLogo={baseAsset?.logo || ''}
-                    quoteAssetLogo={quoteAsset?.logo || ''}
-                    baseAssetSymbol={baseAsset?.ticker || ''}
-                    quoteAssetSymbol={quoteAsset?.ticker || ''}
-                    size="8"
-                />
-                <VStack gap={0} align="start">
-                    <Text fontWeight="600" fontSize="md">
-                        {baseAsset?.ticker}/{quoteAsset?.ticker}
-                    </Text>
-                    <Text fontSize="sm" color="fg.muted">
-                        {baseAsset?.ticker}-{quoteAsset?.ticker} LP
-                    </Text>
-                </VStack>
-            </HStack>
-        </Box>
-        {isUserPool && (
-            <Box as="td" p={4}>
-                <Text fontWeight="600" fontSize="md" color="colorPalette.600">
-                    ${shortNumberFormat(userPoolData.userLiquidityUsd)}
+    return (
+        <Box
+            key={pool.id}
+            as="tr"
+            cursor="pointer"
+            onClick={() => toLpPage(pool.id)}
+            _hover={{ bg: "bg.muted" }}
+            transition="all 0.2s"
+            borderRadius="lg"
+        >
+            <Box as="td" p={3}>
+                <HStack gap={3}>
+                    <LPTokenLogo
+                        baseAssetLogo={baseAsset?.logo || ''}
+                        quoteAssetLogo={quoteAsset?.logo || ''}
+                        baseAssetSymbol={baseAsset?.ticker || ''}
+                        quoteAssetSymbol={quoteAsset?.ticker || ''}
+                        size="10"
+                    />
+                    <VStack gap={0} align="start">
+                        <Text fontWeight="700" fontSize="md">
+                            {baseAsset?.ticker}/{quoteAsset?.ticker}
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted" fontWeight="medium">
+                            {baseAsset?.ticker}-{quoteAsset?.ticker} LP
+                        </Text>
+                    </VStack>
+                </HStack>
+            </Box>
+            {isUserPool && (
+                <Box as="td" p={3}>
+                    <Box
+                        display="inline-block"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/15"
+                        gradientTo="blue.600/15"
+                        borderWidth="1px"
+                        borderColor="blue.500/30"
+                        borderRadius="md"
+                        px="3"
+                        py="1.5"
+                    >
+                        <Text fontWeight="700" fontSize="sm" color="blue.600">
+                            ${shortNumberFormat(userPoolData.userLiquidityUsd)}
+                        </Text>
+                    </Box>
+                </Box>
+            )}
+            <Box as="td" p={3}>
+                <Text fontWeight="600" fontSize="md">
+                    ${shortNumberFormat(volume24h)}
                 </Text>
             </Box>
-        )}
-        <Box as="td" p={4}>
-            <Text fontWeight="600" fontSize="md">
-                ${shortNumberFormat(volume24h)}
-            </Text>
+            <Box as="td" p={3}>
+                <Text fontWeight="600" fontSize="md">
+                    ${shortNumberFormat(totalLiquidity)}
+                </Text>
+            </Box>
+            <Box as="td" p={3}>
+                <Box
+                    display="inline-block"
+                    bgGradient="to-br"
+                    gradientFrom={apr > 15 ? 'green.500/15' : apr > 10 ? 'yellow.500/15' : 'blue.500/15'}
+                    gradientTo={apr > 15 ? 'green.600/15' : apr > 10 ? 'yellow.600/15' : 'blue.600/15'}
+                    borderWidth="1px"
+                    borderColor={apr > 15 ? 'green.500/30' : apr > 10 ? 'yellow.500/30' : 'blue.500/30'}
+                    borderRadius="md"
+                    px="3"
+                    py="1.5"
+                >
+                    <Text
+                        fontWeight="700"
+                        fontSize="sm"
+                        color={apr > 15 ? 'green.600' : apr > 10 ? 'yellow.700' : 'blue.600'}
+                    >
+                        {apr.toFixed(2)}%
+                    </Text>
+                </Box>
+            </Box>
+            <Box as="td" p={3}>
+                <Button
+                    size="sm"
+                    variant={isUserPool ? "solid" : "outline"}
+                    colorPalette={isUserPool ? "blue" : "gray"}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        toLpPage(pool.id)
+                    }}
+                >
+                    {isUserPool ? "Manage" : "View"}
+                </Button>
+            </Box>
         </Box>
-        <Box as="td" p={4}>
-            <Text fontWeight="600" fontSize="md">
-                ${shortNumberFormat(totalLiquidity)}
-            </Text>
-        </Box>
-        <Box as="td" p={4}>
-            <Badge
-                colorPalette={apr > 15 ? 'green' : apr > 10 ? 'yellow' : 'blue'}
-                size="sm"
-            >
-                {apr}%
-            </Badge>
-        </Box>
-        <Box as="td" p={4}>
-            <Button
-                size="sm"
-                variant="outline"
-                onClick={(e) => {
-                    e.stopPropagation()
-                    toLpPage(pool.id)
-                }}
-            >
-                {isUserPool ? "Manage Pool" : "View Pool"}
-            </Button>
-        </Box>
-    </Box>)
+    )
 }
 
 const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: LiquidityPoolCardProps) => {
@@ -136,81 +162,116 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
 
     return (
         <Box
-            bg={"bg.surface"}
+            bg="bg.panel"
             p={4}
-            borderRadius="l1"
-            border="2px solid"
-            borderColor={"border.subtle"}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor={isUserPool ? "blue.500" : "border"}
             cursor="pointer"
             onClick={() => toLpPage(pool.id)}
             _hover={{
                 bg: "bg.muted",
+                transform: "translateY(-2px)",
+                shadow: "md"
             }}
             transition="all 0.2s"
             w="full"
-            position="relative"
+            shadow="sm"
         >
             <VStack gap={3} align="stretch">
-                <HStack justify="space-between" align="center">
-                    <HStack gap={2}>
+                {/* Header */}
+                <HStack justify="space-between" align="start">
+                    <HStack gap={3} flex="1" minW="0">
                         <LPTokenLogo
                             baseAssetLogo={baseAsset?.logo || ''}
                             quoteAssetLogo={quoteAsset?.logo || ''}
                             baseAssetSymbol={baseAsset?.ticker || ''}
                             quoteAssetSymbol={quoteAsset?.ticker || ''}
-                            size="8"
+                            size="10"
                         />
-                        <VStack gap={0} align="start">
-                            <HStack>
-                                <Text fontWeight="600" fontSize="lg">
-                                    {baseAsset?.ticker}/{quoteAsset?.ticker}
-                                </Text>
-                            </HStack>
-                            <Text fontSize="sm" color="fg.muted">
+                        <VStack gap={0.5} align="start" minW="0">
+                            <Text fontWeight="700" fontSize="md">
+                                {baseAsset?.ticker}/{quoteAsset?.ticker}
+                            </Text>
+                            <Text fontSize="xs" color="fg.muted" fontWeight="medium">
                                 {baseAsset?.ticker}-{quoteAsset?.ticker} LP
                             </Text>
                         </VStack>
                     </HStack>
-                    <Badge
-                        colorPalette={apr > 15 ? 'green' : apr > 10 ? 'yellow' : 'blue'}
-                        size="lg"
+
+                    {/* APR Badge */}
+                    <Box
+                        flexShrink="0"
+                        bgGradient="to-br"
+                        gradientFrom={apr > 15 ? 'green.500/15' : apr > 10 ? 'yellow.500/15' : 'blue.500/15'}
+                        gradientTo={apr > 15 ? 'green.600/15' : apr > 10 ? 'yellow.600/15' : 'blue.600/15'}
+                        borderWidth="1px"
+                        borderColor={apr > 15 ? 'green.500/30' : apr > 10 ? 'yellow.500/30' : 'blue.500/30'}
+                        borderRadius="md"
+                        px="3"
+                        py="1.5"
                     >
-                        {apr}
-                    </Badge>
+                        <VStack gap="0" align="center">
+                            <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">APR</Text>
+                            <Text
+                                fontWeight="700"
+                                fontSize="md"
+                                color={apr > 15 ? 'green.600' : apr > 10 ? 'yellow.700' : 'blue.600'}
+                                lineHeight="1"
+                            >
+                                {apr.toFixed(2)}%
+                            </Text>
+                        </VStack>
+                    </Box>
                 </HStack>
 
+                {/* User Liquidity */}
                 {isUserPool && (
-                    <Box bg="bg.muted" p={2} borderRadius="md">
+                    <Box
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/15"
+                        gradientTo="blue.600/15"
+                        borderWidth="1px"
+                        borderColor="blue.500/30"
+                        p={3}
+                        borderRadius="md"
+                    >
                         <HStack justify="space-between">
-                            <Text fontSize="xs" color="fg.muted" fontWeight="500">
+                            <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
                                 My Liquidity
                             </Text>
-                            <Text fontWeight="600" fontSize="sm" color="blue.600">
+                            <Text fontWeight="700" fontSize="md" color="blue.600">
                                 ${shortNumberFormat(userPoolData.userLiquidityUsd)}
                             </Text>
                         </HStack>
                     </Box>
                 )}
 
-                <HStack justify="space-between">
-                    <VStack gap={1} align="start">
-                        <Text fontSize="xs" color="fg.muted" fontWeight="500">
-                            24h Volume
-                        </Text>
-                        <Text fontWeight="600" fontSize="md">
-                            ${shortNumberFormat(volume24h)}
-                        </Text>
-                    </VStack>
-                    <VStack gap={1} align="end">
-                        <Text fontSize="xs" color="fg.muted" fontWeight="500">
-                            Total Liquidity
-                        </Text>
-                        <Text fontWeight="600" fontSize="md">
-                            ${shortNumberFormat(totalLiquidity)}
-                        </Text>
-                    </VStack>
+                {/* Metrics */}
+                <HStack gap={2}>
+                    <Box flex="1" bg="bg.muted" p={2.5} borderRadius="md" borderWidth="1px">
+                        <VStack gap={0.5} align="start">
+                            <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
+                                24h Volume
+                            </Text>
+                            <Text fontWeight="700" fontSize="sm">
+                                ${shortNumberFormat(volume24h)}
+                            </Text>
+                        </VStack>
+                    </Box>
+                    <Box flex="1" bg="bg.muted" p={2.5} borderRadius="md" borderWidth="1px">
+                        <VStack gap={0.5} align="start">
+                            <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
+                                Total Liquidity
+                            </Text>
+                            <Text fontWeight="700" fontSize="sm">
+                                ${shortNumberFormat(totalLiquidity)}
+                            </Text>
+                        </VStack>
+                    </Box>
                 </HStack>
 
+                {/* Action Button */}
                 <Button
                     size="sm"
                     variant={isUserPool ? "solid" : "outline"}
@@ -245,6 +306,8 @@ export default function LiquidityPoolsPage() {
         { value: 'apr-desc', label: 'APR (High to Low)' },
         { value: 'apr-asc', label: 'APR (Low to High)' }
     ]
+
+    const allPoolsCount = useMemo(() => pools.length, [pools])
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {
@@ -322,255 +385,344 @@ export default function LiquidityPoolsPage() {
     }, [])
 
     return (
-        <Box minH="100vh">
-            <Container maxW="7xl" py={8}>
-                <VStack gap={8} align="stretch">
-                    <ListingTitle title={"Liquidity Pools"} subtitle={"Provide liquidity to earn fees and rewards"} />
+        <Box minH="100vh" bg="bg.subtle">
+            <Container maxW="7xl" py={12}>
+                <VStack align="stretch" gap="8">
+                    {/* Page Header */}
+                    <VStack gap={3} align="center" mb={4}>
+                        <Text fontSize="3xl" fontWeight="bold" letterSpacing="tight">
+                            Liquidity Pools
+                        </Text>
+                        <Text fontSize="md" color="fg.muted">
+                            Provide liquidity to earn fees and rewards
+                        </Text>
+                    </VStack>
 
-                    <Box bg="bg.surface" p={6} borderRadius="l2" shadow="sm" w="full">
-                        <VStack gap={6} w="full">
-                            <VStack gap={4} w="full">
-                                <Box position="relative" w="full">
+                    {/* Search and Filter Section */}
+                    <Box
+                        p={6}
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <VStack gap={4} w="full">
+                            <HStack gap={4} wrap="wrap" flex={1} w="full">
+                                <Box position="relative" flex="1" minW="300px" maxW="500px">
                                     <Input
                                         placeholder="Search pools by token symbol..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         size="lg"
-                                        pl={10}
+                                        pl="12"
+                                        borderRadius="lg"
                                     />
-                                    <Box position="absolute" left={3} top="50%" transform="translateY(-50%)">
-                                        <LuSearch color="gray" />
+                                    <Box position="absolute" left="4" top="50%" transform="translateY(-50%)" color="fg.muted">
+                                        <LuSearch size={20} />
                                     </Box>
                                 </Box>
+                                <Spacer />
+                                <Badge
+                                    variant="outline"
+                                    colorPalette="gray"
+                                    fontSize="md"
+                                    px={4}
+                                    py={2}
+                                    borderRadius="lg"
+                                >
+                                    {allPoolsCount} liquidity pools
+                                </Badge>
+                            </HStack>
 
-                                {/* Mobile Sort Select */}
-                                <Box display={{ base: 'block', md: 'none' }} w="full">
-                                    <VStack gap={2} align="stretch">
-                                        <Text fontSize="sm" fontWeight="600" color="fg.muted">
-                                            Sort by:
-                                        </Text>
-                                        <NativeSelectRoot w="full">
-                                            <NativeSelectField
-                                                value={`${sortField}-${sortOrder}`}
-                                                onChange={(e) => handleMobileSort(e.target.value)}
-                                                p={3}
-                                                borderRadius="md"
-                                                border="1px solid"
-                                                borderColor="border.subtle"
-                                                bg="bg.surface"
-                                                fontSize="md"
-                                            >
-                                                {sortOptions.map((option) => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </NativeSelectField>
-                                        </NativeSelectRoot>
-                                    </VStack>
-                                </Box>
-                            </VStack>
-
-                            {/* Desktop Table View */}
-                            <Box overflowX="auto" w="full" display={{ base: 'none', md: 'block' }}>
-                                {/* User Pools Section */}
-                                {filteredAndSortedPools.userPools.length > 0 && (
-                                    <VStack gap={4} mb={8} align="stretch">
-                                        <HStack>
-                                            <LuUser />
-                                            <Heading size="lg" color="blue.600" _dark={{ color: "blue.300" }}>
-                                                My Pools ({filteredAndSortedPools.userPools.length})
-                                            </Heading>
-                                        </HStack>
-                                        <Box as="table" w="full" borderCollapse="collapse">
-                                            <Box as="thead">
-                                                <Box as="tr">
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        Pool
-                                                    </Box>
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        My Liquidity
-                                                    </Box>
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        24h Volume
-                                                    </Box>
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        Total Liquidity
-                                                    </Box>
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        APR
-                                                    </Box>
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        Action
-                                                    </Box>
-                                                </Box>
-                                            </Box>
-                                            <Box as="tbody">
-                                                {filteredAndSortedPools.userPools.map((pool) => (
-                                                    <DesktopLiquidityPoolCard
-                                                        pool={pool}
-                                                        isUserPool={true}
-                                                        key={pool.id}
-                                                        poolData={poolsData.get(pool.id)}
-                                                    />
-                                                ))}
-                                            </Box>
-                                        </Box>
-                                    </VStack>
-                                )}
-
-                                {/* All Pools Section */}
-                                {filteredAndSortedPools.otherPools.length > 0 && (
-                                    <VStack gap={4} align="stretch">
-                                        <Heading size="lg">
-                                            All Pools ({filteredAndSortedPools.otherPools.length})
-                                        </Heading>
-                                        <Box as="table" w="full" borderCollapse="collapse">
-                                            <Box as="thead">
-                                                <Box as="tr">
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        Pool
-                                                    </Box>
-                                                    <Box
-                                                        as="th"
-                                                        textAlign="left"
-                                                        p={4}
-                                                        fontSize="sm"
-                                                        fontWeight="600"
-                                                        color="fg.muted"
-                                                        cursor="pointer"
-                                                        onClick={() => handleSort('volume24h')}
-                                                        _hover={{ bg: "bg.muted" }}
-                                                        borderRadius="md"
-                                                    >
-                                                        <HStack>
-                                                            <Text>24h Volume</Text>
-                                                            <SortIcon field="volume24h" />
-                                                        </HStack>
-                                                    </Box>
-                                                    <Box
-                                                        as="th"
-                                                        textAlign="left"
-                                                        p={4}
-                                                        fontSize="sm"
-                                                        fontWeight="600"
-                                                        color="fg.muted"
-                                                        cursor="pointer"
-                                                        onClick={() => handleSort('totalLiquidity')}
-                                                        _hover={{ bg: "bg.muted" }}
-                                                        borderRadius="md"
-                                                    >
-                                                        <HStack>
-                                                            <Text>Total Liquidity</Text>
-                                                            <SortIcon field="totalLiquidity" />
-                                                        </HStack>
-                                                    </Box>
-                                                    <Box
-                                                        as="th"
-                                                        textAlign="left"
-                                                        p={4}
-                                                        fontSize="sm"
-                                                        fontWeight="600"
-                                                        color="fg.muted"
-                                                        cursor="pointer"
-                                                        onClick={() => handleSort('apr')}
-                                                        _hover={{ bg: "bg.muted" }}
-                                                        borderRadius="md"
-                                                    >
-                                                        <HStack>
-                                                            <Text>APR</Text>
-                                                            <SortIcon field="apr" />
-                                                        </HStack>
-                                                    </Box>
-                                                    <Box as="th" textAlign="left" p={4} fontSize="sm" fontWeight="600" color="fg.muted">
-                                                        Action
-                                                    </Box>
-                                                </Box>
-                                            </Box>
-                                            <Box as="tbody">
-                                                {filteredAndSortedPools.otherPools.map((pool) => (
-                                                    <DesktopLiquidityPoolCard
-                                                        key={pool.id}
-                                                        pool={pool}
-                                                        isUserPool={false}
-                                                        poolData={poolsData.get(pool.id)}
-                                                    />
-                                                ))}
-                                            </Box>
-                                        </Box>
-                                    </VStack>
-                                )}
+                            {/* Mobile Sort Select */}
+                            <Box display={{ base: 'block', md: 'none' }} w="full" maxW="500px">
+                                <NativeSelectRoot w="full">
+                                    <NativeSelectField
+                                        value={`${sortField}-${sortOrder}`}
+                                        onChange={(e) => handleMobileSort(e.target.value)}
+                                        p={3}
+                                        borderRadius="lg"
+                                        borderWidth="1px"
+                                        borderColor="border"
+                                        bg="bg.panel"
+                                        fontSize="sm"
+                                    >
+                                        {sortOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </NativeSelectField>
+                                </NativeSelectRoot>
                             </Box>
+                        </VStack>
+                    </Box>
 
-                            {/* Mobile Card View */}
-                            <Box w="full" display={{ base: 'block', md: 'none' }}>
-                                {/* User Pools Section - Mobile */}
-                                {filteredAndSortedPools.userPools.length > 0 && (
-                                    <VStack gap={4} mb={6} align="stretch">
-                                        <HStack>
-                                            <Heading size="lg" color="blue.600" _dark={{ color: "blue.300" }}>
-                                                My Pools ({filteredAndSortedPools.userPools.length})
-                                            </Heading>
-                                        </HStack>
-                                        <VStack gap={3} w="full">
+                    <VStack gap={6} w="full">
+
+                        {/* Desktop Table View */}
+                        <Box overflowX="auto" w="full" display={{ base: 'none', md: 'block' }}>
+                            {/* User Pools Section */}
+                            {filteredAndSortedPools.userPools.length > 0 && (
+                                <VStack gap={3} mb={6} align="stretch">
+                                    <HStack gap={2} px={2}>
+                                        <LuUser size={20} color="var(--chakra-colors-blue-600)" />
+                                        <Heading size="lg" color="blue.600" _dark={{ color: "blue.300" }}>
+                                            My Pools
+                                        </Heading>
+                                        <Badge colorPalette="blue" size="sm" ml={1}>
+                                            {filteredAndSortedPools.userPools.length}
+                                        </Badge>
+                                    </HStack>
+                                    <Box
+                                        as="table"
+                                        w="full"
+                                        borderCollapse="separate"
+                                        borderSpacing="0 4px"
+                                        bg="bg.panel"
+                                        borderRadius="lg"
+                                        p={2}
+                                        borderWidth="1px"
+                                        borderColor="border"
+                                    >
+                                        <Box as="thead">
+                                            <Box as="tr">
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    Pool
+                                                </Box>
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    My Liquidity
+                                                </Box>
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    24h Volume
+                                                </Box>
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    Total Liquidity
+                                                </Box>
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    APR
+                                                </Box>
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    Action
+                                                </Box>
+                                            </Box>
+                                        </Box>
+                                        <Box as="tbody">
                                             {filteredAndSortedPools.userPools.map((pool) => (
-                                                <MobileLiquidityPoolCard
-                                                    key={pool.id}
+                                                <DesktopLiquidityPoolCard
                                                     pool={pool}
                                                     isUserPool={true}
+                                                    key={pool.id}
                                                     poolData={poolsData.get(pool.id)}
                                                 />
                                             ))}
-                                        </VStack>
-                                    </VStack>
-                                )}
+                                        </Box>
+                                    </Box>
+                                </VStack>
+                            )}
 
-                                {/* All Pools Section - Mobile */}
-                                {filteredAndSortedPools.otherPools.length > 0 && (
-                                    <VStack gap={4} align="stretch">
+                            {/* All Pools Section */}
+                            {filteredAndSortedPools.otherPools.length > 0 && (
+                                <VStack gap={3} align="stretch">
+                                    <HStack gap={2} px={2}>
                                         <Heading size="lg">
-                                            All Pools ({filteredAndSortedPools.otherPools.length})
+                                            All Pools
                                         </Heading>
-                                        <VStack gap={3} w="full">
+                                        <Badge colorPalette="gray" size="sm" ml={1}>
+                                            {filteredAndSortedPools.otherPools.length}
+                                        </Badge>
+                                    </HStack>
+                                    <Box
+                                        as="table"
+                                        w="full"
+                                        borderCollapse="separate"
+                                        borderSpacing="0 4px"
+                                        bg="bg.panel"
+                                        borderRadius="lg"
+                                        p={2}
+                                        borderWidth="1px"
+                                        borderColor="border"
+                                    >
+                                        <Box as="thead">
+                                            <Box as="tr">
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    Pool
+                                                </Box>
+                                                <Box
+                                                    as="th"
+                                                    textAlign="left"
+                                                    p={3}
+                                                    fontSize="xs"
+                                                    fontWeight="700"
+                                                    color="fg.muted"
+                                                    textTransform="uppercase"
+                                                    cursor="pointer"
+                                                    onClick={() => handleSort('volume24h')}
+                                                    _hover={{ bg: "bg.muted" }}
+                                                    borderRadius="md"
+                                                    transition="all 0.2s"
+                                                >
+                                                    <HStack gap={1}>
+                                                        <Text>24h Volume</Text>
+                                                        <SortIcon field="volume24h" />
+                                                    </HStack>
+                                                </Box>
+                                                <Box
+                                                    as="th"
+                                                    textAlign="left"
+                                                    p={3}
+                                                    fontSize="xs"
+                                                    fontWeight="700"
+                                                    color="fg.muted"
+                                                    textTransform="uppercase"
+                                                    cursor="pointer"
+                                                    onClick={() => handleSort('totalLiquidity')}
+                                                    _hover={{ bg: "bg.muted" }}
+                                                    borderRadius="md"
+                                                    transition="all 0.2s"
+                                                >
+                                                    <HStack gap={1}>
+                                                        <Text>Total Liquidity</Text>
+                                                        <SortIcon field="totalLiquidity" />
+                                                    </HStack>
+                                                </Box>
+                                                <Box
+                                                    as="th"
+                                                    textAlign="left"
+                                                    p={3}
+                                                    fontSize="xs"
+                                                    fontWeight="700"
+                                                    color="fg.muted"
+                                                    textTransform="uppercase"
+                                                    cursor="pointer"
+                                                    onClick={() => handleSort('apr')}
+                                                    _hover={{ bg: "bg.muted" }}
+                                                    borderRadius="md"
+                                                    transition="all 0.2s"
+                                                >
+                                                    <HStack gap={1}>
+                                                        <Text>APR</Text>
+                                                        <SortIcon field="apr" />
+                                                    </HStack>
+                                                </Box>
+                                                <Box as="th" textAlign="left" p={3} fontSize="xs" fontWeight="700" color="fg.muted" textTransform="uppercase">
+                                                    Action
+                                                </Box>
+                                            </Box>
+                                        </Box>
+                                        <Box as="tbody">
                                             {filteredAndSortedPools.otherPools.map((pool) => (
-                                                <MobileLiquidityPoolCard
+                                                <DesktopLiquidityPoolCard
                                                     key={pool.id}
                                                     pool={pool}
                                                     isUserPool={false}
                                                     poolData={poolsData.get(pool.id)}
                                                 />
                                             ))}
-                                        </VStack>
-                                    </VStack>
-                                )}
-                            </Box>
+                                        </Box>
+                                    </Box>
+                                </VStack>
+                            )}
+                        </Box>
 
-                            {(filteredAndSortedPools.userPools.length === 0 && filteredAndSortedPools.otherPools.length === 0) && (
-                                <VStack gap={4} py={8}>
-                                    <Text fontSize="lg" color="fg.muted">
-                                        No pools found matching your search
+                        {/* Mobile Card View */}
+                        <Box w="full" display={{ base: 'block', md: 'none' }}>
+                            {/* User Pools Section - Mobile */}
+                            {filteredAndSortedPools.userPools.length > 0 && (
+                                <VStack gap={3} mb={6} align="stretch">
+                                    <HStack gap={2}>
+                                        <LuUser size={20} color="var(--chakra-colors-blue-600)" />
+                                        <Heading size="md" color="blue.600" _dark={{ color: "blue.300" }}>
+                                            My Pools
+                                        </Heading>
+                                        <Badge colorPalette="blue" size="sm" ml={1}>
+                                            {filteredAndSortedPools.userPools.length}
+                                        </Badge>
+                                    </HStack>
+                                    <VStack gap={3} w="full">
+                                        {filteredAndSortedPools.userPools.map((pool) => (
+                                            <MobileLiquidityPoolCard
+                                                key={pool.id}
+                                                pool={pool}
+                                                isUserPool={true}
+                                                poolData={poolsData.get(pool.id)}
+                                            />
+                                        ))}
+                                    </VStack>
+                                </VStack>
+                            )}
+
+                            {/* All Pools Section - Mobile */}
+                            {filteredAndSortedPools.otherPools.length > 0 && (
+                                <VStack gap={3} align="stretch">
+                                    <HStack gap={2}>
+                                        <Heading size="md">
+                                            All Pools
+                                        </Heading>
+                                        <Badge colorPalette="gray" size="sm" ml={1}>
+                                            {filteredAndSortedPools.otherPools.length}
+                                        </Badge>
+                                    </HStack>
+                                    <VStack gap={3} w="full">
+                                        {filteredAndSortedPools.otherPools.map((pool) => (
+                                            <MobileLiquidityPoolCard
+                                                key={pool.id}
+                                                pool={pool}
+                                                isUserPool={false}
+                                                poolData={poolsData.get(pool.id)}
+                                            />
+                                        ))}
+                                    </VStack>
+                                </VStack>
+                            )}
+                        </Box>
+
+                        {(filteredAndSortedPools.userPools.length === 0 && filteredAndSortedPools.otherPools.length === 0) && (
+                            <Box
+                                bg="bg.panel"
+                                p={12}
+                                borderRadius="lg"
+                                borderWidth="1px"
+                                borderColor="border"
+                                textAlign="center"
+                            >
+                                <VStack gap={4}>
+                                    <Text fontSize="lg" fontWeight="600" color="fg.muted">
+                                        No pools found
+                                    </Text>
+                                    <Text fontSize="sm" color="fg.muted">
+                                        Try adjusting your search criteria
                                     </Text>
                                     <Button
                                         variant="outline"
+                                        size="sm"
                                         onClick={() => setSearchTerm('')}
                                     >
                                         Clear Search
                                     </Button>
                                 </VStack>
-                            )}
-                        </VStack>
-                    </Box>
+                            </Box>
+                        )}
+                    </VStack>
 
-                    <Flex justify="center" mt={4}>
-                        <Text fontSize="sm" color="fg.muted">
-                            Showing {filteredAndSortedPools.userPools.length + filteredAndSortedPools.otherPools.length} of {pools.length} pools
-                            {filteredAndSortedPools.userPools.length > 0 && (
-                                <Text as="span" color="blue.600" _dark={{ color: "blue.300" }} fontWeight="600">
-                                    {" "}• {filteredAndSortedPools.userPools.length} My Pools
+                    {/* Footer Info */}
+                    {(filteredAndSortedPools.userPools.length > 0 || filteredAndSortedPools.otherPools.length > 0) && (
+                        <Box textAlign="center" py={2}>
+                            <HStack justify="center" gap={2} flexWrap="wrap">
+                                <Text fontSize="sm" color="fg.muted">
+                                    Showing {filteredAndSortedPools.userPools.length + filteredAndSortedPools.otherPools.length} of {pools.length} pools
                                 </Text>
-                            )}
-                        </Text>
-                    </Flex>
+                                {filteredAndSortedPools.userPools.length > 0 && (
+                                    <>
+                                        <Text fontSize="sm" color="fg.muted">•</Text>
+                                        <Badge colorPalette="blue" size="sm">
+                                            {filteredAndSortedPools.userPools.length} My Pools
+                                        </Badge>
+                                    </>
+                                )}
+                            </HStack>
+                        </Box>
+                    )}
                 </VStack>
             </Container>
         </Box>

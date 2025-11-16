@@ -8,7 +8,7 @@ import {
     Input,
     Card,
     VStack,
-    Grid, Skeleton,
+    Grid, Skeleton, Badge, HStack, Spacer,
 } from '@chakra-ui/react';
 import {
     LuSearch,
@@ -49,6 +49,8 @@ const StakingPage = () => {
     const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
     const {isVerifiedAsset, denomTicker, nativeAsset, denomDecimals} = useAssets()
     const {totalUsdValue} = useAssetsValue()
+
+    const allActiveStakingRewardsCount = useMemo(() => stakingRewards.filter(sr => sr.payouts < sr.duration).length + 1, [stakingRewards])
 
     const stakingCount = useMemo(() => {
         let totalCount = 0
@@ -209,25 +211,38 @@ const StakingPage = () => {
                         borderWidth="1px"
                         shadow="sm"
                     >
-                        <Box position="relative" maxW="500px">
-                            <Input
-                                placeholder="Search staking opportunities..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                pl="12"
-                                size="lg"
-                                borderRadius="lg"
-                            />
-                            <Box
-                                position="absolute"
-                                left="4"
-                                top="50%"
-                                transform="translateY(-50%)"
-                                color="fg.muted"
-                            >
-                                <LuSearch size={20} />
+                        <HStack gap={4} wrap="wrap">
+                            <Box position="relative" flex="1" minW="300px" maxW="500px">
+                                <Input
+                                    placeholder="Search staking opportunities..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    pl="12"
+                                    size="lg"
+                                    borderRadius="lg"
+                                />
+                                <Box
+                                    position="absolute"
+                                    left="4"
+                                    top="50%"
+                                    transform="translateY(-50%)"
+                                    color="fg.muted"
+                                >
+                                    <LuSearch size={20} />
+                                </Box>
                             </Box>
-                        </Box>
+                            <Spacer />
+                            <Badge
+                                variant="outline"
+                                colorPalette="gray"
+                                fontSize="md"
+                                px={4}
+                                py={2}
+                                borderRadius="lg"
+                            >
+                                {allActiveStakingRewardsCount} staking rewards
+                            </Badge>
+                        </HStack>
                     </Box>
 
                 {/* Stats Overview */}

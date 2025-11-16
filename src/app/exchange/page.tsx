@@ -331,8 +331,8 @@ export default function ExchangePage() {
                             </Box>
                             <Spacer />
                             <Badge
-                                variant="subtle"
-                                colorPalette="blue"
+                                variant="outline"
+                                colorPalette="gray"
                                 fontSize="md"
                                 px={4}
                                 py={2}
