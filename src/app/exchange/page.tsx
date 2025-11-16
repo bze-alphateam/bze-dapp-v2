@@ -10,13 +10,13 @@ import {
     Button,
     Input,
     SimpleGrid,
-    Spacer, Skeleton,
+    Spacer,
+    Skeleton,
 } from '@chakra-ui/react'
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import {useCallback, useMemo, useState} from 'react'
 import NextLink from "next/link";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {ListingTitle} from "@/components/ui/listing/title";
 import {useMarkets} from "@/hooks/useMarkets";
 import {useAsset, useAssets} from "@/hooks/useAssets";
 import {createMarketId} from "@/utils/market";
@@ -65,17 +65,20 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
     return (
         <Box
-            p={4}
+            p={5}
             borderWidth="1px"
             borderColor="border.subtle"
-            borderRadius="lg"
+            borderRadius="xl"
             cursor="pointer"
             transition="all 0.2s"
+            shadow="sm"
             _hover={{
-                bg: "bg.muted"
+                bg: "bg.muted",
+                shadow: "md",
+                transform: "translateY(-2px)"
             }}
             onClick={onClick}
-            bg="bg.surface"
+            bg="bg.panel"
         >
             {/* Desktop View */}
             <SimpleGrid
@@ -91,49 +94,47 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
                         quoteAssetLogo={quoteAsset?.logo || ''}
                         baseAssetSymbol={baseAsset?.ticker || market.base}
                         quoteAssetSymbol={quoteAsset?.ticker || market.quote}
-                        size="8"
+                        size="10"
                     />
-                    <VStack align="start" gap={0}>
-                        <HStack>
-                            <Text fontWeight="bold" fontSize="md">
+                    <VStack align="start" gap={1}>
+                        <HStack gap={2}>
+                            <Text fontWeight="bold" fontSize="lg" letterSpacing="tight">
                                 {baseAsset?.ticker}/{quoteAsset?.ticker}
                             </Text>
                             {isVerifiedMarket && (<VerifiedBadge />)}
                         </HStack>
-                        <Text fontSize="xs" color="fg.muted">
+                        <Text fontSize="xs" color="fg.muted" fontWeight="medium">
                             {baseAsset?.name} / {quoteAsset?.name}
                         </Text>
                     </VStack>
                 </HStack>
 
                 {/* Price */}
-                <VStack align="end" gap={0}>
-                    <Text fontWeight="semibold">
+                <VStack align="end" gap={1}>
+                    <Text fontWeight="semibold" fontSize="md">
                         {displayPrice} {quoteAsset?.ticker}
                     </Text>
-                    <HStack gap={1}>
+                    <Badge
+                        colorPalette={isPositive ? 'green' : 'red'}
+                        variant="subtle"
+                        fontSize="xs"
+                    >
                         {isPositive ? (
-                            <LuTrendingUp size={12} color="green" />
+                            <LuTrendingUp size={12} />
                         ) : (
-                            <LuTrendingDown size={12} color="red" />
+                            <LuTrendingDown size={12} />
                         )}
-                        <Text
-                            fontSize="sm"
-                            color={isPositive ? 'green.500' : 'red.500'}
-                            fontWeight="medium"
-                        >
-                            {isPositive ? '+' : ''}{marketData?.change.toFixed(2) || 0}%
-                        </Text>
-                    </HStack>
+                        {isPositive ? '+' : ''}{marketData?.change.toFixed(2) || 0}%
+                    </Badge>
                 </VStack>
 
                 {/* Volume */}
-                <VStack align="end" gap={0}>
-                    <Text fontWeight="medium">
+                <VStack align="end" gap={1}>
+                    <Text fontWeight="semibold" fontSize="md">
                         {prettyAmount(displayVolume)} {quoteAsset?.ticker}
                     </Text>
                     {!quoteIsUSDC && (
-                        <Text fontSize="sm" color="fg.muted">
+                        <Text fontSize="sm" color="fg.muted" fontWeight="medium">
                             ${displayUsdVolume}
                         </Text>
                     )}
@@ -143,9 +144,10 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
                 <NextLink href="/exchange/market">
                     <Box textAlign="right">
                         <Button
-                            size="sm"
-                            variant="solid"
-                            minW="80px"
+                            size="md"
+                            colorPalette="blue"
+                            minW="100px"
+                            fontWeight="semibold"
                         >
                             Trade <LuArrowRight />
                         </Button>
@@ -154,70 +156,76 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
             </SimpleGrid>
 
             {/* Mobile View */}
-            <VStack align="stretch" gap={3} hideFrom="md">
+            <VStack align="stretch" gap={4} hideFrom="md">
                 <HStack justify="space-between" align="center">
-                    <HStack gap={2}>
+                    <HStack gap={3}>
                         <LPTokenLogo
                             baseAssetLogo={baseAsset?.logo || ''}
                             quoteAssetLogo={quoteAsset?.logo || ''}
                             baseAssetSymbol={baseAsset?.ticker || market.base}
                             quoteAssetSymbol={quoteAsset?.ticker || market.quote}
-                            size="8"
+                            size="10"
                         />
-                        <VStack align="start" gap={0}>
-                            <HStack gap={1}>
-                                <Text fontWeight="bold" fontSize="sm">
+                        <VStack align="start" gap={1}>
+                            <HStack gap={2}>
+                                <Text fontWeight="bold" fontSize="md" letterSpacing="tight">
                                     {baseAsset?.ticker}/{quoteAsset?.ticker}
                                 </Text>
-                                <Badge
-                                    variant="subtle" colorPalette={isVerifiedMarket ? 'blue' : 'gray'}
-                                    fontSize="10px"
-                                    px={1}
-                                    py={0.5}
-                                >
-                                    {isVerifiedMarket ? '✓' : 'U'}
-                                </Badge>
+                                {isVerifiedMarket && (<VerifiedBadge />)}
                             </HStack>
                         </VStack>
                     </HStack>
-                    <Button size="xs" variant="solid">
+                    <Button
+                        size="sm"
+                        colorPalette="blue"
+                        fontWeight="semibold"
+                    >
                         Trade
                     </Button>
                 </HStack>
 
                 <SimpleGrid columns={2} gap={4}>
-                    <Box>
-                        <Text fontSize="xs" color="fg.muted" mb={1}>
+                    <Box
+                        p={3}
+                        bg="bg.muted"
+                        borderRadius="lg"
+                        borderWidth="1px"
+                    >
+                        <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="medium">
                             24h Price
                         </Text>
-                        <Text fontWeight="semibold" fontSize="sm">
+                        <Text fontWeight="semibold" fontSize="md">
                             {displayPrice} {quoteAsset?.ticker}
                         </Text>
-                        <HStack gap={1}>
+                        <Badge
+                            colorPalette={isPositive ? 'green' : 'red'}
+                            variant="subtle"
+                            fontSize="xs"
+                            mt={1}
+                        >
                             {isPositive ? (
-                                <LuTrendingUp size={10} color="green" />
+                                <LuTrendingUp size={10} />
                             ) : (
-                                <LuTrendingDown size={10} color="red" />
+                                <LuTrendingDown size={10} />
                             )}
-                            <Text
-                                fontSize="xs"
-                                color={isPositive ? 'green.500' : 'red.500'}
-                                fontWeight="medium"
-                            >
-                                {isPositive ? '+' : ''}{marketData?.change.toFixed(2) || 0}%
-                            </Text>
-                        </HStack>
+                            {isPositive ? '+' : ''}{marketData?.change.toFixed(2) || 0}%
+                        </Badge>
                     </Box>
 
-                    <Box>
-                        <Text fontSize="xs" color="fg.muted" mb={1}>
+                    <Box
+                        p={3}
+                        bg="bg.muted"
+                        borderRadius="lg"
+                        borderWidth="1px"
+                    >
+                        <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="medium">
                             24h Volume
                         </Text>
-                        <Text fontWeight="medium" fontSize="sm">
+                        <Text fontWeight="semibold" fontSize="md">
                             {prettyAmount(displayVolume)} {quoteAsset?.ticker}
                         </Text>
                         {!quoteIsUSDC && (
-                            <Text fontSize="xs" color="fg.muted">
+                            <Text fontSize="xs" color="fg.muted" mt={1}>
                                 ${quoteUsdValue(new BigNumber(displayVolume)).toString()}
                             </Text>
                         )}
@@ -280,57 +288,88 @@ export default function ExchangePage() {
     }, [toMarketPage])
 
     return (
-        <Container maxW="7xl" py={8}>
-            <VStack gap={6} align="stretch">
-                {/* Header */}
-                <ListingTitle title={"Exchange Markets"} />
+        <Box minH="100vh" bg="bg.subtle">
+            <Container maxW="7xl" py={12}>
+                <VStack gap={8} align="stretch">
+                    {/* Page Header */}
+                    <VStack gap={3} align="center" mb={4}>
+                        <Text fontSize="3xl" fontWeight="bold" letterSpacing="tight">
+                            Exchange Markets
+                        </Text>
+                        <Text fontSize="md" color="fg.muted">
+                            Discover and trade verified trading pairs
+                        </Text>
+                    </VStack>
 
-                {/* Search and Filters */}
-                <HStack gap={4}>
-                    <Box position="relative" maxW="400px">
-                        <Input
-                            placeholder="Search markets..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            pl="10"
-                        />
-                        <Box
-                            position="absolute"
-                            left="3"
-                            top="50%"
-                            transform="translateY(-50%)"
-                            color="fg.muted"
-                        >
-                            <LuSearch size={18} />
-                        </Box>
+                    {/* Search and Stats */}
+                    <Box
+                        p={6}
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <HStack gap={4} wrap="wrap">
+                            <Box position="relative" flex="1" minW="300px" maxW="500px">
+                                <Input
+                                    placeholder="Search markets..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    pl="12"
+                                    size="lg"
+                                    borderRadius="lg"
+                                />
+                                <Box
+                                    position="absolute"
+                                    left="4"
+                                    top="50%"
+                                    transform="translateY(-50%)"
+                                    color="fg.muted"
+                                >
+                                    <LuSearch size={20} />
+                                </Box>
+                            </Box>
+                            <Spacer />
+                            <Badge
+                                variant="subtle"
+                                colorPalette="blue"
+                                fontSize="md"
+                                px={4}
+                                py={2}
+                                borderRadius="lg"
+                            >
+                                {filteredMarkets.length} trading pairs
+                            </Badge>
+                        </HStack>
                     </Box>
-                    <Spacer />
-                    <HStack gap={2}>
-                        <Badge variant="outline" fontSize="sm" px={3} py={1}>
-                            {filteredMarkets.length} pairs
-                        </Badge>
-                    </HStack>
-                </HStack>
 
                 {/* Market List Header - Desktop Only */}
-                <SimpleGrid columns={{ base: 1, md: 4 }} gap={4} px={4} py={2} hideBelow="md">
-                    <Text fontSize="sm" fontWeight="medium" color="fg.muted">
+                <SimpleGrid
+                    columns={{ base: 1, md: 4 }}
+                    gap={4}
+                    px={6}
+                    py={3}
+                    hideBelow="md"
+                    bg="bg.muted"
+                    borderRadius="lg"
+                >
+                    <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
                         Market
                     </Text>
-                    <Text fontSize="sm" fontWeight="medium" color="fg.muted" textAlign="right">
+                    <Text fontSize="sm" fontWeight="semibold" color="fg.muted" textAlign="right">
                         24h Price
                     </Text>
-                    <Text fontSize="sm" fontWeight="medium" color="fg.muted" textAlign="right">
+                    <Text fontSize="sm" fontWeight="semibold" color="fg.muted" textAlign="right">
                         24h Volume
                     </Text>
-                    <Text fontSize="sm" fontWeight="medium" color="fg.muted" textAlign="right">
+                    <Text fontSize="sm" fontWeight="semibold" color="fg.muted" textAlign="right">
                         Action
                     </Text>
                 </SimpleGrid>
 
                 {/* Market List */}
                 <Skeleton asChild loading={isLoadingMarkets}>
-                    <VStack gap={2} align="stretch">
+                    <VStack gap={3} align="stretch">
                         {filteredMarkets.map((market) => (
                             <MarketRow
                                 key={market.base + market.quote}
@@ -342,14 +381,25 @@ export default function ExchangePage() {
                     </VStack>
                 </Skeleton>
 
-                {filteredMarkets.length === 0 && (
-                    <Box textAlign="center" py={12}>
-                        <Text color="fg.muted" fontSize="lg">
-                            No markets found matching &#34;{searchTerm}&#34;
+                {filteredMarkets.length === 0 && !isLoadingMarkets && (
+                    <Box
+                        textAlign="center"
+                        py={16}
+                        px={6}
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        borderWidth="1px"
+                    >
+                        <Text color="fg.muted" fontSize="lg" fontWeight="medium">
+                            No markets found matching &quot;{searchTerm}&quot;
+                        </Text>
+                        <Text color="fg.muted" fontSize="sm" mt={2}>
+                            Try adjusting your search terms
                         </Text>
                     </Box>
                 )}
             </VStack>
         </Container>
+        </Box>
     )
 }
