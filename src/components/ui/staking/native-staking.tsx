@@ -261,7 +261,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                                 <LuGift size={12} />
                                                 <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Rewards</Text>
                                             </HStack>
-                                            <Text fontWeight="bold" fontSize="lg" color="purple.600">{pendingRewards}</Text>
+                                            <Text fontWeight="bold" fontSize="lg">{pendingRewards}</Text>
                                         </VStack>
                                     </Box>
                                 )}
@@ -374,6 +374,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                         <Button
                                             flex="1"
                                             colorPalette="blue"
+                                            variant='outline'
                                             onClick={() => openExternalLink('https://staking.getbze.com')}
                                         >
                                             <HStack gap="2">
@@ -384,6 +385,7 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
 
                                         <Button
                                             flex="1"
+                                            colorPalette="orange"
                                             variant="outline"
                                             disabled={!hasUserStake}
                                             onClick={() => openExternalLink('https://staking.getbze.com')}
@@ -396,7 +398,8 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
 
                                         <Button
                                             flex="1"
-                                            colorPalette="green"
+                                            colorPalette="purple"
+                                            variant='outline'
                                             disabled={!hasRewards}
                                             onClick={() => openModal('claim')}
                                         >
@@ -411,11 +414,35 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
 
                             {modalType === 'claim' && hasRewards && (
                                 <VStack gap="4">
-                                    <Text>Available rewards to claim:</Text>
-                                    <Text fontSize="2xl" fontWeight="bold" color="green.600">
-                                        {pendingRewards}
-                                    </Text>
-                                    <Button colorPalette="green" width="full" loading={pendingClaim} loadingText={"Claiming rewards..."} onClick={onClaimRewards}>
+                                    <Box
+                                        bgGradient="to-br"
+                                        gradientFrom="purple.500/15"
+                                        gradientTo="purple.600/15"
+                                        borderWidth="1px"
+                                        borderColor="purple.500/30"
+                                        borderRadius="md"
+                                        p="4"
+                                        w="full"
+                                    >
+                                        <VStack align="start" gap="2">
+                                            <HStack gap="1" color="purple.600">
+                                                <LuGift size={14} />
+                                                <Text fontSize="sm" fontWeight="semibold" textTransform="uppercase">Rewards</Text>
+                                            </HStack>
+                                            <Text fontSize="lg" fontWeight="bold">
+                                                {pendingRewards}
+                                            </Text>
+                                        </VStack>
+                                    </Box>
+                                    <Button
+                                        variant='outline'
+                                        colorPalette="purple"
+                                        width="full"
+                                        loading={pendingClaim}
+                                        loadingText={"Claiming rewards..."}
+                                        onClick={onClaimRewards}
+                                    >
+                                        <LuGift size={16} />
                                         Claim Rewards
                                     </Button>
                                 </VStack>

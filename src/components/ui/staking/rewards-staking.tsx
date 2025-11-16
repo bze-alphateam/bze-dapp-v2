@@ -413,7 +413,7 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                                                 <LuGift size={12} />
                                                 <Text fontSize="xs" textTransform="uppercase" fontWeight="semibold">Rewards</Text>
                                             </HStack>
-                                            <Text fontWeight="bold" fontSize="lg" color="purple.600">{pendingRewards}</Text>
+                                            <Text fontWeight="bold" fontSize="lg">{pendingRewards}</Text>
                                         </VStack>
                                     </Box>
                                 )}

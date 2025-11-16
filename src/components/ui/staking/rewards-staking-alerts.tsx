@@ -1,8 +1,10 @@
-import {Alert} from "@chakra-ui/react";
+import {Box, HStack, Text, VStack} from "@chakra-ui/react";
 import React, {useMemo} from "react";
 import {prettyAmount, uAmountToAmount} from "@/utils/amount";
 import {useEpochs} from "@/hooks/useEpochs";
 import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
+import {LuLockOpen} from "react-icons/lu";
+
 
 export const RewardsStakingUnlockAlerts = ({userUnlocking, ticker, decimals}: {userUnlocking?: ExtendedPendingUnlockParticipantSDKType[], ticker: string, decimals: number}) => {
     const {getHourEpochInfo} = useEpochs()
@@ -38,10 +40,25 @@ export const RewardsStakingUnlockAlerts = ({userUnlocking, ticker, decimals}: {u
     return (
         <>
             {pendingUnlock.length > 0 && pendingUnlock.map((item, index) => (
-                <Alert.Root status={"warning"} variant="subtle" key={index}>
-                    <Alert.Indicator />
-                    <Alert.Title fontSize="sm">{item.title}</Alert.Title>
-                </Alert.Root>
+                <Box
+                    key={index}
+                    bgGradient="to-br"
+                    gradientFrom="orange.500/15"
+                    gradientTo="orange.600/15"
+                    borderWidth="1px"
+                    borderColor="orange.500/30"
+                    borderRadius="md"
+                    p="3"
+                    w='full'
+                >
+                    <VStack align="start" gap="0.5">
+                        <HStack gap="1" color="orange.600">
+                            <LuLockOpen size={12} />
+                            <Text fontSize="xs" fontWeight="semibold" textTransform="uppercase">Pending Unlock</Text>
+                        </HStack>
+                        <Text fontWeight="bold" fontSize="lg">{item.title}</Text>
+                    </VStack>
+                </Box>
             ))}
         </>
     )
