@@ -94,7 +94,7 @@ function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
                 </HStack>
 
                 <Box
-                    textAlign={{ base: 'left', sm: 'right' }}
+                    textAlign={{ base: 'center', sm: 'right' }}
                     w={{ base: 'full', sm: 'auto' }}
                     flexShrink={0}
                 >
@@ -394,19 +394,16 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
             {/* Mobile Price Display */}
             <Box display={{ base: 'block', sm: 'none' }} px={4} pb={2}>
                 <HStack justify="space-between">
-                    <Text fontWeight="medium">${formattedPrice}</Text>
+                    <Skeleton asChild loading={!priceLoadedOnce}>
+                        <Text fontWeight="medium">${formattedPrice}</Text>
+                    </Skeleton>
                     <HStack gap={1}>
-                        {change > 0 ? (
-                            <LuArrowUpRight size={14} color="var(--chakra-colors-green-500)" />
-                        ) : (
-                            <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
-                        )}
-                        <Text
-                            fontSize="sm"
-                            color={change > 0 ? 'green.500' : 'red.500'}
-                        >
-                            {change > 0 ? '+' : ''}{change}%
-                        </Text>
+                        <Skeleton asChild loading={!priceLoadedOnce}>
+                            <HStack gap={1} justify="flex-end">
+                                {renderChangeArrow}
+                                {renderChangeText}
+                            </HStack>
+                        </Skeleton>
                     </HStack>
                 </HStack>
             </Box>
