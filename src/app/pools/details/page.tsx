@@ -1421,7 +1421,7 @@ const PoolDetailsPageContent = () => {
     );
 
     return (
-        <Container maxW="4xl" py={{ base: "4", md: "8" }} px={{ base: "4", md: "6" }}>
+        <Container maxW="4xl" py={{ base: "4", md: "8" }} px={{ base: "4", md: "6" }} bg="bg.subtle">
             <VStack align="start" gap={{ base: "4", md: "6" }} mb={{ base: "4", md: "8" }}>
                 {/* Header */}
                 <HStack>

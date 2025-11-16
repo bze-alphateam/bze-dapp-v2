@@ -8,12 +8,11 @@ import {
     Input,
     Card,
     VStack,
-    Grid, Skeleton,
+    Grid, Skeleton, Badge, HStack, Spacer,
 } from '@chakra-ui/react';
 import {
     LuSearch,
 } from 'react-icons/lu';
-import {ListingTitle} from "@/components/ui/listing/title";
 import {useNativeStakingData} from "@/hooks/useNativeStakingData";
 import {NativeStakingCard} from "@/components/ui/staking/native-staking";
 import {RewardsStakingBox} from "@/components/ui/staking/rewards-staking";
@@ -50,6 +49,8 @@ const StakingPage = () => {
     const {rewards: stakingRewards, isLoading: isLoadingStakingRewards, addressData, reload: reloadRewardsStaking} = useRewardsStakingData()
     const {isVerifiedAsset, denomTicker, nativeAsset, denomDecimals} = useAssets()
     const {totalUsdValue} = useAssetsValue()
+
+    const allActiveStakingRewardsCount = useMemo(() => stakingRewards.filter(sr => sr.payouts < sr.duration).length + 1, [stakingRewards])
 
     const stakingCount = useMemo(() => {
         let totalCount = 0
@@ -189,71 +190,143 @@ const StakingPage = () => {
     }, [reload, reloadRewardsStaking])
 
     return (
-        <Container maxW="7xl" py={8}>
-            <VStack align="stretch" gap="8">
-                {/* Header */}
-                <ListingTitle title={"Crypto Staking"} subtitle={"Earn passive income by staking and locking your tokens"} />
+        <Box minH="100vh" bg="bg.subtle">
+            <Container maxW="7xl" py={12}>
+                <VStack align="stretch" gap="8">
+                    {/* Page Header */}
+                    <VStack gap={3} align="center" mb={4}>
+                        <Text fontSize="3xl" fontWeight="bold" letterSpacing="tight">
+                            Staking & Rewards
+                        </Text>
+                        <Text fontSize="md" color="fg.muted">
+                            Earn passive income by staking and locking your tokens
+                        </Text>
+                    </VStack>
 
-                {/* Search */}
-                <Box position="relative" maxW="md">
-                    <Input
-                        placeholder="Search staking opportunities..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        paddingLeft="10"
-                    />
-                    <Box position="absolute" left="3" top="50%" transform="translateY(-50%)" pointerEvents="none">
-                        <LuSearch size={16} color="var(--chakra-colors-gray-400)" />
+                    {/* Search */}
+                    <Box
+                        p={6}
+                        bg="bg.panel"
+                        borderRadius="xl"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <HStack gap={4} wrap="wrap">
+                            <Box position="relative" flex="1" minW="300px" maxW="500px">
+                                <Input
+                                    placeholder="Search staking opportunities..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    pl="12"
+                                    size="lg"
+                                    borderRadius="lg"
+                                />
+                                <Box
+                                    position="absolute"
+                                    left="4"
+                                    top="50%"
+                                    transform="translateY(-50%)"
+                                    color="fg.muted"
+                                >
+                                    <LuSearch size={20} />
+                                </Box>
+                            </Box>
+                            <Spacer />
+                            <Badge
+                                variant="outline"
+                                colorPalette="gray"
+                                fontSize="md"
+                                px={4}
+                                py={2}
+                                borderRadius="lg"
+                            >
+                                {allActiveStakingRewardsCount} staking rewards
+                            </Badge>
+                        </HStack>
                     </Box>
-                </Box>
 
                 {/* Stats Overview */}
-                <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="6">
-                    <Card.Root>
-                        <Card.Body>
-                            <VStack align="start">
-                                <Text color="gray.600">Total Value Staked</Text>
+                <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }} gap="3">
+                    <Card.Root
+                        borderRadius="lg"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <Card.Body p={4}>
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    Total Value Staked
+                                </Text>
                                 <Skeleton asChild loading={summaryLoading}>
-                                    <Text fontSize="2xl" fontWeight="bold">≈${shortNumberFormat(stakedUsdValue)}</Text>
+                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                        ≈${shortNumberFormat(stakedUsdValue)}
+                                    </Text>
                                 </Skeleton>
-                                {/*<Text fontSize="sm" color="green.500">+12.5% this month</Text>*/}
                             </VStack>
                         </Card.Body>
                     </Card.Root>
 
-                    <Card.Root>
-                        <Card.Body>
-                            <VStack align="start">
-                                <Text color="gray.600">Your Active Stakes</Text>
+                    <Card.Root
+                        borderRadius="lg"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <Card.Body p={4}>
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    Active Stakes
+                                </Text>
                                 <Skeleton asChild loading={summaryLoading}>
-                                    <Text fontSize="2xl" fontWeight="bold">{stakingCount}</Text>
+                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                        {stakingCount}
+                                    </Text>
                                 </Skeleton>
-                                <Text fontSize="sm" color="blue.500">Earning rewards</Text>
+                                <Text fontSize="xs" color="blue.500" fontWeight="medium">
+                                    Earning rewards
+                                </Text>
                             </VStack>
                         </Card.Body>
                     </Card.Root>
 
-                    <Card.Root>
-                        <Card.Body>
-                            <VStack align="start">
-                                <Text color="gray.600">Unclaimed Rewards</Text>
+                    <Card.Root
+                        borderRadius="lg"
+                        borderWidth="1px"
+                        shadow="sm"
+                    >
+                        <Card.Body p={4}>
+                            <VStack align="start" gap={2}>
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase">
+                                    Unclaimed Rewards
+                                </Text>
                                 <Skeleton asChild loading={summaryLoading}>
                                     <Box display="flex" alignItems="baseline" gap="1">
-                                        <Text fontSize="2xl" fontWeight="bold">{prettyAmount(pendingBzeRedwards)} {nativeAsset?.ticker}</Text>
-                                        {pendingOtherRewards > 0 && (<Text fontSize="sm">{` + ${pendingOtherRewards} others`}</Text>)}
+                                        <Text fontSize="xl" fontWeight="bold" letterSpacing="tight">
+                                            {prettyAmount(pendingBzeRedwards)} {nativeAsset?.ticker}
+                                        </Text>
+                                        {pendingOtherRewards > 0 && (
+                                            <Text fontSize="sm" color="fg.muted">
+                                                {` + ${pendingOtherRewards}`}
+                                            </Text>
+                                        )}
                                     </Box>
                                 </Skeleton>
                                 <Skeleton asChild loading={summaryLoading}>
-                                    <Text fontSize="sm" color="blue.500">≈ ${prettyAmount(pendingUsdRewards)}</Text>
+                                    <Text fontSize="xs" color="blue.500" fontWeight="medium">
+                                        ≈ ${prettyAmount(pendingUsdRewards)}
+                                    </Text>
                                 </Skeleton>
                             </VStack>
                         </Card.Body>
                     </Card.Root>
                 </Grid>
 
-                {/* Staking Cards */}
-                <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="6">
-                    <NativeStakingCard stakingData={stakingData} isLoading={isLoading} onClaimSuccess={reload} />
+                {/* Staking Opportunities */}
+                <VStack gap={3} align="stretch">
+                    <NativeStakingCard
+                        stakingData={stakingData}
+                        isLoading={isLoading}
+                        onClaimSuccess={reload}
+                    />
                     {!isLoadingStakingRewards && filteredOpportunities.map((sr) => (
                         <RewardsStakingBox
                             key={sr.reward_id}
@@ -263,7 +336,7 @@ const StakingPage = () => {
                             onClick={() => openModal(sr)}
                         />
                     ))}
-                </Grid>
+                </VStack>
 
                 {/* Action Modal */}
                 {isModalOpen && (
@@ -276,6 +349,7 @@ const StakingPage = () => {
                     />)}
             </VStack>
         </Container>
+        </Box>
     );
 };
 
