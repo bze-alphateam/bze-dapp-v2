@@ -30,30 +30,10 @@ import {TokenLogo} from "@/components/ui/token_logo";
 import { useAssets } from '@/hooks/useAssets';
 import { useBalances } from '@/hooks/useBalances';
 import { useLiquidityPools } from '@/hooks/useLiquidityPools';
-import {prettyAmount, uAmountToBigNumberAmount} from '@/utils/amount';
+import {prettyAmount, uAmountToBigNumberAmount, amountToBigNumberUAmount, toBigNumber} from '@/utils/amount';
 import BigNumber from 'bignumber.js';
 import { ammRouter } from '@/service/amm_router';
-
-interface Route {
-  type: 'LP' | 'OrderBook';
-  percentage: number;
-  amount: string;
-  pools?: string[];
-}
-
-const mockRoutes: Route[] = [
-  {
-    type: 'LP',
-    percentage: 70,
-    amount: '700.00',
-    pools: ['BZE/USDT Pool', 'Multi-hop Pool'],
-  },
-  {
-    type: 'OrderBook',
-    percentage: 30,
-    amount: '300.00',
-  },
-];
+import { SwapRouteResult } from '@/types/liquidity_pool';
 
 const slippagePresets = [1, 2, 5];
 
@@ -242,7 +222,7 @@ const AssetSelector = memo(({
 AssetSelector.displayName = 'AssetSelector';
 
 export default function SwapPage() {
-  const { assetsLpExcluded } = useAssets();
+  const { assetsLpExcluded, denomTicker, getAsset } = useAssets();
   const { getBalanceByDenom } = useBalances();
   const { pools } = useLiquidityPools();
 
@@ -307,8 +287,8 @@ export default function SwapPage() {
   const [slippage, setSlippage] = useState(2);
   const [customSlippage, setCustomSlippage] = useState('');
   const [useOrderBook, setUseOrderBook] = useState(true);
-  const [estimatedOutput] = useState('985.43');
-  const [priceImpact] = useState('0.15');
+  const [routeResult, setRouteResult] = useState<SwapRouteResult | null>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
   // Set default assets once they're loaded
   useMemo(() => {
@@ -319,6 +299,65 @@ export default function SwapPage() {
       setToAsset(assetsWithBalanceInfo[1]);
     }
   }, [assetsWithBalanceInfo, fromAsset, toAsset]);
+
+  // Find optimal route when inputs change
+  useEffect(() => {
+    // Reset route and output if no valid input
+    if (!fromAsset || !toAsset || !fromAmount) {
+      setRouteResult(null);
+      setToAmount('');
+      return;
+    }
+
+    // Don't calculate if same asset
+    if (fromAsset.denom === toAsset.denom) {
+      setRouteResult(null);
+      setToAmount('');
+      return;
+    }
+
+    // Parse and validate amount
+    const amount = toBigNumber(fromAmount);
+    if (amount.isNaN() || amount.lte(0)) {
+      setRouteResult(null);
+      setToAmount('');
+      return;
+    }
+
+    // Convert human-readable amount to micro amount
+    const amountInMicro = amountToBigNumberUAmount(amount, fromAsset.decimals);
+
+    setIsCalculatingRoute(true);
+
+    // Find optimal route (async to not block UI)
+    setTimeout(() => {
+      try {
+        const route = ammRouter.findOptimalRoute(
+          fromAsset.denom,
+          toAsset.denom,
+          amountInMicro,
+          3, // max 3 hops
+          true // use cache
+        );
+
+        if (route) {
+          setRouteResult(route);
+          // Convert expected output from micro to human-readable
+          const outputAmount = uAmountToBigNumberAmount(route.expectedOutput, toAsset.decimals);
+          setToAmount(outputAmount.toString());
+        } else {
+          setRouteResult(null);
+          setToAmount('');
+        }
+      } catch (error) {
+        console.error('Error calculating route:', error);
+        setRouteResult(null);
+        setToAmount('');
+      } finally {
+        setIsCalculatingRoute(false);
+      }
+    }, 0);
+  }, [fromAsset, toAsset, fromAmount]);
 
   // Check if user has sufficient balance
   const hasInsufficientBalance = useMemo(() => {
@@ -340,8 +379,16 @@ export default function SwapPage() {
     if (fromAsset.denom === toAsset.denom) return false;
 
     // Must have sufficient balance
-    return !hasInsufficientBalance;
-  }, [fromAmount, fromAsset, toAsset, hasInsufficientBalance]);
+    if (hasInsufficientBalance) return false;
+
+    // Must have a valid route
+    if (!routeResult) return false;
+
+    // Must not be calculating
+    if (isCalculatingRoute) return false;
+
+    return true;
+  }, [fromAmount, fromAsset, toAsset, hasInsufficientBalance, routeResult, isCalculatingRoute]);
 
   const handleSwapAssets = () => {
     const temp = fromAsset;
@@ -365,44 +412,40 @@ export default function SwapPage() {
     }
   };
 
+  const handleSwapSubmit = async () => {
+    // TODO: Implement swap message submission
+    // This function will:
+    // 1. Convert fromAmount to micro amount
+    // 2. Calculate minimum output based on slippage tolerance
+    // 3. Create swap message(s) based on routeResult.route (pool IDs)
+    // 4. Sign and broadcast transaction
+    // 5. Handle success/error states
+
+    if (!fromAsset || !toAsset || !routeResult || !fromAmount) {
+      console.error('Missing required data for swap');
+      return;
+    }
+
+    console.log('Swap parameters:', {
+      fromAsset: fromAsset.ticker,
+      toAsset: toAsset.ticker,
+      fromAmount,
+      expectedOutput: routeResult.expectedOutput.toString(),
+      route: routeResult.route,
+      path: routeResult.path,
+      slippage,
+      priceImpact: routeResult.priceImpact.toString()
+    });
+
+    // Message submission will be implemented here
+  };
+
   const calculateUSDValue = (amount: string, asset: typeof assetsWithBalanceInfo[0] | null) => {
     // TODO: Integrate with USD price data from context
     // For now, return null until USD pricing is available
     if (!asset) return null;
     return null;
   };
-
-
-  const RouteItem = ({ route }: { route: Route }) => (
-      <Card.Root variant="subtle" p="3">
-        <VStack align="start" gap="2">
-          <HStack justify="space-between" w="full">
-            <Badge
-                colorScheme={route.type === 'LP' ? 'blue' : 'green'}
-                variant="subtle"
-            >
-              {route.type}
-            </Badge>
-            <Text fontSize="sm" fontWeight="medium">
-              {route.percentage}%
-            </Text>
-          </HStack>
-          <Text fontSize="sm" color="fg.muted">
-            Amount: {route.amount} {toAsset?.ticker || ''}
-          </Text>
-          {route.pools && (
-              <VStack align="start" gap="1">
-                {route.pools.map((pool, index) => (
-                    <HStack key={index} fontSize="xs" color="fg.muted">
-                      <Text>{pool}</Text>
-                      {index < route.pools!.length - 1 && <LuArrowRight size={12} />}
-                    </HStack>
-                ))}
-              </VStack>
-          )}
-        </VStack>
-      </Card.Root>
-  );
 
   return (
       <Box minH="100vh" bg="bg.subtle">
@@ -606,7 +649,7 @@ export default function SwapPage() {
                 </Box>
 
                 {/* Estimated Output & Price Impact */}
-                {fromAmount && (
+                {fromAmount && routeResult && (
                     <Box px="6" pt="2">
                       <Card.Root variant="subtle" p="4" borderRadius="lg">
                         <VStack gap="3" align="stretch">
@@ -615,7 +658,7 @@ export default function SwapPage() {
                               Estimated Output
                             </Text>
                             <Text fontSize="sm" fontWeight="semibold">
-                              {estimatedOutput} {toAsset?.ticker || ''}
+                              {prettyAmount(uAmountToBigNumberAmount(routeResult.expectedOutput, toAsset?.decimals || 6))} {toAsset?.ticker || ''}
                             </Text>
                           </HStack>
                           <HStack justify="space-between">
@@ -623,19 +666,49 @@ export default function SwapPage() {
                               Price Impact
                             </Text>
                             <Badge
-                              colorPalette={parseFloat(priceImpact) > 1 ? 'red' : 'green'}
+                              colorPalette={routeResult.priceImpact.gt(1) ? 'red' : routeResult.priceImpact.gt(0.5) ? 'yellow' : 'green'}
                               variant="subtle"
                             >
-                              {priceImpact}%
+                              {routeResult.priceImpact.toFixed(2)}%
                             </Badge>
+                          </HStack>
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+                              Total Fees
+                            </Text>
+                            <Text fontSize="sm" fontWeight="medium">
+                              {prettyAmount(uAmountToBigNumberAmount(routeResult.totalFees, toAsset?.decimals || 6))} {toAsset?.ticker || ''}
+                            </Text>
                           </HStack>
                         </VStack>
                       </Card.Root>
                     </Box>
                 )}
+                {fromAmount && isCalculatingRoute && (
+                    <Box px="6" pt="2">
+                      <Card.Root variant="subtle" p="4" borderRadius="lg">
+                        <Text fontSize="sm" color="fg.muted" textAlign="center">
+                          Calculating best route...
+                        </Text>
+                      </Card.Root>
+                    </Box>
+                )}
+                {fromAmount && !isCalculatingRoute && !routeResult && (
+                    <Box px="6" pt="2">
+                      <Alert.Root status="warning">
+                        <Alert.Indicator />
+                        <Alert.Content>
+                          <Alert.Title>No Route Found</Alert.Title>
+                          <Alert.Description>
+                            No available liquidity pools to swap these assets
+                          </Alert.Description>
+                        </Alert.Content>
+                      </Alert.Root>
+                    </Box>
+                )}
 
                 {/* Routes Section */}
-                {fromAmount && (
+                {fromAmount && routeResult && (
                     <Box px="6">
                       <Button
                           variant="ghost"
@@ -645,20 +718,67 @@ export default function SwapPage() {
                           justifyContent="space-between"
                           colorPalette="gray"
                       >
-                        <Text fontSize="sm" fontWeight="medium">Trade Routes</Text>
+                        <Text fontSize="sm" fontWeight="medium">Trade Route ({routeResult.pools.length} hop{routeResult.pools.length > 1 ? 's' : ''})</Text>
                         {showRoutes ? <LuChevronUp size={18} /> : <LuChevronDown size={18} />}
                       </Button>
 
                       <Collapsible.Root open={showRoutes}>
                         <Collapsible.Content>
-                          <VStack gap="3" mt="3" align="stretch">
-                            <Text fontSize="xs" color="fg.muted" textAlign="center" fontWeight="medium">
-                              Your trade will be split across:
-                            </Text>
-                            {mockRoutes.map((route, index) => (
-                                <RouteItem key={index} route={route} />
-                            ))}
-                          </VStack>
+                          <Box mt="3">
+                            <Card.Root variant="subtle" p="3">
+                              {/* Route Path */}
+                              <Flex wrap="wrap" gap="2" align="center" justify="center">
+                                {routeResult.path.map((denom, index) => {
+                                  const asset = getAsset(denom);
+                                  const isLast = index === routeResult.path.length - 1;
+                                  const pool = !isLast ? routeResult.pools[index] : null;
+
+                                  return (
+                                    <Flex key={index} align="center" gap="2">
+                                      {/* Asset */}
+                                      <Tooltip
+                                        content={`${asset?.name || denomTicker(denom)}${pool ? ` → Pool ${denomTicker(pool.base)}/${denomTicker(pool.quote)}` : ''}`}
+                                        showArrow
+                                      >
+                                        <HStack
+                                          gap="1.5"
+                                          px="2"
+                                          py="1.5"
+                                          borderRadius="md"
+                                          borderWidth="1px"
+                                          bg="bg.panel"
+                                          _hover={{ bg: "bg.muted" }}
+                                          transition="background 0.2s"
+                                        >
+                                          <TokenLogo
+                                            src={asset?.logo || ''}
+                                            symbol={denomTicker(denom)}
+                                            size="6"
+                                            circular={true}
+                                          />
+                                          <Text fontSize="sm" fontWeight="medium">
+                                            {denomTicker(denom)}
+                                          </Text>
+                                        </HStack>
+                                      </Tooltip>
+
+                                      {/* Arrow with pool info */}
+                                      {!isLast && pool && (
+                                        <VStack gap="0" align="center">
+                                          <Box color="fg.muted">
+                                            <LuArrowRight size={16} />
+                                          </Box>
+                                          <Text fontSize="xs" color="fg.muted" fontWeight="medium">
+                                            {toBigNumber(pool.fee).multipliedBy(100).toFixed(2)}%
+                                          </Text>
+                                        </VStack>
+                                      )}
+                                    </Flex>
+                                  );
+                                })}
+                              </Flex>
+                            </Card.Root>
+                          </Box>
                         </Collapsible.Content>
                       </Collapsible.Root>
                     </Box>
@@ -685,13 +805,20 @@ export default function SwapPage() {
                       size="xl"
                       w="full"
                       disabled={!canSubmit}
+                      onClick={handleSwapSubmit}
                       colorPalette="blue"
                       fontSize="lg"
                       fontWeight="bold"
                       h="14"
                       borderRadius="xl"
                   >
-                    {!fromAmount ? 'Enter Amount' : 'Swap'}
+                    {!fromAmount
+                      ? 'Enter Amount'
+                      : isCalculatingRoute
+                        ? 'Finding Route...'
+                        : !routeResult
+                          ? 'No Route Available'
+                          : 'Swap'}
                   </Button>
                 </Box>
               </VStack>
