@@ -22,7 +22,8 @@ import {
     LuInfo,
     LuDroplets,
     LuArrowLeftRight,
-    LuSearch, LuFactory,
+    LuSearch,
+    LuFactory,
 } from 'react-icons/lu'
 import {Asset} from "@/types/asset";
 import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
@@ -436,20 +437,38 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
             >
                 <VStack align="stretch" gap={4}>
                     {/* Coin Stats */}
-                    <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
-                        <Box>
-                            <Text color="fg.muted" fontSize="sm">Supply on BeeZee</Text>
-                            <HighlightText fontWeight="medium">{formattedSupply} {asset.ticker}</HighlightText>
+                    <Grid gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={3}>
+                        <Box
+                            bgGradient="to-br"
+                            gradientFrom="purple.500/10"
+                            gradientTo="purple.600/10"
+                            borderWidth="1px"
+                            borderColor="purple.500/20"
+                            borderRadius="lg"
+                            p={4}
+                        >
+                            <Text color="fg.muted" fontSize="xs" fontWeight="semibold" textTransform="uppercase" mb={2}>
+                                Supply on BeeZee
+                            </Text>
+                            <HighlightText fontWeight="bold" fontSize="lg" color="purple.600">
+                                {formattedSupply} {asset.ticker}
+                            </HighlightText>
                         </Box>
-                        <Box>
-                            <Text color="fg.muted" fontSize="sm">24h Volume</Text>
-                            <HighlightText fontWeight="medium">{prettyAmount(getAsset24hTradedVolume)} {asset.ticker}</HighlightText>
-                        </Box>
-                        <Box>
-                            <Text color="fg.muted" fontSize="sm">Type</Text>
-                            <Badge colorPalette={getTypeColor(asset.type)} size="sm">
-                                {asset.type.toUpperCase()}
-                            </Badge>
+                        <Box
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/10"
+                            gradientTo="blue.600/10"
+                            borderWidth="1px"
+                            borderColor="blue.500/20"
+                            borderRadius="lg"
+                            p={4}
+                        >
+                            <Text color="fg.muted" fontSize="xs" fontWeight="semibold" textTransform="uppercase" mb={2}>
+                                24h Volume
+                            </Text>
+                            <HighlightText fontWeight="bold" fontSize="lg" color="blue.600">
+                                {prettyAmount(getAsset24hTradedVolume)} {asset.ticker}
+                            </HighlightText>
                         </Box>
                     </Grid>
                     {/* IBC Details */}
@@ -457,26 +476,76 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                         <>
                             <Separator />
                             <Box>
-                                <HStack mb={3}>
-                                    <LuInfo size={16} />
-                                    <Text fontWeight="semibold">IBC Details</Text>
+                                <HStack mb={3} gap={2}>
+                                    <LuInfo size={16} color="var(--chakra-colors-teal-500)" />
+                                    <Text fontWeight="semibold" fontSize="md">IBC Details</Text>
                                 </HStack>
                                 <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Source Chain</Text>
-                                        <Text fontSize="sm">{asset.IBCData?.counterparty.chainPrettyName}</Text>
+                                    <Box
+                                        bgGradient="to-br"
+                                        gradientFrom="teal.500/8"
+                                        gradientTo="teal.600/8"
+                                        borderWidth="1px"
+                                        borderColor="teal.500/20"
+                                        borderRadius="md"
+                                        p={3}
+                                    >
+                                        <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                            Source Chain
+                                        </Text>
+                                        <Text fontSize="sm" fontWeight="medium" color="teal.600">
+                                            {asset.IBCData?.counterparty.chainPrettyName}
+                                        </Text>
                                     </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Channel ID</Text>
-                                        <Text fontSize="sm" fontFamily="mono">{asset.IBCData?.chain.channelId}</Text>
+                                    <Box
+                                        bgGradient="to-br"
+                                        gradientFrom="teal.500/8"
+                                        gradientTo="teal.600/8"
+                                        borderWidth="1px"
+                                        borderColor="teal.500/20"
+                                        borderRadius="md"
+                                        p={3}
+                                    >
+                                        <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                            Channel ID
+                                        </Text>
+                                        <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="teal.600">
+                                            {asset.IBCData?.chain.channelId}
+                                        </Text>
                                     </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Base Denom</Text>
-                                        <Text fontSize="sm" fontFamily="mono">{asset.IBCData?.counterparty.baseDenom}</Text>
+                                    <Box
+                                        bgGradient="to-br"
+                                        gradientFrom="teal.500/8"
+                                        gradientTo="teal.600/8"
+                                        borderWidth="1px"
+                                        borderColor="teal.500/20"
+                                        borderRadius="md"
+                                        p={3}
+                                        gridColumn={{ base: '1', sm: 'span 2' }}
+                                    >
+                                        <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                            Base Denom
+                                        </Text>
+                                        <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="teal.600" wordBreak="break-all">
+                                            {asset.IBCData?.counterparty.baseDenom}
+                                        </Text>
                                     </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Path</Text>
-                                        <Text fontSize="sm" fontFamily="mono">transfer/{asset.IBCData?.chain.channelId}/{asset.IBCData?.counterparty.baseDenom}</Text>
+                                    <Box
+                                        bgGradient="to-br"
+                                        gradientFrom="teal.500/8"
+                                        gradientTo="teal.600/8"
+                                        borderWidth="1px"
+                                        borderColor="teal.500/20"
+                                        borderRadius="md"
+                                        p={3}
+                                        gridColumn={{ base: '1', sm: 'span 2' }}
+                                    >
+                                        <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                            Path
+                                        </Text>
+                                        <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="teal.600" wordBreak="break-all">
+                                            transfer/{asset.IBCData?.chain.channelId}/{asset.IBCData?.counterparty.baseDenom}
+                                        </Text>
                                     </Box>
                                 </Grid>
                             </Box>
@@ -487,20 +556,97 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                         <>
                             <Separator />
                             <Box>
-                                <HStack mb={3}>
-                                    <LuFactory size={16} />
-                                    <Text fontWeight="semibold">Factory Details</Text>
+                                <HStack mb={3} gap={2}>
+                                    <LuFactory size={16} color="var(--chakra-colors-blue-500)" />
+                                    <Text fontWeight="semibold" fontSize="md">Factory Details</Text>
                                 </HStack>
-                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Creator</Text>
-                                        <Text fontSize="sm" fontFamily="mono">{assetCreatorAddress}</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Admin</Text>
-                                        <Text fontSize="sm">{adminAddress !== '' ? adminAddress : 'Nobody'}</Text>
-                                    </Box>
-                                </Grid>
+                                <VStack align="stretch" gap={3}>
+                                    <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
+                                        <Box
+                                            bgGradient="to-br"
+                                            gradientFrom="blue.500/8"
+                                            gradientTo="blue.600/8"
+                                            borderWidth="1px"
+                                            borderColor="blue.500/20"
+                                            borderRadius="md"
+                                            p={3}
+                                        >
+                                            <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                                Creator
+                                            </Text>
+                                            <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="blue.600" wordBreak="break-all">
+                                                {assetCreatorAddress}
+                                            </Text>
+                                        </Box>
+                                        <Box
+                                            bgGradient="to-br"
+                                            gradientFrom="blue.500/8"
+                                            gradientTo="blue.600/8"
+                                            borderWidth="1px"
+                                            borderColor="blue.500/20"
+                                            borderRadius="md"
+                                            p={3}
+                                        >
+                                            <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                                Admin
+                                            </Text>
+                                            <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="blue.600" wordBreak="break-all">
+                                                {adminAddress !== '' ? adminAddress : 'Nobody'}
+                                            </Text>
+                                        </Box>
+                                    </Grid>
+
+                                    {/* Admin Warning/Notice */}
+                                    {adminAddress !== '' ? (
+                                        <Box
+                                            bgGradient="to-br"
+                                            gradientFrom="orange.500/10"
+                                            gradientTo="orange.600/10"
+                                            borderWidth="1px"
+                                            borderColor="orange.500/30"
+                                            borderRadius="md"
+                                            p={3}
+                                        >
+                                            <HStack gap={2} align="start">
+                                                <Box flexShrink={0} mt={0.5}>
+                                                    <LuInfo size={16} color="var(--chakra-colors-orange-500)" />
+                                                </Box>
+                                                <VStack align="start" gap={1}>
+                                                    <Text fontSize="sm" fontWeight="semibold" color="orange.600">
+                                                        Centralized Supply Control
+                                                    </Text>
+                                                    <Text fontSize="xs" color="fg.muted">
+                                                        This token has an admin who can mint new tokens or burn existing ones, potentially affecting the total supply.
+                                                    </Text>
+                                                </VStack>
+                                            </HStack>
+                                        </Box>
+                                    ) : (
+                                        <Box
+                                            bgGradient="to-br"
+                                            gradientFrom="green.500/10"
+                                            gradientTo="green.600/10"
+                                            borderWidth="1px"
+                                            borderColor="green.500/30"
+                                            borderRadius="md"
+                                            p={3}
+                                        >
+                                            <HStack gap={2} align="start">
+                                                <Box flexShrink={0} mt={0.5}>
+                                                    <LuInfo size={16} color="var(--chakra-colors-green-500)" />
+                                                </Box>
+                                                <VStack align="start" gap={1}>
+                                                    <Text fontSize="sm" fontWeight="semibold" color="green.600">
+                                                        Decentralized Supply
+                                                    </Text>
+                                                    <Text fontSize="xs" color="fg.muted">
+                                                        Ownership has been renounced. No one can mint or burn tokens, ensuring the supply remains fixed.
+                                                    </Text>
+                                                </VStack>
+                                            </HStack>
+                                        </Box>
+                                    )}
+                                </VStack>
                             </Box>
                         </>
                     )}
