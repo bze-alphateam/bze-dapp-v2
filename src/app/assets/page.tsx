@@ -316,6 +316,12 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
         return split.length > 1 ? split[1] : "Unknown"
     }, [asset.denom])
 
+    const supplyLabel = useMemo(() => {
+        if (asset.type === ASSET_TYPE_FACTORY) return "Total Supply"
+        if (asset.type === ASSET_TYPE_IBC) return "Supply on BeeZee"
+        return "Current Supply"
+    }, [asset.type])
+
     useEffect(() => {
         //change the state of it only if it wasn't loaded yet
         if (priceLoadedOnce) return;
@@ -448,7 +454,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                             p={4}
                         >
                             <Text color="fg.muted" fontSize="xs" fontWeight="semibold" textTransform="uppercase" mb={2}>
-                                Supply on BeeZee
+                                {supplyLabel}
                             </Text>
                             <HighlightText fontWeight="bold" fontSize="lg" color="purple.600">
                                 {formattedSupply} {asset.ticker}
