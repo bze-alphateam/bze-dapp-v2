@@ -56,6 +56,7 @@ import {CONNECTION_TYPE_WS} from "@/types/settings";
 import {blockchainEventManager} from "@/service/blockchain_event_manager";
 import {getMarketOrderBookChangedEvent} from "@/utils/events";
 import {addDebounce} from "@/utils/debounce";
+import {HighlightText} from "@/components/ui/highlight";
 
 const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
 
@@ -346,6 +347,10 @@ const TradingPageContent = () => {
             setBuyTotal('');
             return;
         }
+        const amountBN = toBigNumber(amount);
+        if (amountBN.isNaN() || amountBN.lte(0)) {
+            return;
+        }
 
         const total = calculateTotalAmount(buyPrice, amount, quoteAsset?.decimals || 0);
         if (total !== '') {
@@ -383,6 +388,10 @@ const TradingPageContent = () => {
         setSellAmount(amount);
         if (amount === '') {
             setSellTotal('');
+            return;
+        }
+        const amountBN = toBigNumber(amount);
+        if (amountBN.isNaN() || amountBN.lte(0)) {
             return;
         }
 
@@ -712,13 +721,13 @@ const TradingPageContent = () => {
                                                 {marketData?.change || 0}%
                                             </Badge>
                                         </HStack>
-                                        <Text fontSize="2xl" fontWeight="bold" color={priceColor}>
+                                        <HighlightText fontSize="2xl" fontWeight="bold" color={priceColor}>
                                             {lastPrice} {quoteAsset?.ticker}
-                                        </Text>
+                                        </HighlightText>
                                         {shouldShowUsdValues && (
-                                            <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+                                            <HighlightText fontSize="sm" color="fg.muted" fontWeight="medium">
                                                 ${quoteUsdValue(marketData?.last_price)}
-                                            </Text>
+                                            </HighlightText>
                                         )}
                                     </VStack>
                                 </HStack>
@@ -727,35 +736,35 @@ const TradingPageContent = () => {
                         <HStack gap={8} display={{ base: 'none', lg: 'flex' }}>
                             <VStack align="start" gap={1}>
                                 <Text fontSize="xs" color="fg.muted" fontWeight="medium">24h Volume</Text>
-                                <Text fontSize="md" fontWeight="semibold">{dailyVolume} {quoteAsset?.ticker}</Text>
+                                <HighlightText fontSize="md" fontWeight="semibold">{dailyVolume} {quoteAsset?.ticker}</HighlightText>
                                 {shouldShowUsdValues && (
-                                    <Text fontSize="xs" color="fg.muted">
+                                    <HighlightText fontSize="xs" color="fg.muted">
                                         ${quoteUsdValue(marketData?.quote_volume)}
-                                    </Text>
+                                    </HighlightText>
                                 )}
                             </VStack>
                             <Box h="12" w="1px" bg="border.subtle" />
                             <VStack align="start" gap={1}>
                                 <Text fontSize="xs" color="fg.muted" fontWeight="medium">24h High</Text>
-                                <Text fontSize="md" fontWeight="semibold" color="green.500">
+                                <HighlightText fontSize="md" fontWeight="semibold" color="green.500">
                                     {marketData?.high || 0}
-                                </Text>
+                                </HighlightText>
                                 {shouldShowUsdValues && (
-                                    <Text fontSize="xs" color="fg.muted">
+                                    <HighlightText fontSize="xs" color="fg.muted">
                                         ${quoteUsdValue(marketData?.high)}
-                                    </Text>
+                                    </HighlightText>
                                 )}
                             </VStack>
                             <Box h="12" w="1px" bg="border.subtle" />
                             <VStack align="start" gap={1}>
                                 <Text fontSize="xs" color="fg.muted" fontWeight="medium">24h Low</Text>
-                                <Text fontSize="md" fontWeight="semibold" color="red.500">
+                                <HighlightText fontSize="md" fontWeight="semibold" color="red.500">
                                     {marketData?.low || 0}
-                                </Text>
+                                </HighlightText>
                                 {shouldShowUsdValues && (
-                                    <Text fontSize="xs" color="fg.muted">
+                                    <HighlightText fontSize="xs" color="fg.muted">
                                         ${quoteUsdValue(marketData?.low)}
-                                    </Text>
+                                    </HighlightText>
                                 )}
                             </VStack>
                         </HStack>
@@ -786,7 +795,7 @@ const TradingPageContent = () => {
                                     return (
                                         <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(ask.price, ORDER_TYPE_SELL, i)}>
                                             <Text color="red.500">{transformedPrice}</Text>
-                                            <Text>{transformedAmount}</Text>
+                                            <HighlightText>{transformedAmount}</HighlightText>
                                         </HStack>
                                     )
                                 })}
@@ -819,7 +828,7 @@ const TradingPageContent = () => {
                                     return (
                                         <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(bid.price, ORDER_TYPE_BUY, i)}>
                                             <Text color="green.500">{transformedPrice}</Text>
-                                            <Text>{transformedAmount}</Text>
+                                            <HighlightText>{transformedAmount}</HighlightText>
                                         </HStack>
                                     )
                                 })}
@@ -1247,11 +1256,11 @@ const TradingPageContent = () => {
                             <VStack align="stretch" gap={2}>
                                 <HStack justify="space-between">
                                     <Text fontSize="xs" color="fg.muted">{baseAsset?.ticker}</Text>
-                                    <Text fontSize="xs" fontWeight="medium">{displayBaseBalance}</Text>
+                                    <HighlightText fontSize="xs" fontWeight="medium">{displayBaseBalance}</HighlightText>
                                 </HStack>
                                 <HStack justify="space-between">
                                     <Text fontSize="xs" color="fg.muted">{quoteAsset?.ticker}</Text>
-                                    <Text fontSize="xs" fontWeight="medium">{displayQuoteBalance}</Text>
+                                    <HighlightText fontSize="xs" fontWeight="medium">{displayQuoteBalance}</HighlightText>
                                 </HStack>
                             </VStack>
                         </Box>
