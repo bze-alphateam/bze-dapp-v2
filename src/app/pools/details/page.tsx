@@ -61,6 +61,7 @@ import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
 import {PrettyBalance} from "@/types/balance";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards-staking-modals";
+import {HighlightText} from "@/components/ui/highlight";
 
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
@@ -77,8 +78,8 @@ const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: stri
                 <Text fontSize="sm" color="fg.muted">{asset?.name}</Text>
             </HStack>
             <VStack align="center" gap="1">
-                <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">{prettyAmount(amount)}</Text>
-                {usdValue.gt(0) && (<Text fontSize="sm" color="fg.muted">${prettyAmount(usdValue)}</Text>)}
+                <HighlightText fontSize="lg" fontWeight="semibold" color="fg.emphasized">{prettyAmount(amount)}</HighlightText>
+                {usdValue.gt(0) && (<HighlightText fontSize="sm" color="fg.muted">${prettyAmount(usdValue)}</HighlightText>)}
             </VStack>
         </VStack>
     </VStack>
@@ -1263,8 +1264,8 @@ const UserPosition = ({
                             quoteAssetSymbol={quoteAsset?.ticker || ''}
                             size="10"
                         />
-                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(uAmountToAmount(userShares, LP_ASSETS_DECIMALS))}</Text>
-                        <Text fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</Text>
+                        <HighlightText fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(uAmountToAmount(userShares, LP_ASSETS_DECIMALS))}</HighlightText>
+                        <HighlightText fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</HighlightText>
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
@@ -1276,7 +1277,7 @@ const UserPosition = ({
                                     size="6"
                                     circular={true}
                                 />
-                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveBase, baseAsset?.decimals || 0))} {baseAsset?.ticker}</Text>
+                                <HighlightText fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveBase, baseAsset?.decimals || 0))} {baseAsset?.ticker}</HighlightText>
                             </HStack>
                             <HStack gap="2">
                                 <TokenLogo
@@ -1285,13 +1286,13 @@ const UserPosition = ({
                                     size="6"
                                     circular={true}
                                 />
-                                <Text fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0))} {quoteAsset?.ticker}</Text>
+                                <HighlightText fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0))} {quoteAsset?.ticker}</HighlightText>
                             </HStack>
                         </VStack>
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Extra Rewards</Text>
-                        <Text fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">${extraRewardsInUsd}</Text>
+                        <HighlightText fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">${extraRewardsInUsd}</HighlightText>
                         <Button size="sm" variant="outline" colorPalette="green" onClick={() => setShowRewardsModal(true)}>
                             Claim
                         </Button>
@@ -1481,19 +1482,19 @@ const PoolDetailsPageContent = () => {
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Total Liquidity</Text>
                                 <Skeleton asChild loading={!hasPoolData}>
-                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdValue || 0)}</Text>
+                                    <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdValue || 0)}</HighlightText>
                                 </Skeleton>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Volume (24h)</Text>
                                 <Skeleton asChild loading={!hasPoolData}>
-                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdVolume || 0)}</Text>
+                                    <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdVolume || 0)}</HighlightText>
                                 </Skeleton>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Fees (24h)</Text>
                                 <Skeleton asChild loading={!hasPoolData}>
-                                    <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdFees || 0)}</Text>
+                                    <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdFees || 0)}</HighlightText>
                                 </Skeleton>
                             </VStack>
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
