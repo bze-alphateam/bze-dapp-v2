@@ -29,6 +29,7 @@ import BigNumber from "bignumber.js";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
 import {formatUsdAmount} from "@/utils/formatter";
 import {useNavigation} from "@/hooks/useNavigation";
+import {HighlightText} from "@/components/ui/highlight";
 
 interface MarketRowProps {
     market: MarketSDKType
@@ -111,9 +112,9 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
                 {/* Price */}
                 <VStack align="end" gap={1}>
-                    <Text fontWeight="semibold" fontSize="md">
+                    <HighlightText fontWeight="semibold" fontSize="md">
                         {displayPrice} {quoteAsset?.ticker}
-                    </Text>
+                    </HighlightText>
                     <Badge
                         colorPalette={isPositive ? 'green' : 'red'}
                         variant="subtle"
@@ -130,13 +131,13 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
                 {/* Volume */}
                 <VStack align="end" gap={1}>
-                    <Text fontWeight="semibold" fontSize="md">
+                    <HighlightText fontWeight="semibold" fontSize="md">
                         {prettyAmount(displayVolume)} {quoteAsset?.ticker}
-                    </Text>
+                    </HighlightText>
                     {!quoteIsUSDC && (
-                        <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+                        <HighlightText fontSize="sm" color="fg.muted" fontWeight="medium">
                             ${displayUsdVolume}
-                        </Text>
+                        </HighlightText>
                     )}
                 </VStack>
 

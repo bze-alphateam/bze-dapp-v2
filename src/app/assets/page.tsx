@@ -22,7 +22,7 @@ import {
     LuInfo,
     LuDroplets,
     LuArrowLeftRight,
-    LuSearch,
+    LuSearch, LuFactory,
 } from 'react-icons/lu'
 import {Asset} from "@/types/asset";
 import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
@@ -39,6 +39,8 @@ import {createMarketId} from "@/utils/market";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {useLiquidityPools} from "@/hooks/useLiquidityPools";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
+import {HighlightText} from "@/components/ui/highlight";
+import {getFactoryDenomAdminAddress} from "@/query/factory";
 
 const MAX_MARKETS_PER_ASSET = 5;
 
@@ -100,20 +102,20 @@ function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
                 >
                     <Text fontSize="xs" color="fg.muted" mb={1}>TVL</Text>
                     {hasUsdValue ? (
-                        <Text fontSize="lg" fontWeight="semibold">
+                        <HighlightText fontSize="lg" fontWeight="semibold">
                             ${shortNumberFormat(poolData.usdValue)}
-                        </Text>
+                        </HighlightText>
                     ) : (
                         <VStack align={{ base: 'flex-start', sm: 'flex-end' }} gap={0.5}>
                             <Skeleton asChild loading={baseLoading}>
-                                <Text fontSize="sm" fontWeight="medium">
+                                <HighlightText fontSize="sm" fontWeight="medium">
                                     {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals || 0))} {base?.ticker}
-                                </Text>
+                                </HighlightText>
                             </Skeleton>
                             <Skeleton asChild loading={quoteLoading}>
-                                <Text fontSize="sm" fontWeight="medium">
+                                <HighlightText fontSize="sm" fontWeight="medium">
                                     {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals || 0))} {quote?.ticker}
-                                </Text>
+                                </HighlightText>
                             </Skeleton>
                         </VStack>
                     )}
@@ -182,9 +184,9 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
                         <Box textAlign={{ base: 'left', sm: 'right' }}>
                             <Text fontSize="xs" color="fg.muted">24h Volume</Text>
                             <Skeleton asChild loading={marketLoading || quoteLoading}>
-                                <Text fontSize="sm" fontWeight="medium">
+                                <HighlightText fontSize="sm" fontWeight="medium">
                                     {marketData?.quote_volume} {quote?.ticker}
-                                </Text>
+                                </HighlightText>
                             </Skeleton>
                         </Box>
                         <Box textAlign="right">
@@ -198,13 +200,13 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
                                             <LuArrowDownRight size={14} color="var(--chakra-colors-red-500)" />
                                         )
                                     )}
-                                    <Text
+                                    <HighlightText
                                         fontSize="sm"
                                         fontWeight="semibold"
                                         color={marketData && marketData?.change > 0 ? 'green.500' : marketData?.change < 0 ? 'red.500' : 'fg.muted'}
                                     >
                                         {marketData && marketData?.change > 0 ? '+' : ''}{marketData?.change}%
-                                    </Text>
+                                    </HighlightText>
                                 </HStack>
                             </Skeleton>
                         </Box>
@@ -221,6 +223,7 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
 
 function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset, isExpanded: boolean, toggleExpanded: (denom: string) => void, pools: LiquidityPoolSDKType[] }) {
     const [priceLoadedOnce, setPriceLoadedOnce] = useState(false)
+    const [adminAddress, setAdminAddress] = useState<string>("")
 
     const {assetMarketsData, getAsset24hTradedVolume, assetMarkets} = useAssetMarkets(asset.denom)
     const { price, change, isLoading: priceLoading } = useAssetPrice(asset.denom)
@@ -307,6 +310,11 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
         return <Text fontSize="sm" color="red.200">{change}%</Text>
     }, [change])
 
+    const assetCreatorAddress = useMemo(() => {
+        const split = asset.denom.split('/')
+        return split.length > 1 ? split[1] : "Unknown"
+    }, [asset.denom])
+
     useEffect(() => {
         //change the state of it only if it wasn't loaded yet
         if (priceLoadedOnce) return;
@@ -314,6 +322,13 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
         setPriceLoadedOnce(!priceLoading)
         //eslint-disable-next-line
     }, [priceLoading]);
+
+    useEffect(() => {
+        if (asset.denom === '' || asset.type !== ASSET_TYPE_FACTORY) return;
+        const loadAdminAddress = async () => setAdminAddress(await getFactoryDenomAdminAddress(asset.denom))
+
+        loadAdminAddress()
+    }, [asset.denom, asset.type]);
 
     return (
         <Box
@@ -370,9 +385,9 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                 <HStack gap={4}>
                     <Box textAlign="right" display={{ base: 'none', sm: 'block' }}>
                         <Skeleton asChild loading={!priceLoadedOnce}>
-                            <Text fontWeight="medium" fontSize="md">
+                            <HighlightText fontWeight="medium" fontSize="md">
                                 ${formattedPrice}
-                            </Text>
+                            </HighlightText>
                         </Skeleton>
                         <Skeleton asChild loading={!priceLoadedOnce}>
                             <HStack gap={1} justify="flex-end">
@@ -395,7 +410,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
             <Box display={{ base: 'block', sm: 'none' }} px={4} pb={2}>
                 <HStack justify="space-between">
                     <Skeleton asChild loading={!priceLoadedOnce}>
-                        <Text fontWeight="medium">${formattedPrice}</Text>
+                        <HighlightText fontWeight="medium">${formattedPrice}</HighlightText>
                     </Skeleton>
                     <HStack gap={1}>
                         <Skeleton asChild loading={!priceLoadedOnce}>
@@ -420,15 +435,15 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                 }}
             >
                 <VStack align="stretch" gap={4}>
-                    {/* Market Stats */}
+                    {/* Coin Stats */}
                     <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(3, 1fr)' }} gap={3}>
                         <Box>
                             <Text color="fg.muted" fontSize="sm">Supply on BeeZee</Text>
-                            <Text fontWeight="medium">{formattedSupply} {asset.ticker}</Text>
+                            <HighlightText fontWeight="medium">{formattedSupply} {asset.ticker}</HighlightText>
                         </Box>
                         <Box>
                             <Text color="fg.muted" fontSize="sm">24h Volume</Text>
-                            <Text fontWeight="medium">{prettyAmount(getAsset24hTradedVolume)} {asset.ticker}</Text>
+                            <HighlightText fontWeight="medium">{prettyAmount(getAsset24hTradedVolume)} {asset.ticker}</HighlightText>
                         </Box>
                         <Box>
                             <Text color="fg.muted" fontSize="sm">Type</Text>
@@ -437,6 +452,28 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                             </Badge>
                         </Box>
                     </Grid>
+                    {/* Factory Details */}
+                    {asset.type === ASSET_TYPE_FACTORY && (
+                        <>
+                            <Separator />
+                            <Box>
+                                <HStack mb={3}>
+                                    <LuFactory size={16} />
+                                    <Text fontWeight="semibold">Factory Details</Text>
+                                </HStack>
+                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Creator</Text>
+                                        <Text fontSize="sm" fontFamily="mono">{assetCreatorAddress}</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Admin</Text>
+                                        <Text fontSize="sm">{adminAddress !== '' ? adminAddress : 'Nobody'}</Text>
+                                    </Box>
+                                </Grid>
+                            </Box>
+                        </>
+                    )}
 
                     <Separator />
 
@@ -473,48 +510,6 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                         <Text color="fg.muted" fontSize="sm">No liquidity pools available</Text>
                         )}
                     </Box>
-
-                    {/* Factory Details */}
-                    {asset.type === 'factory' && (
-                        <>
-                            <Separator />
-                            <Box>
-                                <HStack mb={3}>
-                                    <LuInfo size={16} />
-                                    <Text fontWeight="semibold">Factory Details</Text>
-                                </HStack>
-                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Creator</Text>
-                                        <Text fontSize="sm" fontFamily="mono">bzesdsa...2311213</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Created At</Text>
-                                        <Text fontSize="sm">Joi la 13:30</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Current Supply</Text>
-                                        <Text fontSize="sm">1,333,212.231</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Max Supply</Text>
-                                        <Text fontSize="sm">200,000,000</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Features</Text>
-                                        <HStack gap={2}>
-                                            {1 && (
-                                                <Badge colorPalette="green" size="sm">Mintable</Badge>
-                                            )}
-                                            {1 && (
-                                                <Badge colorPalette="orange" size="sm">Burnable</Badge>
-                                            )}
-                                        </HStack>
-                                    </Box>
-                                </Grid>
-                            </Box>
-                        </>
-                    )}
 
                     {/* IBC Details */}
                     {asset.type === 'ibc' && (
@@ -633,9 +628,9 @@ export default function AssetsPage() {
                                     Native
                                 </Text>
                                 <Skeleton asChild loading={isLoading}>
-                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                    <HighlightText fontSize="2xl" fontWeight="bold" letterSpacing="tight">
                                         {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_NATIVE).length}
-                                    </Text>
+                                    </HighlightText>
                                 </Skeleton>
                             </VStack>
                         </Box>
@@ -651,9 +646,9 @@ export default function AssetsPage() {
                                     Factory
                                 </Text>
                                 <Skeleton asChild loading={isLoading}>
-                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                    <HighlightText fontSize="2xl" fontWeight="bold" letterSpacing="tight">
                                         {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_FACTORY).length}
-                                    </Text>
+                                    </HighlightText>
                                 </Skeleton>
                             </VStack>
                         </Box>
@@ -669,9 +664,9 @@ export default function AssetsPage() {
                                     IBC
                                 </Text>
                                 <Skeleton asChild loading={isLoading}>
-                                    <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
+                                    <HighlightText fontSize="2xl" fontWeight="bold" letterSpacing="tight">
                                         {assetsLpExcluded.filter(a => a.type === ASSET_TYPE_IBC).length}
-                                    </Text>
+                                    </HighlightText>
                                 </Skeleton>
                             </VStack>
                         </Box>

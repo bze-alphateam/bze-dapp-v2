@@ -25,6 +25,7 @@ import {useBalances} from "@/hooks/useBalances";
 import {calculateUserPoolData} from "@/utils/liquidity_pool";
 import {shortNumberFormat} from "@/utils/formatter";
 import {LiquidityPoolData} from "@/types/liquidity_pool";
+import {HighlightText} from "@/components/ui/highlight";
 
 
 type SortField = 'volume24h' | 'totalLiquidity' | 'apr'
@@ -92,21 +93,21 @@ const DesktopLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquid
                         px="3"
                         py="1.5"
                     >
-                        <Text fontWeight="700" fontSize="sm" color="blue.600">
+                        <HighlightText fontWeight="700" fontSize="sm" color="blue.600">
                             ${shortNumberFormat(userPoolData.userLiquidityUsd)}
-                        </Text>
+                        </HighlightText>
                     </Box>
                 </Box>
             )}
             <Box as="td" p={3}>
-                <Text fontWeight="600" fontSize="md">
+                <HighlightText fontWeight="600" fontSize="md">
                     ${shortNumberFormat(volume24h)}
-                </Text>
+                </HighlightText>
             </Box>
             <Box as="td" p={3}>
-                <Text fontWeight="600" fontSize="md">
+                <HighlightText fontWeight="600" fontSize="md">
                     ${shortNumberFormat(totalLiquidity)}
-                </Text>
+                </HighlightText>
             </Box>
             <Box as="td" p={3}>
                 <Box
@@ -240,9 +241,9 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
                             <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
                                 My Liquidity
                             </Text>
-                            <Text fontWeight="700" fontSize="md" color="blue.600">
+                            <HighlightText fontWeight="700" fontSize="md" color="blue.600">
                                 ${shortNumberFormat(userPoolData.userLiquidityUsd)}
-                            </Text>
+                            </HighlightText>
                         </HStack>
                     </Box>
                 )}
@@ -254,9 +255,9 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
                             <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
                                 24h Volume
                             </Text>
-                            <Text fontWeight="700" fontSize="sm">
+                            <HighlightText fontWeight="700" fontSize="sm">
                                 ${shortNumberFormat(volume24h)}
-                            </Text>
+                            </HighlightText>
                         </VStack>
                     </Box>
                     <Box flex="1" bg="bg.muted" p={2.5} borderRadius="md" borderWidth="1px">
@@ -264,9 +265,9 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
                             <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
                                 Total Liquidity
                             </Text>
-                            <Text fontWeight="700" fontSize="sm">
+                            <HighlightText fontWeight="700" fontSize="sm">
                                 ${shortNumberFormat(totalLiquidity)}
-                            </Text>
+                            </HighlightText>
                         </VStack>
                     </Box>
                 </HStack>
