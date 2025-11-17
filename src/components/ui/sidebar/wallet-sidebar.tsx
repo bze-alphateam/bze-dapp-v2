@@ -76,11 +76,12 @@ const BalanceItem = ({asset, onClick}: BalanceItemProps) => {
     return (
         <Box
             p="3"
-            bg="bg.subtle"
+            bg="bg.panel"
             borderRadius="md"
             borderWidth="1px"
-            _hover={{ bg: 'bg.muted' }}
-            transition="background-color 0.2s"
+            borderColor="border"
+            _hover={{ bg: 'bg.muted', borderColor: 'border.emphasized' }}
+            transition="all 0.2s"
             onMouseLeave={() => setShowSendButton(false)}
             onMouseEnter={() => setShowSendButton(true)}
         >
@@ -315,11 +316,13 @@ const SendForm = ({balances, onClose, selectedTicker}: {balances: AssetBalance[]
                 {selectedCoin && (
                     <Box
                         mt="2"
-                        p="2"
-                        bg="bg.muted"
+                        p="3"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/10"
+                        gradientTo="blue.600/10"
                         borderRadius="md"
                         borderWidth="1px"
-                        borderColor="border.subtle"
+                        borderColor="blue.500/30"
                     >
                         <HStack justify="space-between">
                             <Text fontSize="xs" color="fg.muted">
@@ -618,9 +621,10 @@ export const WalletSidebarContent = () => {
                 {status === WalletState.Connected &&
                     <Box
                         p="3"
-                        bg="bg.subtle"
+                        bg="bg.panel"
                         borderRadius="md"
                         borderWidth="1px"
+                        borderColor="border"
                     >
                         <Text fontSize="xs" color="fg.muted" mb="1">
                             {username ?? "Address"}
@@ -643,14 +647,18 @@ export const WalletSidebarContent = () => {
                                         position="absolute"
                                         top="-35px"
                                         right="0"
-                                        bg="green"
+                                        bgGradient="to-br"
+                                        gradientFrom="blue.500"
+                                        gradientTo="blue.600"
                                         color="white"
-                                        px="2"
-                                        py="1"
+                                        px="3"
+                                        py="1.5"
                                         borderRadius="md"
                                         fontSize="xs"
+                                        fontWeight="semibold"
                                         whiteSpace="nowrap"
                                         zIndex="tooltip"
+                                        shadow="md"
                                     >
                                         Copied!
                                     </Box>

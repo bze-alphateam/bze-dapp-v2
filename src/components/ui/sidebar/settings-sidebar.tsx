@@ -9,7 +9,7 @@ import {
     Separator,
     Box,
     Input,
-    Alert, Badge,
+    Badge,
 } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
 import {useState, useEffect, useMemo, useCallback} from 'react'
@@ -179,16 +179,19 @@ export const SettingsSidebarContent = () => {
                             onChange={(e) => setRestEndpoint(e.target.value)}
                         />
                         {validationResults.rest && (
-                            <Box mt="2">
-                                <Alert.Root
-                                    status={validationResults.rest.isValid ? "success" : "error"}
-                                    size="sm"
-                                >
-                                    <Alert.Indicator />
-                                    <Alert.Description>
-                                        {validationResults.rest.error || 'REST endpoint is valid'}
-                                    </Alert.Description>
-                                </Alert.Root>
+                            <Box
+                                mt="2"
+                                p="3"
+                                bgGradient="to-br"
+                                gradientFrom={validationResults.rest.isValid ? "green.500/15" : "red.500/15"}
+                                gradientTo={validationResults.rest.isValid ? "green.600/15" : "red.600/15"}
+                                borderWidth="1px"
+                                borderColor={validationResults.rest.isValid ? "green.500/30" : "red.500/30"}
+                                borderRadius="md"
+                            >
+                                <Text fontSize="sm" color={validationResults.rest.isValid ? "green.700" : "red.700"} _dark={{color: validationResults.rest.isValid ? "green.300" : "red.300"}}>
+                                    {validationResults.rest.error || 'REST endpoint is valid'}
+                                </Text>
                             </Box>
                         )}
                     </Box>
@@ -206,16 +209,19 @@ export const SettingsSidebarContent = () => {
                             onChange={(e) => setRpcEndpoint(e.target.value)}
                         />
                         {validationResults.rpc && (
-                            <Box mt="2">
-                                <Alert.Root
-                                    status={validationResults.rpc.isValid ? "success" : "error"}
-                                    size="sm"
-                                >
-                                    <Alert.Indicator />
-                                    <Alert.Description>
-                                        {validationResults.rpc.error || 'RPC endpoint is valid'}
-                                    </Alert.Description>
-                                </Alert.Root>
+                            <Box
+                                mt="2"
+                                p="3"
+                                bgGradient="to-br"
+                                gradientFrom={validationResults.rpc.isValid ? "green.500/15" : "red.500/15"}
+                                gradientTo={validationResults.rpc.isValid ? "green.600/15" : "red.600/15"}
+                                borderWidth="1px"
+                                borderColor={validationResults.rpc.isValid ? "green.500/30" : "red.500/30"}
+                                borderRadius="md"
+                            >
+                                <Text fontSize="sm" color={validationResults.rpc.isValid ? "green.700" : "red.700"} _dark={{color: validationResults.rpc.isValid ? "green.300" : "red.300"}}>
+                                    {validationResults.rpc.error || 'RPC endpoint is valid'}
+                                </Text>
                             </Box>
                         )}
                     </Box>
