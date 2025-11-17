@@ -452,6 +452,36 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                             </Badge>
                         </Box>
                     </Grid>
+                    {/* IBC Details */}
+                    {asset.type === ASSET_TYPE_IBC && (
+                        <>
+                            <Separator />
+                            <Box>
+                                <HStack mb={3}>
+                                    <LuInfo size={16} />
+                                    <Text fontWeight="semibold">IBC Details</Text>
+                                </HStack>
+                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Source Chain</Text>
+                                        <Text fontSize="sm">{asset.IBCData?.counterparty.chainPrettyName}</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Channel ID</Text>
+                                        <Text fontSize="sm" fontFamily="mono">{asset.IBCData?.chain.channelId}</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Base Denom</Text>
+                                        <Text fontSize="sm" fontFamily="mono">{asset.IBCData?.counterparty.baseDenom}</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text color="fg.muted" fontSize="sm">Path</Text>
+                                        <Text fontSize="sm" fontFamily="mono">transfer/{asset.IBCData?.chain.channelId}/{asset.IBCData?.counterparty.baseDenom}</Text>
+                                    </Box>
+                                </Grid>
+                            </Box>
+                        </>
+                    )}
                     {/* Factory Details */}
                     {asset.type === ASSET_TYPE_FACTORY && (
                         <>
@@ -510,37 +540,6 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                         <Text color="fg.muted" fontSize="sm">No liquidity pools available</Text>
                         )}
                     </Box>
-
-                    {/* IBC Details */}
-                    {asset.type === 'ibc' && (
-                        <>
-                            <Separator />
-                            <Box>
-                                <HStack mb={3}>
-                                    <LuInfo size={16} />
-                                    <Text fontWeight="semibold">IBC Details</Text>
-                                </HStack>
-                                <Grid gridTemplateColumns={{ base: '1fr', sm: '1fr 1fr' }} gap={3}>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Source Chain</Text>
-                                        <Text fontSize="sm">AtomOne</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Channel ID</Text>
-                                        <Text fontSize="sm" fontFamily="mono">channel-2</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Base Denom</Text>
-                                        <Text fontSize="sm" fontFamily="mono">atone</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text color="fg.muted" fontSize="sm">Path</Text>
-                                        <Text fontSize="sm" fontFamily="mono">transfer/channel-2/test</Text>
-                                    </Box>
-                                </Grid>
-                            </Box>
-                        </>
-                    )}
                 </VStack>
             </Box>
         </Box>
