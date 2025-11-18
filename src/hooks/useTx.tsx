@@ -16,7 +16,8 @@ interface TxOptions {
     onSuccess?: (res: DeliverTxResponse) => void;
     onFailure?: (err: string) => void;
     memo?: string;
-    progressTrackerTimeout?: number
+    progressTrackerTimeout?: number;
+    fallbackOnSimulate?: boolean;
 }
 
 export enum TxStatus {
@@ -78,25 +79,17 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
     }, [isSigningClientReady, signingClientError]);
 
     const simulateFee = useCallback(async (messages: EncodeObject[], memo: string | undefined): Promise<StdFee> => {
-        try {
-            const gasPrice = 0.02;
-            const gasDenom = getChainNativeAssetDenom();
-            // @ts-expect-error is checked above
-            const gasEstimated = await signingClient.simulate(address, messages, memo);
+        const gasPrice = 0.02;
+        const gasDenom = getChainNativeAssetDenom();
+        // @ts-expect-error is checked above
+        const gasEstimated = await signingClient.simulate(address, messages, memo);
 
-            const gasAmount = BigNumber(gasEstimated).multipliedBy(1.5);
-            const gasPayment = gasAmount.multipliedBy(gasPrice).toFixed(0).toString();
-            return {
-                amount: coins(gasPayment, gasDenom),
-                gas: gasAmount.toFixed(0)
-            };
-
-        } catch (e) {
-            console.error("failed to get gas", e);
-            setProgressTrack("Using default fee")
-
-            return defaultFee
-        }
+        const gasAmount = BigNumber(gasEstimated).multipliedBy(1.5);
+        const gasPayment = gasAmount.multipliedBy(gasPrice).toFixed(0).toString();
+        return {
+            amount: coins(gasPayment, gasDenom),
+            gas: gasAmount.toFixed(0)
+        };
     }, [signingClient, address]);
 
     const getFee = useCallback(async (messages: EncodeObject[], options?: TxOptions|undefined): Promise<StdFee> => {
@@ -108,14 +101,15 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
                 return await simulateFee(messages, options?.memo);
             }
         } catch (e) {
-            console.error(e);
-            // @ts-expect-error - small chances for e to be undefined
-            toast.error('Failed to get signing client', e.message ?? 'An unexpected error has occurred')
+            console.error("could not get fee: ", e);
 
-            setProgressTrack("Using default fee")
-            return defaultFee;
+            if (options?.fallbackOnSimulate) {
+                return defaultFee;
+            } else {
+                throw e;
+            }
         }
-    }, [simulateFee, toast]);
+    }, [simulateFee]);
 
     const tx = useCallback(async (msgs: EncodeObject[], options?: TxOptions|undefined) => {
         if (!address) {
@@ -129,10 +123,10 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
 
         setProgressTrack("Getting fee")
-        const fee = await getFee(msgs, options);
         const broadcastToastId = toast.loading(TxStatus.Broadcasting,'Waiting for transaction to be signed and included in block')
         if (signingClient) {
             try {
+                const fee = await getFee(msgs, options);
                 setProgressTrack("Signing transaction")
                 const resp = await signingClient.signAndBroadcast(address, msgs, fee, options?.memo ?? DEFAULT_TX_MEMO)
                 if (isDeliverTxSuccess(resp)) {

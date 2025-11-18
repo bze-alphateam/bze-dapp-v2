@@ -39,6 +39,8 @@ import {useBZETx} from "@/hooks/useTx";
 import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
+import {HighlightText} from "@/components/ui/highlight";
+import {sanitizeNumberInput} from "@/utils/number";
 
 const slippagePresets = [0.5, 1, 2];
 
@@ -194,9 +196,9 @@ const AssetSelector = memo(({
                                   {assetOption.name}
                                 </Text>
                               </HStack>
-                              <Text fontSize="sm" color="fg.muted">
+                              <HighlightText fontSize="sm" color="fg.muted">
                                 Balance: {assetOption.balanceFormatted}
-                              </Text>
+                              </HighlightText>
                             </VStack>
                           </HStack>
                         </Select.ItemText>
@@ -231,7 +233,7 @@ export default function SwapPage() {
   const { getBalanceByDenom } = useBalances();
   const { pools } = useLiquidityPools();
   const {toast} = useToast()
-  const {tx} = useBZETx()
+  const {tx, progressTrack} = useBZETx()
   const {address} = useChain(getChainName())
   const {totalUsdValue} = useAssetsValue()
 
@@ -297,6 +299,7 @@ export default function SwapPage() {
   const [customSlippage, setCustomSlippage] = useState('');
   const [routeResult, setRouteResult] = useState<SwapRouteResult | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Set default assets once they're loaded
   useMemo(() => {
@@ -305,6 +308,22 @@ export default function SwapPage() {
     }
     if (assetsWithBalanceInfo.length > 1 && !toAsset) {
       setToAsset(assetsWithBalanceInfo[1]);
+    }
+  }, [assetsWithBalanceInfo, fromAsset, toAsset]);
+
+  // Sync selected assets with updated balance info
+  useEffect(() => {
+    if (fromAsset) {
+      const updatedFromAsset = assetsWithBalanceInfo.find(a => a.denom === fromAsset.denom);
+      if (updatedFromAsset && updatedFromAsset.balance.toString() !== fromAsset.balance.toString()) {
+        setFromAsset(updatedFromAsset);
+      }
+    }
+    if (toAsset) {
+      const updatedToAsset = assetsWithBalanceInfo.find(a => a.denom === toAsset.denom);
+      if (updatedToAsset && updatedToAsset.balance.toString() !== toAsset.balance.toString()) {
+        setToAsset(updatedToAsset);
+      }
     }
   }, [assetsWithBalanceInfo, fromAsset, toAsset]);
 
@@ -415,7 +434,7 @@ export default function SwapPage() {
   const handleCustomSlippage = (value: string) => {
     setCustomSlippage(value);
     const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue > 0 && numValue <= 50) {
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 50) {
       setSlippage(numValue);
     }
   };
@@ -442,7 +461,7 @@ export default function SwapPage() {
 
       // 3. Create multiSwap message
       const {multiSwap} = bze.tradebin.MessageComposer.withTypeUrl;
-
+      setIsSubmitting(true)
       const msg = multiSwap({
         creator: address,
         routes: routeResult.route,
@@ -464,14 +483,13 @@ export default function SwapPage() {
           setToAmount('');
           setRouteResult(null);
         },
-        onFailure: (error) => {
-          console.error('Swap failed:', error);
-        }
+        fallbackOnSimulate: false, //we want to show the error message if the tx fails on simulate
       });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error('Error preparing swap:', error);
       toast.error('Failed to prepare swap transaction');
     }
+    setIsSubmitting(false)
   };
 
   const calculateUSDValue = (amount: string, asset: typeof assetsWithBalanceInfo[0] | null) => {
@@ -551,9 +569,9 @@ export default function SwapPage() {
                             <Input
                                 placeholder="Custom %"
                                 value={customSlippage}
-                                onChange={(e) => handleCustomSlippage(e.target.value)}
+                                onChange={(e) => handleCustomSlippage(sanitizeNumberInput(e.target.value))}
                                 size="sm"
-                                type="number"
+                                type="text"
                                 min="0"
                                 max="50"
                                 step="0.1"
@@ -720,10 +738,10 @@ export default function SwapPage() {
                           </HStack>
                           <HStack justify="space-between">
                             <Text fontSize="sm" color="fg.muted" fontWeight="medium">
-                              Total Fees
+                              Fee
                             </Text>
                             <Text fontSize="sm" fontWeight="medium">
-                              {prettyAmount(uAmountToBigNumberAmount(routeResult.totalFees, toAsset?.decimals || 6))} {toAsset?.ticker || ''}
+                              {routeResult.feesPerHop.length > 0 && prettyAmount(uAmountToBigNumberAmount(routeResult.feesPerHop[0], fromAsset?.decimals || 6))} {fromAsset?.ticker || ''}
                             </Text>
                           </HStack>
                         </VStack>
@@ -851,6 +869,8 @@ export default function SwapPage() {
                       size="xl"
                       w="full"
                       disabled={!canSubmit}
+                      loading={isSubmitting}
+                      loadingText={progressTrack || 'Submitting...'}
                       onClick={handleSwapSubmit}
                       colorPalette="blue"
                       fontSize="lg"
