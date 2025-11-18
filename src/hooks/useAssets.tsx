@@ -28,31 +28,35 @@ export function useAssets() {
     );
 
     const isVerifiedAsset = useCallback((denom: string) => {
-        const asset = assets.find(a => a.denom === denom)
+        const asset = assetsMap.get(denom)
         if (!asset) {
             return false
         }
 
         return asset.verified
-    }, [assets])
+    }, [assetsMap])
 
     const denomTicker = useCallback((denom: string) => {
-        const asset = assets.find(a => a.denom === denom)
+        const asset = assetsMap.get(denom)
         if (!asset) {
             return truncateDenom(denom)
         }
 
         return asset.ticker
-    }, [assets])
+    }, [assetsMap])
 
     const denomDecimals = useCallback((denom: string) => {
-        const asset = assets.find(a => a.denom === denom)
+        const asset = assetsMap.get(denom)
         if (!asset) {
             return 0
         }
 
         return asset.decimals
-    }, [assets])
+    }, [assetsMap])
+
+    const getAsset = useCallback((denom: string) => {
+        return assetsMap.get(denom)
+    }, [assetsMap])
 
     const assetsLpExcluded = useMemo(() => {
         return assets?.filter(item => !isLpDenom(item.denom))
@@ -65,6 +69,7 @@ export function useAssets() {
         isVerifiedAsset,
         denomTicker,
         denomDecimals,
+        getAsset,
         assetsLpExcluded,
     };
 }
