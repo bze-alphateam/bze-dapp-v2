@@ -518,7 +518,7 @@ export default function SwapPage() {
                     Swap
                   </Text>
                   <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowSettings(!showSettings)}
                       colorPalette="gray"
@@ -562,30 +562,31 @@ export default function SwapPage() {
                             />
                           </Box>
 
-                          <HStack justify="space-between" align="center" pt="2">
-                            <Tooltip
-                                content="The app will try to match order book pairs for best prices"
-                                showArrow
-                            >
-                              <HStack gap="2">
-                                <LuInfo size={16} />
-                                <Text fontSize="sm" fontWeight="medium">Use Order Book</Text>
-                              </HStack>
-                            </Tooltip>
-                            <Switch.Root
-                                checked={useOrderBook}
-                                onCheckedChange={(details) => {
-                                  console.log('Switch changed:', details);
-                                  setUseOrderBook(details.checked);
-                                }}
-                                colorPalette="blue"
-                            >
-                              <Switch.Control>
-                                <Switch.Thumb />
-                              </Switch.Control>
-                              <Switch.HiddenInput />
-                            </Switch.Root>
-                          </HStack>
+                          {/*TODO: integrate order book in swap AFTER we change tradebin create order message to drop the order if not executed immediately */}
+                          {/*<HStack justify="space-between" align="center" pt="2">*/}
+                          {/*  <Tooltip*/}
+                          {/*      content="The app will try to match order book pairs for best prices"*/}
+                          {/*      showArrow*/}
+                          {/*  >*/}
+                          {/*    <HStack gap="2">*/}
+                          {/*      <LuInfo size={16} />*/}
+                          {/*      <Text fontSize="sm" fontWeight="medium">Use Order Book</Text>*/}
+                          {/*    </HStack>*/}
+                          {/*  </Tooltip>*/}
+                          {/*  <Switch.Root*/}
+                          {/*      checked={useOrderBook}*/}
+                          {/*      onCheckedChange={(details) => {*/}
+                          {/*        console.log('Switch changed:', details);*/}
+                          {/*        setUseOrderBook(details.checked);*/}
+                          {/*      }}*/}
+                          {/*      colorPalette="blue"*/}
+                          {/*  >*/}
+                          {/*    <Switch.Control>*/}
+                          {/*      <Switch.Thumb />*/}
+                          {/*    </Switch.Control>*/}
+                          {/*    <Switch.HiddenInput />*/}
+                          {/*  </Switch.Root>*/}
+                          {/*</HStack>*/}
                         </VStack>
                       </Card.Root>
                     </Box>
