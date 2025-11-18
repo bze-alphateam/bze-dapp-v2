@@ -1,6 +1,7 @@
 const errorsMap: { [key: string]: string } = {
     "failed to execute message; message index: 0: amount is smaller than staking reward min stake": "Amount is smaller than minimum required stake",
-    "the resulted amount is too low": "Swap minimum amount could not be met. Increase the slippage and try again."
+    "the resulted amount is too low": "Swap minimum amount could not be met. Increase the slippage and try again.",
+    "amount is too low to be traded": "Amount is too low to be traded",
 };
 
 export const prettyError = (err: string|undefined): string|undefined => {
