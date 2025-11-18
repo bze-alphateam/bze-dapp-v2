@@ -10,7 +10,9 @@ import {
     Box,
     Input,
     Badge,
+    createListCollection,
 } from '@chakra-ui/react'
+import { Select, Portal } from '@chakra-ui/react'
 import { useTheme } from "next-themes"
 import {useState, useEffect, useMemo, useCallback} from 'react'
 import { useSettings } from '@/hooks/useSettings'
@@ -23,25 +25,30 @@ import {
 } from '@/types/settings'
 import {useToast} from "@/hooks/useToast";
 import {useConnectionType} from "@/hooks/useConnectionType";
+import {useFeeTokens} from "@/hooks/useFeeTokens";
+import {getChainNativeAssetDenom} from "@/constants/assets";
 
 // Your existing content component - unchanged except for removing height="100%"
 export const SettingsSidebarContent = () => {
     const { setTheme, resolvedTheme} = useTheme()
     const {toast} = useToast()
-    const { settings, isLoaded, updateEndpoints, defaultSettings } = useSettings()
+    const { settings, isLoaded, updateEndpoints, updatePreferredFeeDenom, defaultSettings } = useSettings()
     const {connectionType} = useConnectionType()
+    const { feeTokens, isLoading: feeTokensLoading } = useFeeTokens()
 
     // Local form state
     const [restEndpoint, setRestEndpoint] = useState('')
     const [rpcEndpoint, setRpcEndpoint] = useState('')
     const [isValidating, setIsValidating] = useState(false)
     const [validationResults, setValidationResults] = useState<EndpointValidationResults>({})
+    const [preferredFeeDenom, setPreferredFeeDenom] = useState<string | undefined>(undefined)
 
     // Initialize form with loaded settings
     useEffect(() => {
         if (isLoaded) {
             setRestEndpoint(settings.endpoints.restEndpoint)
             setRpcEndpoint(settings.endpoints.rpcEndpoint)
+            setPreferredFeeDenom(settings.preferredFeeDenom || getChainNativeAssetDenom())
         }
     }, [isLoaded, settings])
 
@@ -67,7 +74,7 @@ export const SettingsSidebarContent = () => {
         }
     }, [])
 
-    const handleSaveEndpoints = useCallback(async (rest: string, rpc: string) => {
+    const handleSaveSettings = useCallback(async (rest: string, rpc: string, feeDenom?: string) => {
         setValidationResults({})
         const results = await validateEndpoints(rest, rpc)
         if (!results.isValid) {
@@ -81,12 +88,14 @@ export const SettingsSidebarContent = () => {
             return
         }
 
-        const success = updateEndpoints({
+        const endpointsSuccess = updateEndpoints({
             restEndpoint: rest.trim(),
             rpcEndpoint: convertToWebSocketUrl(rpc.trim())
         })
 
-        if (success) {
+        const feeTokenSuccess = updatePreferredFeeDenom(feeDenom)
+
+        if (endpointsSuccess && feeTokenSuccess) {
             toast.success('Success!', 'Settings have been saved.')
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +104,7 @@ export const SettingsSidebarContent = () => {
     const handleResetToDefaults = useCallback(() => {
         setRestEndpoint(defaultSettings.endpoints.restEndpoint)
         setRpcEndpoint(defaultSettings.endpoints.rpcEndpoint)
+        setPreferredFeeDenom(defaultSettings.preferredFeeDenom)
         setValidationResults({})
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -121,9 +131,23 @@ export const SettingsSidebarContent = () => {
         }
     }, [connectionType])
 
+    // Create fee tokens collection for select
+    const feeTokensCollection = useMemo(() => createListCollection({
+        items: feeTokens.map(token => ({
+            label: token.ticker || token.name,
+            value: token.denom,
+            name: token.ticker || token.name,
+        }))
+    }), [feeTokens])
+
+    const handleFeeTokenChange = useCallback((denom: string) => {
+        setPreferredFeeDenom(denom || undefined)
+    }, [])
+
     const hasUnsavedChanges =
         restEndpoint !== settings.endpoints.restEndpoint ||
-        rpcEndpoint !== settings.endpoints.rpcEndpoint
+        rpcEndpoint !== settings.endpoints.rpcEndpoint ||
+        preferredFeeDenom !== settings.preferredFeeDenom
 
     return (
         <VStack gap="6" align="stretch">
@@ -148,6 +172,52 @@ export const SettingsSidebarContent = () => {
                             </Switch.Control>
                         </Switch.Root>
                     </HStack>
+                </VStack>
+            </Box>
+
+            <Separator />
+
+            {/* Fee Token Preference Section */}
+            <Box>
+                <Text fontSize="sm" fontWeight="medium" mb="3">
+                    Fee Token Preference
+                </Text>
+                <VStack gap="3" align="stretch">
+                    <Box>
+                        <Select.Root
+                            collection={feeTokensCollection}
+                            size="sm"
+                            value={preferredFeeDenom ? [preferredFeeDenom] : ['']}
+                            onValueChange={(details) => handleFeeTokenChange(details.value[0] || '')}
+                            disabled={feeTokensLoading}
+                        >
+                            <Select.Label>Preferred Fee Token</Select.Label>
+                            <Select.HiddenSelect />
+                            <Select.Control>
+                                <Select.Trigger>
+                                    <Select.ValueText placeholder="Native Token (default)" />
+                                </Select.Trigger>
+                                <Select.IndicatorGroup>
+                                    <Select.Indicator />
+                                </Select.IndicatorGroup>
+                            </Select.Control>
+                            <Portal>
+                                <Select.Positioner>
+                                    <Select.Content>
+                                        {feeTokensCollection.items.map((item) => (
+                                            <Select.Item key={item.value} item={item}>
+                                                <Text>{item.label}</Text>
+                                                <Select.ItemIndicator />
+                                            </Select.Item>
+                                        ))}
+                                    </Select.Content>
+                                </Select.Positioner>
+                            </Portal>
+                        </Select.Root>
+                        <Text fontSize="xs" color="fg.muted" mt="2">
+                            Select your preferred token for paying transaction fees. Only tokens with liquidity pools paired with the native token are available.
+                        </Text>
+                    </Box>
                 </VStack>
             </Box>
 
@@ -245,7 +315,7 @@ export const SettingsSidebarContent = () => {
                     <Button
                         size="sm"
                         width="full"
-                        onClick={() => handleSaveEndpoints(restEndpoint, rpcEndpoint)}
+                        onClick={() => handleSaveSettings(restEndpoint, rpcEndpoint, preferredFeeDenom)}
                         colorPalette="blue"
                         disabled={!hasUnsavedChanges}
                     >

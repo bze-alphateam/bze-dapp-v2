@@ -1,4 +1,5 @@
 import { AppSettings } from '@/types/settings'
+import {getChainNativeAssetDenom} from "@/constants/assets";
 
 // LocalStorage key for settings
 export const SETTINGS_STORAGE_KEY = 'bze_app_settings'
@@ -8,7 +9,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
     endpoints: {
         restEndpoint: process.env.NEXT_PUBLIC_REST_ENDPOINT ?? '',
         rpcEndpoint: process.env.NEXT_PUBLIC_RPC_ENDPOINT ?? ''
-    }
+    },
+    preferredFeeDenom: getChainNativeAssetDenom()
 }
 
 // Validation error messages

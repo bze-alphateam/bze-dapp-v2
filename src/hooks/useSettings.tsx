@@ -29,6 +29,12 @@ export function useSettings() {
         return saveSettings(newSettings)
     }, [settings, saveSettings])
 
+    // Update preferred fee denom
+    const updatePreferredFeeDenom = useCallback((preferredFeeDenom?: string): boolean => {
+        const newSettings = { ...settings, preferredFeeDenom }
+        return saveSettings(newSettings)
+    }, [settings, saveSettings])
+
     // Reset all settings to default values
     const resetToDefaults = useCallback((): boolean => {
         saveSettings(DEFAULT_SETTINGS)
@@ -47,6 +53,7 @@ export function useSettings() {
         isLoaded,
         saveSettings,
         updateEndpoints,
+        updatePreferredFeeDenom,
         resetToDefaults,
         getEndpoints,
         defaultSettings
