@@ -9,7 +9,6 @@ import {
   VStack,
   Text,
   Input,
-  Switch,
   Collapsible,
   Badge,
   Flex,
@@ -23,7 +22,7 @@ import {
   LuSettings,
   LuChevronDown,
   LuChevronUp,
-  LuArrowRight, LuInfo,
+  LuArrowRight,
 } from 'react-icons/lu';
 import { useState, useMemo, memo, useEffect } from 'react';
 import {TokenLogo} from "@/components/ui/token_logo";
@@ -296,7 +295,6 @@ export default function SwapPage() {
   const [showRoutes, setShowRoutes] = useState(false);
   const [slippage, setSlippage] = useState(0.5);
   const [customSlippage, setCustomSlippage] = useState('');
-  const [useOrderBook, setUseOrderBook] = useState(true);
   const [routeResult, setRouteResult] = useState<SwapRouteResult | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
