@@ -34,8 +34,14 @@ import {prettyAmount, uAmountToBigNumberAmount, amountToBigNumberUAmount, toBigN
 import BigNumber from 'bignumber.js';
 import { ammRouter } from '@/service/amm_router';
 import { SwapRouteResult } from '@/types/liquidity_pool';
+import {useToast} from "@/hooks/useToast";
+import {bze} from "@bze/bzejs";
+import {useBZETx} from "@/hooks/useTx";
+import {useChain} from "@interchain-kit/react";
+import {getChainName} from "@/constants/chain";
+import {useAssetsValue} from "@/hooks/useAssetsValue";
 
-const slippagePresets = [1, 2, 5];
+const slippagePresets = [0.5, 1, 2];
 
 // Define the asset type for better type safety
 type AssetWithBalance = {
@@ -225,6 +231,10 @@ export default function SwapPage() {
   const { assetsLpExcluded, denomTicker, getAsset } = useAssets();
   const { getBalanceByDenom } = useBalances();
   const { pools } = useLiquidityPools();
+  const {toast} = useToast()
+  const {tx} = useBZETx()
+  const {address} = useChain(getChainName())
+  const {totalUsdValue} = useAssetsValue()
 
   // Update AMM router whenever pools change
   useEffect(() => {
@@ -284,7 +294,7 @@ export default function SwapPage() {
   const [toAmount, setToAmount] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showRoutes, setShowRoutes] = useState(false);
-  const [slippage, setSlippage] = useState(2);
+  const [slippage, setSlippage] = useState(0.5);
   const [customSlippage, setCustomSlippage] = useState('');
   const [useOrderBook, setUseOrderBook] = useState(true);
   const [routeResult, setRouteResult] = useState<SwapRouteResult | null>(null);
@@ -357,7 +367,7 @@ export default function SwapPage() {
         setIsCalculatingRoute(false);
       }
     }, 0);
-  }, [fromAsset, toAsset, fromAmount]);
+  }, [fromAsset, toAsset, fromAmount, toast]);
 
   // Check if user has sufficient balance
   const hasInsufficientBalance = useMemo(() => {
@@ -413,38 +423,70 @@ export default function SwapPage() {
   };
 
   const handleSwapSubmit = async () => {
-    // TODO: Implement swap message submission
-    // This function will:
-    // 1. Convert fromAmount to micro amount
-    // 2. Calculate minimum output based on slippage tolerance
-    // 3. Create swap message(s) based on routeResult.route (pool IDs)
-    // 4. Sign and broadcast transaction
-    // 5. Handle success/error states
-
-    if (!fromAsset || !toAsset || !routeResult || !fromAmount) {
-      console.error('Missing required data for swap');
+    if (!address) {
+      toast.error('Please connect your wallet');
       return;
     }
 
-    console.log('Swap parameters:', {
-      fromAsset: fromAsset.ticker,
-      toAsset: toAsset.ticker,
-      fromAmount,
-      expectedOutput: routeResult.expectedOutput.toString(),
-      route: routeResult.route,
-      path: routeResult.path,
-      slippage,
-      priceImpact: routeResult.priceImpact.toString()
-    });
+    if (!fromAsset || !toAsset || !routeResult || !fromAmount) {
+      toast.error('Missing required data for swap');
+      return;
+    }
 
-    // Message submission will be implemented here
+    try {
+      // 1. Convert fromAmount to micro amount
+      const amountIn = amountToBigNumberUAmount(fromAmount, fromAsset.decimals);
+
+      // 2. Calculate minimum output based on slippage tolerance
+      // slippage is in percentage (e.g., 2 for 2%)
+      const slippageMultiplier = toBigNumber(1).minus(toBigNumber(slippage).dividedBy(100));
+      const minAmountOut = routeResult.expectedOutput.multipliedBy(slippageMultiplier);
+
+      // 3. Create multiSwap message
+      const {multiSwap} = bze.tradebin.MessageComposer.withTypeUrl;
+
+      const msg = multiSwap({
+        creator: address,
+        routes: routeResult.route,
+        input: {
+          denom: fromAsset.denom,
+          amount: amountIn.toFixed(0),
+        },
+        minOutput: {
+          denom: toAsset.denom,
+          amount: minAmountOut.toFixed(0),
+        },
+      });
+
+      // 4. Sign and broadcast transaction
+      await tx([msg], {
+        onSuccess: () => {
+          // Reset form on success
+          setFromAmount('');
+          setToAmount('');
+          setRouteResult(null);
+        },
+        onFailure: (error) => {
+          console.error('Swap failed:', error);
+        }
+      });
+    } catch (error) {
+      console.error('Error preparing swap:', error);
+      toast.error('Failed to prepare swap transaction');
+    }
   };
 
   const calculateUSDValue = (amount: string, asset: typeof assetsWithBalanceInfo[0] | null) => {
-    // TODO: Integrate with USD price data from context
-    // For now, return null until USD pricing is available
-    if (!asset) return null;
-    return null;
+    if (!asset || !amount) return null;
+
+    const usdValue = totalUsdValue([{
+      denom: asset.denom,
+      amount: toBigNumber(amount)
+    }]);
+
+    if (!usdValue || usdValue.lte(0)) return null;
+
+    return prettyAmount(usdValue);
   };
 
   return (
@@ -648,17 +690,22 @@ export default function SwapPage() {
                   </VStack>
                 </Box>
 
-                {/* Estimated Output & Price Impact */}
+                {/* Minimum Output & Price Impact */}
                 {fromAmount && routeResult && (
                     <Box px="6" pt="2">
                       <Card.Root variant="subtle" p="4" borderRadius="lg">
                         <VStack gap="3" align="stretch">
                           <HStack justify="space-between">
                             <Text fontSize="sm" color="fg.muted" fontWeight="medium">
-                              Estimated Output
+                              Minimum Output
                             </Text>
                             <Text fontSize="sm" fontWeight="semibold">
-                              {prettyAmount(uAmountToBigNumberAmount(routeResult.expectedOutput, toAsset?.decimals || 6))} {toAsset?.ticker || ''}
+                              {prettyAmount(uAmountToBigNumberAmount(
+                                routeResult.expectedOutput.multipliedBy(
+                                  toBigNumber(1).minus(toBigNumber(slippage).dividedBy(100))
+                                ),
+                                toAsset?.decimals || 6
+                              ))} {toAsset?.ticker || ''}
                             </Text>
                           </HStack>
                           <HStack justify="space-between">
