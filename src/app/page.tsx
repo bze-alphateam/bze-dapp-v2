@@ -327,10 +327,12 @@ export default function SwapPage() {
     }
   }, [assetsWithBalanceInfo, fromAsset, toAsset]);
 
-  // Find optimal route when inputs change
-  useEffect(() => {
-    // Reset route and output if no valid input
-    if (!fromAsset || !toAsset || !fromAmount) {
+  // Handle fromAmount changes - calculate toAmount
+  const handleFromAmountChange = (value: string) => {
+    setFromAmount(value);
+
+    // Reset if no valid input
+    if (!fromAsset || !toAsset || !value) {
       setRouteResult(null);
       setToAmount('');
       return;
@@ -344,32 +346,29 @@ export default function SwapPage() {
     }
 
     // Parse and validate amount
-    const amount = toBigNumber(fromAmount);
+    const amount = toBigNumber(value);
     if (amount.isNaN() || amount.lte(0)) {
       setRouteResult(null);
       setToAmount('');
       return;
     }
 
-    // Convert human-readable amount to micro amount
+    // Convert to micro amount and find route
     const amountInMicro = amountToBigNumberUAmount(amount, fromAsset.decimals);
-
     setIsCalculatingRoute(true);
 
-    // Find optimal route (async to not block UI)
     setTimeout(() => {
       try {
         const route = ammRouter.findOptimalRoute(
           fromAsset.denom,
           toAsset.denom,
           amountInMicro,
-          3, // max 3 hops
-          true // use cache
+          3,
+          true
         );
 
         if (route) {
           setRouteResult(route);
-          // Convert expected output from micro to human-readable
           const outputAmount = uAmountToBigNumberAmount(route.expectedOutput, toAsset.decimals);
           setToAmount(outputAmount.toString());
         } else {
@@ -384,7 +383,88 @@ export default function SwapPage() {
         setIsCalculatingRoute(false);
       }
     }, 0);
-  }, [fromAsset, toAsset, fromAmount, toast]);
+  };
+
+  // Handle toAmount changes - calculate fromAmount (reverse)
+  const handleToAmountChange = (value: string) => {
+    setToAmount(value);
+
+    // Reset if no valid input
+    if (!fromAsset || !toAsset || !value) {
+      setRouteResult(null);
+      return;
+    }
+
+    // Don't calculate if same asset
+    if (fromAsset.denom === toAsset.denom) {
+      setRouteResult(null);
+      return;
+    }
+
+    // Parse and validate amount
+    const desiredOutput = toBigNumber(value);
+    if (desiredOutput.isNaN() || desiredOutput.lte(0)) {
+      setRouteResult(null);
+      return;
+    }
+
+    setIsCalculatingRoute(true);
+
+    // Binary search to find input amount that gives desired output
+    setTimeout(() => {
+      try {
+        const desiredOutputMicro = amountToBigNumberUAmount(desiredOutput, toAsset.decimals);
+        let low = toBigNumber(0);
+        let high = desiredOutputMicro.multipliedBy(10);
+        let iterations = 0;
+        const maxIterations = 30;
+        const tolerance = toBigNumber(0.0001);
+
+        let bestInput = toBigNumber(0);
+        let bestRoute: SwapRouteResult | null = null;
+
+        while (iterations < maxIterations && high.minus(low).dividedBy(high).gt(tolerance)) {
+          const mid = low.plus(high).dividedBy(2);
+          const route = ammRouter.findOptimalRoute(fromAsset.denom, toAsset.denom, mid, 3, true);
+
+          if (route) {
+            const diff = route.expectedOutput.minus(desiredOutputMicro);
+
+            if (diff.abs().dividedBy(desiredOutputMicro).lte(tolerance)) {
+              bestInput = mid;
+              bestRoute = route;
+              break;
+            } else if (diff.lt(0)) {
+              low = mid;
+            } else {
+              high = mid;
+              bestInput = mid;
+              bestRoute = route;
+            }
+          } else {
+            high = mid;
+          }
+
+          iterations++;
+        }
+
+        if (bestRoute) {
+          setRouteResult(bestRoute);
+          const inputAmount = uAmountToBigNumberAmount(bestInput, fromAsset.decimals);
+          setFromAmount(inputAmount.toString());
+        } else {
+          setRouteResult(null);
+          setFromAmount('');
+        }
+      } catch (error) {
+        console.error('Error calculating reverse route:', error);
+        setRouteResult(null);
+        setFromAmount('');
+      } finally {
+        setIsCalculatingRoute(false);
+      }
+    }, 0);
+  };
 
   // Check if user has sufficient balance
   const hasInsufficientBalance = useMemo(() => {
@@ -418,12 +498,24 @@ export default function SwapPage() {
   }, [fromAmount, fromAsset, toAsset, hasInsufficientBalance, routeResult, isCalculatingRoute]);
 
   const handleSwapAssets = () => {
-    const temp = fromAsset;
-    setFromAsset(toAsset);
-    setToAsset(temp);
+    const tempAsset = fromAsset;
     const tempAmount = fromAmount;
+
+    // Swap assets
+    setFromAsset(toAsset);
+    setToAsset(tempAsset);
+
+    // Swap amounts
     setFromAmount(toAmount);
     setToAmount(tempAmount);
+
+    // Recalculate route with swapped values
+    // We need to trigger recalculation after state updates
+    setTimeout(() => {
+      if (toAmount) {
+        handleFromAmountChange(toAmount);
+      }
+    }, 0);
   };
 
   const handleSlippagePreset = (value: number) => {
@@ -628,7 +720,7 @@ export default function SwapPage() {
                       <Input
                           placeholder="0.0"
                           value={fromAmount}
-                          onChange={(e) => setFromAmount(e.target.value)}
+                          onChange={(e) => handleFromAmountChange(sanitizeNumberInput(e.target.value))}
                           fontSize="2xl"
                           fontWeight="semibold"
                           textAlign="right"
@@ -689,7 +781,7 @@ export default function SwapPage() {
                       <Input
                           placeholder="0.0"
                           value={toAmount}
-                          onChange={(e) => setToAmount(e.target.value)}
+                          onChange={(e) => handleToAmountChange(sanitizeNumberInput(e.target.value))}
                           fontSize="2xl"
                           fontWeight="semibold"
                           textAlign="right"
@@ -763,9 +855,6 @@ export default function SwapPage() {
                         <Alert.Indicator />
                         <Alert.Content>
                           <Alert.Title>No Route Found</Alert.Title>
-                          <Alert.Description>
-                            No available liquidity pools to swap these assets
-                          </Alert.Description>
                         </Alert.Content>
                       </Alert.Root>
                     </Box>
