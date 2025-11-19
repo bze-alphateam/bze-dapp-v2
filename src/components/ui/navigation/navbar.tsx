@@ -70,7 +70,7 @@ export const TopNavBar = ({ appLabel = "DEX" }: TopNavBarProps) => {
                                 ariaLabel="Wallet"
                                 trigger={
                                     <Button size={{ base: 'sm', md: 'md' }}>
-                                        <LuWallet /> {walletButtonText}
+                                        <LuWallet /> <Text hideBelow="md">{walletButtonText}</Text>
                                     </Button>
                                 }
                             >
