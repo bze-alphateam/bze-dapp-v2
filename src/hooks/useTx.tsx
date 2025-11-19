@@ -10,6 +10,9 @@ import {openExternalLink, sleep} from "@/utils/functions";
 import BigNumber from "bignumber.js";
 import {DEFAULT_TX_MEMO} from "@/constants/placeholders";
 import {useCallback, useMemo, useState} from "react";
+import {useLiquidityPools} from "@/hooks/useLiquidityPools";
+import {useSettings} from "@/hooks/useSettings";
+import {calculatePoolOppositeAmount} from "@/utils/liquidity_pool";
 
 interface TxOptions {
     fee?: StdFee | null;
@@ -63,6 +66,8 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
     const {toast} = useToast();
     const {signingClient, isSigningClientReady, signingClientError} = useSigningClient({chainName: chainName, isCosmos: isCosmos, isIbc: isIBC});
     const [progressTrack, setProgressTrack] = useState("")
+    const {getDenomsPool} = useLiquidityPools()
+    const {feeDenom} = useSettings()
 
     const defaultChainName = useMemo(() => getChainName(), []);
 
@@ -80,17 +85,39 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
 
     const simulateFee = useCallback(async (messages: EncodeObject[], memo: string | undefined): Promise<StdFee> => {
         const gasPrice = 0.02;
-        const gasDenom = getChainNativeAssetDenom();
+        const nativeDenom = getChainNativeAssetDenom();
         // @ts-expect-error is checked above
         const gasEstimated = await signingClient.simulate(address, messages, memo);
 
         const gasAmount = BigNumber(gasEstimated).multipliedBy(1.5);
-        const gasPayment = gasAmount.multipliedBy(gasPrice).toFixed(0).toString();
-        return {
-            amount: coins(gasPayment, gasDenom),
+        const gasPayment = gasAmount.multipliedBy(gasPrice);
+        const nativeFee = {
+            amount: coins(gasPayment.toFixed(0).toString(), nativeDenom),
             gas: gasAmount.toFixed(0)
+        }
+
+        //user wants to pay in the fee in native denomination
+        if (feeDenom === nativeDenom) {
+            return nativeFee;
+        }
+
+        //search for the pool for the fee denom and calculate the expected amount
+        const pool = getDenomsPool(feeDenom, nativeDenom)
+        if (!pool) {
+            return nativeFee;
+        }
+
+        //calculate how much amount we need to pay for fee in the opposite denomination
+        const expectedAmount = calculatePoolOppositeAmount(pool, gasPayment, pool.base === feeDenom)
+        if (!expectedAmount.isPositive()) {
+            return nativeFee;
+        }
+
+        return {
+            amount: coins(expectedAmount.multipliedBy(1.5).toFixed(0).toString(), feeDenom),
+            gas: gasAmount.multipliedBy(1.5).toFixed(0)
         };
-    }, [signingClient, address]);
+    }, [signingClient, address, feeDenom, getDenomsPool]);
 
     const getFee = useCallback(async (messages: EncodeObject[], options?: TxOptions|undefined): Promise<StdFee> => {
         try {
