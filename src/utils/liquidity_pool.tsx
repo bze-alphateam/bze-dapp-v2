@@ -36,6 +36,30 @@ export const calculateUserPoolData = (
     return { userLiquidityUsd, userSharesPercentage }
 }
 
+export const calculatePoolOppositeAmount = (pool: LiquidityPoolSDKType, amount: string | BigNumber, isBase: boolean): BigNumber => {
+    const amountBN = toBigNumber(amount);
+    if (amountBN.isZero() || amountBN.isNaN()) {
+        return toBigNumber(0);
+    }
+
+    const reserveBase = toBigNumber(pool.reserve_base);
+    const reserveQuote = toBigNumber(pool.reserve_quote);
+
+    if (reserveBase.isZero() || reserveQuote.isZero()) {
+        return toBigNumber(0);
+    }
+
+    if (isBase) {
+        // Given base amount, calculate quote amount
+        // quoteAmount = (baseAmount * reserveQuote) / reserveBase
+        return amountBN.multipliedBy(reserveQuote).dividedBy(reserveBase);
+    } else {
+        // Given quote amount, calculate base amount
+        // baseAmount = (quoteAmount * reserveBase) / reserveQuote
+        return amountBN.multipliedBy(reserveBase).dividedBy(reserveQuote);
+    }
+}
+
 /**
  * Calculates the price of a given denom in terms of the opposing asset in the pool.
  *

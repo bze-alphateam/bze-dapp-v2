@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AppSettings, BeeZeeEndpoints } from '@/types/settings'
 import { DEFAULT_SETTINGS } from '@/constants/settings'
 import {getSettings, setSettings} from "@/storage/settings";
+import {getChainNativeAssetDenom} from "@/constants/assets";
 
 // Custom hook for managing application settings
 export function useSettings() {
@@ -48,6 +49,8 @@ export function useSettings() {
 
     const defaultSettings = useMemo(() => DEFAULT_SETTINGS, [])
 
+    const feeDenom = useMemo(() => settings.preferredFeeDenom || getChainNativeAssetDenom(), [settings.preferredFeeDenom])
+
     return {
         settings,
         isLoaded,
@@ -56,6 +59,7 @@ export function useSettings() {
         updatePreferredFeeDenom,
         resetToDefaults,
         getEndpoints,
-        defaultSettings
+        defaultSettings,
+        feeDenom,
     }
 }

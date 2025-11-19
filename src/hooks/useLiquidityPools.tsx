@@ -2,16 +2,24 @@ import {useCallback, useMemo} from "react";
 import {toBigNumber} from "@/utils/amount";
 import {useAssetsContext} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
+import {calculatePoolOppositeAmount, createPoolId} from "@/utils/liquidity_pool";
 
 export function useLiquidityPools() {
     const {poolsMap, poolsDataMap, isLoading} = useAssetsContext()
 
     const pools = useMemo(() => Array.from(poolsMap.values()), [poolsMap])
 
+    const getDenomsPool = useCallback((denomA: string, denomB: string) => {
+        const poolId = createPoolId(denomA, denomB)
+
+        return poolsMap.get(poolId)
+    }, [poolsMap])
+
     return {
         pools,
         isLoading: isLoading,
         poolsData: poolsDataMap,
+        getDenomsPool,
     }
 }
 
@@ -71,27 +79,7 @@ export function useLiquidityPool(poolId: string) {
             return toBigNumber(0);
         }
 
-        const amountBN = toBigNumber(amount);
-        if (amountBN.isZero() || amountBN.isNaN()) {
-            return toBigNumber(0);
-        }
-
-        const reserveBase = toBigNumber(pool.reserve_base);
-        const reserveQuote = toBigNumber(pool.reserve_quote);
-
-        if (reserveBase.isZero() || reserveQuote.isZero()) {
-            return toBigNumber(0);
-        }
-
-        if (isBase) {
-            // Given base amount, calculate quote amount
-            // quoteAmount = (baseAmount * reserveQuote) / reserveBase
-            return amountBN.multipliedBy(reserveQuote).dividedBy(reserveBase);
-        } else {
-            // Given quote amount, calculate base amount
-            // baseAmount = (quoteAmount * reserveBase) / reserveQuote
-            return amountBN.multipliedBy(reserveBase).dividedBy(reserveQuote);
-        }
+        return calculatePoolOppositeAmount(pool, amount, isBase);
     }, [pool]);
 
     const calculateSharesFromAmounts = useCallback((baseAmount: string | BigNumber, quoteAmount: string | BigNumber): BigNumber => {
