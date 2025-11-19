@@ -114,8 +114,8 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
 
         return {
-            amount: coins(expectedAmount.multipliedBy(1.05).toFixed(0).toString(), feeDenom),
-            gas: gasAmount.toFixed(0)
+            amount: coins(expectedAmount.multipliedBy(1.5).toFixed(0).toString(), feeDenom),
+            gas: gasAmount.multipliedBy(1.5).toFixed(0)
         };
     }, [signingClient, address, feeDenom, getDenomsPool]);
 
