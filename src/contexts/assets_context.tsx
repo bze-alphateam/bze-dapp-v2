@@ -25,6 +25,7 @@ import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {LiquidityPoolData} from "@/types/liquidity_pool";
 import {getLiquidityPools} from "@/query/liquidity_pools";
 import {calculatePoolPrice, createPoolId, poolIdFromPoolDenom} from "@/utils/liquidity_pool";
+import {EXCLUDED_MARKETS} from "@/constants/market";
 
 export interface AssetsContextType {
     //assets
@@ -110,7 +111,11 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const doUpdateMarkets = useCallback((newMarkets: Market[]) => {
         const newMap = new Map<string, Market>();
         newMarkets.forEach(market => {
-            newMap.set(createMarketId(market.base, market.quote), market);
+            const marketId = createMarketId(market.base, market.quote);
+            if (EXCLUDED_MARKETS[marketId]) {
+                return
+            }
+            newMap.set(marketId, market);
         })
 
         setMarketsMap(newMap);
@@ -118,6 +123,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
     const doUpdateMarketsData = useCallback((newMarkets: MarketData[]) => {
         const newMap = new Map<string, MarketData>();
         newMarkets.forEach(market => {
+            if (EXCLUDED_MARKETS[market.market_id]) {
+                return
+            }
             newMap.set(market.market_id, market);
         })
 
