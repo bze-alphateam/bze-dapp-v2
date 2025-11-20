@@ -110,12 +110,12 @@ function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
                         <VStack align={{ base: 'flex-start', sm: 'flex-end' }} gap={0.5}>
                             <Skeleton asChild loading={baseLoading}>
                                 <HighlightText fontSize="sm" fontWeight="medium">
-                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals || 0))} {base?.ticker}
+                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals ?? 0))} {base?.ticker}
                                 </HighlightText>
                             </Skeleton>
                             <Skeleton asChild loading={quoteLoading}>
                                 <HighlightText fontSize="sm" fontWeight="medium">
-                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals || 0))} {quote?.ticker}
+                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals ?? 0))} {quote?.ticker}
                                 </HighlightText>
                             </Skeleton>
                         </VStack>

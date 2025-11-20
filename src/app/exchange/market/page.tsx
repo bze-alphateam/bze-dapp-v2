@@ -190,7 +190,7 @@ const TradingPageContent = () => {
         }
 
         if (historyOrders && historyOrders.length > 0) {
-            return uPriceToPrice(historyOrders[0].price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0);
+            return uPriceToPrice(historyOrders[0].price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0);
         }
 
         return 0;
@@ -222,11 +222,11 @@ const TradingPageContent = () => {
     }, [marketData])
     const displayBaseBalance = useMemo(() => {
         if (!baseBalance) return '0';
-        return prettyAmount(uAmountToAmount(baseBalance.amount, baseAsset?.decimals || 0))
+        return prettyAmount(uAmountToAmount(baseBalance.amount, baseAsset?.decimals ?? 0))
     }, [baseBalance, baseAsset])
     const displayQuoteBalance = useMemo(() => {
         if (!quoteBalance) return '0';
-        return prettyAmount(uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals || 0))
+        return prettyAmount(uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals ?? 0))
     }, [quoteBalance, quoteAsset])
     const quoteUsdValue = useCallback((value: number|bigint|BigNumber|string|undefined) => {
         if (!value) return '0';
@@ -334,11 +334,11 @@ const TradingPageContent = () => {
             return;
         }
 
-        const total = calculateTotalAmount(price, buyAmount, quoteAsset?.decimals || 0);
+        const total = calculateTotalAmount(price, buyAmount, quoteAsset?.decimals ?? 0);
         if (total !== '') {
             setBuyTotal(total);
         } else {
-            setBuyAmount(calculateAmountFromPrice(price, buyTotal, baseAsset?.decimals || 0));
+            setBuyAmount(calculateAmountFromPrice(price, buyTotal, baseAsset?.decimals ?? 0));
         }
     }, [buyAmount, buyTotal, quoteAsset, baseAsset])
     const onBuyAmountChange = useCallback((amount: string) => {
@@ -352,20 +352,20 @@ const TradingPageContent = () => {
             return;
         }
 
-        const total = calculateTotalAmount(buyPrice, amount, quoteAsset?.decimals || 0);
+        const total = calculateTotalAmount(buyPrice, amount, quoteAsset?.decimals ?? 0);
         if (total !== '') {
             setBuyTotal(total);
         } else {
-            setBuyPrice(calculatePricePerUnit(amount, buyTotal, quoteAsset?.decimals || 0));
+            setBuyPrice(calculatePricePerUnit(amount, buyTotal, quoteAsset?.decimals ?? 0));
         }
     }, [buyPrice, buyTotal, quoteAsset])
     const onBuyTotalChange = useCallback((total: string) => {
         setBuyTotal(total);
-        const amount = calculateAmountFromPrice(buyPrice, total, quoteAsset?.decimals || 0);
+        const amount = calculateAmountFromPrice(buyPrice, total, quoteAsset?.decimals ?? 0);
         if (amount !== '') {
             setBuyAmount(amount);
         } else {
-            setBuyPrice(calculatePricePerUnit(buyAmount, total, baseAsset?.decimals || 0));
+            setBuyPrice(calculatePricePerUnit(buyAmount, total, baseAsset?.decimals ?? 0));
         }
     }, [buyPrice, buyAmount, quoteAsset, baseAsset])
 
@@ -377,11 +377,11 @@ const TradingPageContent = () => {
             return;
         }
 
-        const total = calculateTotalAmount(price, sellAmount, quoteAsset?.decimals || 0);
+        const total = calculateTotalAmount(price, sellAmount, quoteAsset?.decimals ?? 0);
         if (total !== '') {
             setSellTotal(total);
         } else {
-            setSellAmount(calculateAmountFromPrice(price, sellTotal, baseAsset?.decimals || 0));
+            setSellAmount(calculateAmountFromPrice(price, sellTotal, baseAsset?.decimals ?? 0));
         }
     }, [sellAmount, sellTotal, quoteAsset, baseAsset])
     const onSellAmountChange = useCallback((amount: string) => {
@@ -395,25 +395,25 @@ const TradingPageContent = () => {
             return;
         }
 
-        const total = calculateTotalAmount(sellPrice, amount, quoteAsset?.decimals || 0);
+        const total = calculateTotalAmount(sellPrice, amount, quoteAsset?.decimals ?? 0);
         if (total !== '') {
             setSellTotal(total);
         } else {
-            setSellPrice(calculatePricePerUnit(amount, sellTotal, quoteAsset?.decimals || 0));
+            setSellPrice(calculatePricePerUnit(amount, sellTotal, quoteAsset?.decimals ?? 0));
         }
     }, [sellPrice, sellTotal, quoteAsset])
     const onSellTotalChange = useCallback((total: string) => {
         setSellTotal(total);
-        const amount = calculateAmountFromPrice(sellPrice, total, quoteAsset?.decimals || 0);
+        const amount = calculateAmountFromPrice(sellPrice, total, quoteAsset?.decimals ?? 0);
         if (amount !== '') {
             setSellAmount(amount);
         } else {
-            setSellPrice(calculatePricePerUnit(sellAmount, total, baseAsset?.decimals || 0));
+            setSellPrice(calculatePricePerUnit(sellAmount, total, baseAsset?.decimals ?? 0));
         }
     }, [sellPrice, sellAmount, quoteAsset, baseAsset])
 
     const onOrderBookClick = useCallback((price: string, orderType: 'buy' | 'sell', index: number) => {
-        const transformedPrice = uPriceToPrice(price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0);
+        const transformedPrice = uPriceToPrice(price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0);
         setBuyPrice(transformedPrice);
         setSellPrice(transformedPrice);
         let amount = toBigNumber(0)
@@ -429,7 +429,7 @@ const TradingPageContent = () => {
         for (let i = 0; i < orders.length; i++) {
             const order = orders[i];
             if (order) {
-                amount = amount.plus(uAmountToBigNumberAmount(order.amount, baseAsset?.decimals || 0));
+                amount = amount.plus(uAmountToBigNumberAmount(order.amount, baseAsset?.decimals ?? 0));
             }
         }
 
@@ -437,7 +437,7 @@ const TradingPageContent = () => {
         setBuyAmount(amtStr);
         setSellAmount(amtStr);
 
-        const total = calculateTotalAmount(transformedPrice, amount, quoteAsset?.decimals || 0);
+        const total = calculateTotalAmount(transformedPrice, amount, quoteAsset?.decimals ?? 0);
         setSellTotal(total);
         setBuyTotal(total);
     }, [quoteAsset, baseAsset, activeOrders])
@@ -563,10 +563,10 @@ const TradingPageContent = () => {
         }
 
         //using only smallest amounts (uAmount, uPrice)
-        let amount = amountToBigNumberUAmount(buyAmount, baseAsset.decimals || 0)
+        let amount = amountToBigNumberUAmount(buyAmount, baseAsset.decimals ?? 0)
         let price = priceToBigNumberUPrice(buyPrice, quoteAsset.decimals, baseAsset.decimals)
         if (orderType === ORDER_TYPE_SELL) {
-            amount = amountToBigNumberUAmount(sellAmount, baseAsset.decimals || 0)
+            amount = amountToBigNumberUAmount(sellAmount, baseAsset.decimals ?? 0)
             price = priceToBigNumberUPrice(sellPrice, quoteAsset.decimals, baseAsset.decimals)
         }
 
@@ -611,13 +611,13 @@ const TradingPageContent = () => {
         if (!activeOrders) return undefined;
         const toFill = getMatchingOrders(
             orderType,
-            priceToBigNumberUPrice(price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0),
-            amountToBigNumberUAmount(amount, baseAsset?.decimals || 0)
+            priceToBigNumberUPrice(price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0),
+            amountToBigNumberUAmount(amount, baseAsset?.decimals ?? 0)
         );
 
         const toFillCount = toFill.length;
         if (toFillCount > 1) {
-            return `Match orders with price from ${uPriceToPrice(toFill[0].price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)} to ${uPriceToPrice(toFill[toFillCount - 1].price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}`
+            return `Match orders with price from ${uPriceToPrice(toFill[0].price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)} to ${uPriceToPrice(toFill[toFillCount - 1].price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)}`
         }
 
         return undefined;
@@ -790,8 +790,8 @@ const TradingPageContent = () => {
                                     <Text fontSize="xs" color="fg.muted">Amount ({baseAsset?.ticker})</Text>
                                 </HStack>
                                 {activeOrders?.sellOrders.map((ask, i) => {
-                                    const transformedPrice = uPriceToPrice(ask.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)
-                                    const transformedAmount = uAmountToAmount(ask.amount, baseAsset?.decimals || 0)
+                                    const transformedPrice = uPriceToPrice(ask.price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)
+                                    const transformedAmount = uAmountToAmount(ask.amount, baseAsset?.decimals ?? 0)
                                     return (
                                         <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(ask.price, ORDER_TYPE_SELL, i)}>
                                             <Text color="red.500">{transformedPrice}</Text>
@@ -823,8 +823,8 @@ const TradingPageContent = () => {
                             {/* Bids */}
                             <Box>
                                 {activeOrders?.buyOrders.map((bid, i) => {
-                                    const transformedPrice = uPriceToPrice(bid.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)
-                                    const transformedAmount = uAmountToAmount(bid.amount, baseAsset?.decimals || 0)
+                                    const transformedPrice = uPriceToPrice(bid.price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)
+                                    const transformedAmount = uAmountToAmount(bid.amount, baseAsset?.decimals ?? 0)
                                     return (
                                         <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(bid.price, ORDER_TYPE_BUY, i)}>
                                             <Text color="green.500">{transformedPrice}</Text>
@@ -1133,11 +1133,11 @@ const TradingPageContent = () => {
                                             <Table.Row key={i}>
                                                 <Table.Cell>
                                                     <Text fontSize="xs" color={orderTypeColor(trade.order_type)} fontWeight="medium">
-                                                        {uPriceToPrice(trade.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}
+                                                        {uPriceToPrice(trade.price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)}
                                                     </Text>
                                                 </Table.Cell>
                                                 <Table.Cell textAlign="right">
-                                                    <Text fontSize="xs">{uAmountToAmount(trade.amount, baseAsset?.decimals || 0)}</Text>
+                                                    <Text fontSize="xs">{uAmountToAmount(trade.amount, baseAsset?.decimals ?? 0)}</Text>
                                                 </Table.Cell>
                                                 <Table.Cell textAlign="right">
                                                     <Text fontSize="xs" color="fg.muted">
@@ -1223,12 +1223,12 @@ const TradingPageContent = () => {
                                                     </Table.Cell>
                                                     <Table.Cell textAlign="right">
                                                         <Text fontSize="xs" fontWeight="medium">
-                                                            {uPriceToPrice(order.price, quoteAsset?.decimals || 0, baseAsset?.decimals || 0)}
+                                                            {uPriceToPrice(order.price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)}
                                                         </Text>
                                                     </Table.Cell>
                                                     <Table.Cell textAlign="right">
                                                         <Text fontSize="xs">
-                                                            {uAmountToAmount(order.amount, baseAsset?.decimals || 0)}
+                                                            {uAmountToAmount(order.amount, baseAsset?.decimals ?? 0)}
                                                         </Text>
                                                     </Table.Cell>
                                                     <Table.Cell textAlign="right">

@@ -96,7 +96,7 @@ const StakingPage = () => {
         if (!stakingData || !stakingRewards || !nativeAsset) return;
 
         const totalStaked: PrettyBalance[] = []
-        const bzeAmount = uAmountToBigNumberAmount(stakingData.totalStaked.amount, nativeAsset.decimals || 6)
+        const bzeAmount = uAmountToBigNumberAmount(stakingData.totalStaked.amount, nativeAsset.decimals ?? 6)
         if (bzeAmount) {
             totalStaked.push({
                 amount: bzeAmount,

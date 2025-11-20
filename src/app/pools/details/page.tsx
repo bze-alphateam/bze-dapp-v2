@@ -110,8 +110,8 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
     const {balance: baseBalance} = useBalance(pool?.base || '')
     const {balance: quoteBalance} = useBalance(pool?.quote || '')
 
-    const baseBalanceAmount = useMemo(() => uAmountToAmount(baseBalance.amount, baseAsset?.decimals || 0), [baseAsset, baseBalance])
-    const quoteBalanceAmount = useMemo(() => uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals || 0), [quoteAsset, quoteBalance])
+    const baseBalanceAmount = useMemo(() => uAmountToAmount(baseBalance.amount, baseAsset?.decimals ?? 0), [baseAsset, baseBalance])
+    const quoteBalanceAmount = useMemo(() => uAmountToAmount(quoteBalance.amount, quoteAsset?.decimals ?? 0), [quoteAsset, quoteBalance])
 
     const onAddLiquidityBaseAmountChange = useCallback((value: string) => {
         setAddLiquidityBaseAmount(value);
@@ -119,12 +119,12 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
             setAddLiquidityQuoteAmount('')
             return
         }
-        const oppositeAmount = calculateOppositeAmount(amountToUAmount(value, baseAsset?.decimals || 0), true)
+        const oppositeAmount = calculateOppositeAmount(amountToUAmount(value, baseAsset?.decimals ?? 0), true)
         if (oppositeAmount.lt(0)) {
             setAddLiquidityQuoteAmount('')
             return
         }
-        setAddLiquidityQuoteAmount(uAmountToAmount(oppositeAmount, quoteAsset?.decimals || 0))
+        setAddLiquidityQuoteAmount(uAmountToAmount(oppositeAmount, quoteAsset?.decimals ?? 0))
         //eslint-disable-next-line
     }, [baseAsset, quoteAsset])
     const onAddLiquidityQuoteAmountChange = useCallback((value: string) => {
@@ -134,19 +134,19 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
             return
         }
 
-        const oppositeAmount = calculateOppositeAmount(amountToUAmount(value, quoteAsset?.decimals || 0), false)
+        const oppositeAmount = calculateOppositeAmount(amountToUAmount(value, quoteAsset?.decimals ?? 0), false)
         if (oppositeAmount.lt(0)) {
             setAddLiquidityBaseAmount('')
             return
         }
-        setAddLiquidityBaseAmount(uAmountToAmount(oppositeAmount, baseAsset?.decimals || 0))
+        setAddLiquidityBaseAmount(uAmountToAmount(oppositeAmount, baseAsset?.decimals ?? 0))
         //eslint-disable-next-line
     }, [baseAsset, quoteAsset])
     const expectedShares = useMemo(() => {
         if (!addLiquidityBaseAmount || !addLiquidityQuoteAmount || !calculateSharesFromAmounts) return '0';
 
-        const baseUAmount = amountToBigNumberUAmount(addLiquidityBaseAmount, baseAsset?.decimals || 0);
-        const quoteUAmount = amountToBigNumberUAmount(addLiquidityQuoteAmount, quoteAsset?.decimals || 0);
+        const baseUAmount = amountToBigNumberUAmount(addLiquidityBaseAmount, baseAsset?.decimals ?? 0);
+        const quoteUAmount = amountToBigNumberUAmount(addLiquidityQuoteAmount, quoteAsset?.decimals ?? 0);
 
         const shares = calculateSharesFromAmounts(baseUAmount, quoteUAmount);
         return uAmountToAmount(shares, LP_ASSETS_DECIMALS);
@@ -163,13 +163,13 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
     const onAddLiquidity = useCallback(async () => {
         if (!pool) return;
 
-        const baseAmountBN = amountToBigNumberUAmount(addLiquidityBaseAmount, baseAsset?.decimals || 0)
+        const baseAmountBN = amountToBigNumberUAmount(addLiquidityBaseAmount, baseAsset?.decimals ?? 0)
         if (baseAmountBN.isNaN() || baseAmountBN.lte(0)) {
             toast.error(`Invalid ${baseAsset?.ticker} amount provided`)
             return
         }
 
-        const quoteAmountBN = amountToBigNumberUAmount(addLiquidityQuoteAmount, quoteAsset?.decimals || 0)
+        const quoteAmountBN = amountToBigNumberUAmount(addLiquidityQuoteAmount, quoteAsset?.decimals ?? 0)
         if (quoteAmountBN.isNaN() || quoteAmountBN.lte(0)) {
             toast.error(`Invalid ${quoteAsset?.ticker} amount provided`)
             return
@@ -392,7 +392,7 @@ const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote
 
         const removeUAmount = amountToBigNumberUAmount(removeAmount, LP_ASSETS_DECIMALS);
         const ratio = removeUAmount.dividedBy(userShares);
-        return uAmountToAmount(userReserveBase.multipliedBy(ratio), baseAsset?.decimals || 0);
+        return uAmountToAmount(userReserveBase.multipliedBy(ratio), baseAsset?.decimals ?? 0);
     }, [removeAmount, userShares, userReserveBase, baseAsset]);
 
     const estimatedQuoteAmount = useMemo(() => {
@@ -402,7 +402,7 @@ const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote
 
         const removeUAmount = amountToBigNumberUAmount(removeAmount, LP_ASSETS_DECIMALS);
         const ratio = removeUAmount.dividedBy(userShares);
-        return uAmountToAmount(userReserveQuote.multipliedBy(ratio), quoteAsset?.decimals || 0);
+        return uAmountToAmount(userReserveQuote.multipliedBy(ratio), quoteAsset?.decimals ?? 0);
     }, [removeAmount, userShares, userReserveQuote, quoteAsset]);
 
     const minimumBaseAmount = useMemo(() => {
@@ -472,8 +472,8 @@ const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote
             return;
         }
 
-        const minBaseUAmount = amountToBigNumberUAmount(minimumBaseAmount, baseAsset?.decimals || 0);
-        const minQuoteUAmount = amountToBigNumberUAmount(minimumQuoteAmount, quoteAsset?.decimals || 0);
+        const minBaseUAmount = amountToBigNumberUAmount(minimumBaseAmount, baseAsset?.decimals ?? 0);
+        const minQuoteUAmount = amountToBigNumberUAmount(minimumQuoteAmount, quoteAsset?.decimals ?? 0);
 
         setIsSubmitting(true);
 
@@ -1281,7 +1281,7 @@ const UserPosition = ({
                                     size="6"
                                     circular={true}
                                 />
-                                <HighlightText fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveBase, baseAsset?.decimals || 0))} {baseAsset?.ticker}</HighlightText>
+                                <HighlightText fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveBase, baseAsset?.decimals ?? 0))} {baseAsset?.ticker}</HighlightText>
                             </HStack>
                             <HStack gap="2">
                                 <TokenLogo
@@ -1290,7 +1290,7 @@ const UserPosition = ({
                                     size="6"
                                     circular={true}
                                 />
-                                <HighlightText fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveQuote, quoteAsset?.decimals || 0))} {quoteAsset?.ticker}</HighlightText>
+                                <HighlightText fontSize="sm" color="fg.emphasized" fontWeight="medium">{prettyAmount(uAmountToAmount(userReserveQuote, quoteAsset?.decimals ?? 0))} {quoteAsset?.ticker}</HighlightText>
                             </HStack>
                         </VStack>
                     </VStack>

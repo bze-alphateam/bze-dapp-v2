@@ -370,7 +370,7 @@ export default function SwapPage() {
         if (route) {
           setRouteResult(route);
           const outputAmount = uAmountToBigNumberAmount(route.expectedOutput, toAsset.decimals);
-          setToAmount(outputAmount.toString());
+          setToAmount(outputAmount.toFixed(toAsset.decimals));
         } else {
           setRouteResult(null);
           setToAmount('');
@@ -451,7 +451,7 @@ export default function SwapPage() {
         if (bestRoute) {
           setRouteResult(bestRoute);
           const inputAmount = uAmountToBigNumberAmount(bestInput, fromAsset.decimals);
-          setFromAmount(inputAmount.toString());
+          setFromAmount(inputAmount.toFixed(fromAsset.decimals));
         } else {
           setRouteResult(null);
           setFromAmount('');
@@ -813,8 +813,8 @@ export default function SwapPage() {
                                 routeResult.expectedOutput.multipliedBy(
                                   toBigNumber(1).minus(toBigNumber(slippage).dividedBy(100))
                                 ),
-                                toAsset?.decimals || 6
-                              ))} {toAsset?.ticker || ''}
+                                toAsset?.decimals ?? 6
+                              ).toFixed(toAsset?.decimals ?? 6))} {toAsset?.ticker || ''}
                             </Text>
                           </HStack>
                           <HStack justify="space-between">
@@ -833,7 +833,7 @@ export default function SwapPage() {
                               Fee
                             </Text>
                             <Text fontSize="sm" fontWeight="medium">
-                              {routeResult.feesPerHop.length > 0 && prettyAmount(uAmountToBigNumberAmount(routeResult.feesPerHop[0], fromAsset?.decimals || 6))} {fromAsset?.ticker || ''}
+                              {routeResult.feesPerHop.length > 0 && prettyAmount(uAmountToBigNumberAmount(routeResult.feesPerHop[0], fromAsset?.decimals ?? 6))} {fromAsset?.ticker || ''}
                             </Text>
                           </HStack>
                         </VStack>
