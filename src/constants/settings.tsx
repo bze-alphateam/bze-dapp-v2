@@ -23,3 +23,5 @@ export const VALIDATION_ERRORS = {
     WEBSOCKET_ERROR: 'WebSocket connection failed - unable to connect to RPC endpoint',
     NETWORK_ERROR: 'Network error - unable to validate endpoint'
 } as const
+
+export const getAppName = () => process.env.NEXT_PUBLIC_APP_NAME ?? 'DEX'

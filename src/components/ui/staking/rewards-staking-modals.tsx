@@ -684,7 +684,7 @@ export const RewardsStakingPendingRewardsModal = ({
                                         <LuGift size={14} />
                                         <Text fontSize="sm" fontWeight="semibold" textTransform="uppercase">Available Rewards</Text>
                                     </HStack>
-                                    {pendingRewards?.map((reward, index) => (
+                                    {pendingRewards?.filter(reward => reward.amount.gt(0)).map((reward, index) => (
                                         <Text fontSize="2xl" fontWeight="bold" color="purple.600" key={index}>
                                             {prettyAmount(reward.amount)} {denomTicker(reward.denom)}
                                         </Text>
@@ -708,7 +708,8 @@ export const RewardsStakingPendingRewardsModal = ({
                                 </Text>
                             </Box>
                         )}
-                        <Button
+                        <RewardsStakingButton
+                            buttonType={TYPE_REWARDS}
                             colorPalette="purple"
                             variant="outline"
                             width="full"
@@ -718,7 +719,7 @@ export const RewardsStakingPendingRewardsModal = ({
                             onClick={claimRewards}
                         >
                             Claim Rewards
-                        </Button>
+                        </RewardsStakingButton>
                     </VStack>
                 </Card.Body>
             </Card.Root>

@@ -54,7 +54,7 @@ import {useChain} from "@interchain-kit/react";
 import {getChainName} from "@/constants/chain";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {AddressRewardsStaking, ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
-import {RewardsStakingUnlockAlerts} from "@/components/ui/staking/rewards-staking-alerts";
+import {RewardsStakingUnlockAlerts, TYPE_REWARDS} from "@/components/ui/staking/rewards-staking-alerts";
 import {useRewardsStakingData} from "@/hooks/useRewardsStakingData";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
@@ -62,6 +62,7 @@ import {PrettyBalance} from "@/types/balance";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards-staking-modals";
 import {HighlightText} from "@/components/ui/highlight";
+import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
 
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
@@ -1211,11 +1212,14 @@ const UserPosition = ({
 
         const balances: PrettyBalance[] = [];
         lockedLpShares.forEach(item => {
-            balances.push(item.pendingReward)
+            balances.push({
+                denom: item.pendingReward.denom,
+                amount: uAmountToBigNumberAmount(item.pendingReward.amount, denomDecimals(item.pendingReward.denom))
+            })
         })
 
         return balances;
-    }, [lockedLpShares])
+    }, [lockedLpShares, denomDecimals])
     const extraRewardsInUsd = useMemo(() => {
         if (extraRewards.length === 0) return '0';
 
@@ -1291,11 +1295,11 @@ const UserPosition = ({
                         </VStack>
                     </VStack>
                     <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
-                        <Text fontSize="sm" color="fg.muted" textAlign="center">Extra Rewards</Text>
-                        <HighlightText fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="green.500">${extraRewardsInUsd}</HighlightText>
-                        <Button size="sm" variant="outline" colorPalette="green" onClick={() => setShowRewardsModal(true)}>
+                        <Text fontSize="sm" color="fg.muted" textAlign="center">Boost Rewards</Text>
+                        <HighlightText fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="purple.500">${extraRewardsInUsd}</HighlightText>
+                        <RewardsStakingButton buttonType={TYPE_REWARDS} flex={0} w={undefined} onClick={() => setShowRewardsModal(true)}>
                             Claim
-                        </Button>
+                        </RewardsStakingButton>
                     </VStack>
                 </Grid>
 
@@ -1334,7 +1338,7 @@ const UserPosition = ({
                             <Button
                                 size="xs"
                                 variant="outline"
-                                colorPalette="purple"
+                                colorPalette="orange"
                                 onClick={() => unstakeShares(item.rewardId)}
                                 disabled={isUnstaking}
                                 loading={isUnstaking}

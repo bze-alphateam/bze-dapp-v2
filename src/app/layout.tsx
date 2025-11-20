@@ -7,6 +7,7 @@ import {TopNavBar} from "@/components/ui/navigation/navbar";
 import {Toaster} from "@/components/ui/toaster";
 import {AssetsProvider} from "@/contexts/assets_context";
 import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
+import {getAppName} from "@/constants/settings";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -26,7 +27,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
             <Provider>
               <AssetsProvider>
                   <BlockchainListenerWrapper />
-                  <TopNavBar appLabel={"DEX"} />
+                  <TopNavBar appLabel={getAppName()} />
                     {children}
                   <Toaster />
               </AssetsProvider>
