@@ -37,6 +37,7 @@ import {useSDKTx} from "@/hooks/useTx";
 import {cosmos} from "@bze/bzejs";
 import {openExternalLink} from "@/utils/functions";
 import {shortNumberFormat} from "@/utils/formatter";
+import {HighlightText} from "@/components/ui/highlight";
 
 type ViewState = 'balances' | 'send'
 
@@ -113,12 +114,12 @@ const BalanceItem = ({asset, onClick}: BalanceItemProps) => {
                 )}
             </HStack>
             <HStack justify="space-between">
-                <Text fontSize="sm" fontFamily="mono">
+                <HighlightText fontSize="sm" fontFamily="mono">
                     {formattedBalanceAmount}
-                </Text>
-                <Text fontSize="sm" color="fg.muted">
+                </HighlightText>
+                <HighlightText fontSize="sm" color="fg.muted">
                     ${formattedBalanceUSDValue}
-                </Text>
+                </HighlightText>
             </HStack>
         </Box>
     )
@@ -438,16 +439,15 @@ export const WalletSidebarContent = () => {
         disconnect,
         connect,
     } = useChain(getChainName());
-    const {getAssetsBalances, isLoading: assetsLoading} = useBalances();
+    const {assetsBalances, isLoading: assetsLoading} = useBalances();
     const walletManager = useWalletManager()
     const {ibcChains} = useIBCChains()
 
     const balancesWithoutLps = useMemo(() => {
         if (assetsLoading) return [];
 
-        return getAssetsBalances().filter(asset => !isLpDenom(asset.denom))
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [assetsLoading])
+        return assetsBalances.filter(asset => !isLpDenom(asset.denom))
+    }, [assetsLoading, assetsBalances])
 
     const nativeDenom = getChainNativeAssetDenom()
     const sortedBalances = useMemo(() => {

@@ -19,7 +19,7 @@ export function useBalances() {
         return balancesMap.get(denom) || { denom, amount: BigNumber(0) }
     }, [balancesMap])
 
-    const getAssetsBalances = useCallback(() => {
+    const assetsBalances = useMemo(() => {
         const result: AssetBalance[] = []
         balances.map(bal => {
             const asset = assetsMap.get(bal.denom)
@@ -49,7 +49,7 @@ export function useBalances() {
     return {
         isLoading,
         balances,
-        getAssetsBalances,
+        assetsBalances,
         getBalanceByDenom
     }
 }
