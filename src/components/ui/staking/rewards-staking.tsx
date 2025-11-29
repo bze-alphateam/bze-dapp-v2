@@ -217,8 +217,12 @@ export const RewardsStakingBox = ({stakingReward, onClick, userStake, userUnlock
                 borderColor={hasUserStake ? "blue.500" : (hasUnbonding ? "orange.500" : "border")}
                 cursor="pointer"
                 transition="all 0.2s"
+                bgGradient="to-br"
+                gradientFrom={hasUserStake ? "blue.500/5" : (hasUnbonding ? "orange.500/5" : "blue.400/5")}
+                gradientTo={hasUserStake ? "blue.600/5" : (hasUnbonding ? "yellow.500/5" : "cyan.500/5")}
                 _hover={{
-                    bg: "bg.muted",
+                    gradientFrom: hasUserStake ? "blue.500/10" : (hasUnbonding ? "orange.500/10" : "blue.400/10"),
+                    gradientTo: hasUserStake ? "blue.600/10" : (hasUnbonding ? "yellow.500/10" : "cyan.500/10"),
                     transform: "translateY(-2px)",
                     shadow: "lg"
                 }}

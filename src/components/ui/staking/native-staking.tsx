@@ -117,8 +117,12 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                 borderColor={hasUserStake ? "blue.500" : (hasUnbonding ? "orange.500" : "purple.500")}
                 cursor="pointer"
                 transition="all 0.2s"
+                bgGradient="to-br"
+                gradientFrom={hasUserStake ? "blue.500/8" : (hasUnbonding ? "orange.500/8" : "blue.400/8")}
+                gradientTo={hasUserStake ? "blue.600/8" : (hasUnbonding ? "yellow.500/8" : "cyan.500/8")}
                 _hover={{
-                    bg: "bg.muted",
+                    gradientFrom: hasUserStake ? "blue.500/12" : (hasUnbonding ? "orange.500/12" : "blue.400/12"),
+                    gradientTo: hasUserStake ? "blue.600/12" : (hasUnbonding ? "yellow.500/12" : "cyan.500/12"),
                     transform: "translateY(-2px)",
                     shadow: "lg"
                 }}
@@ -277,10 +281,10 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
                                 {hasUserStake && (
                                     <Box
                                         bgGradient="to-br"
-                                        gradientFrom="purple.500/15"
-                                        gradientTo="purple.600/15"
+                                        gradientFrom="blue.500/15"
+                                        gradientTo="blue.600/15"
                                         borderWidth="1px"
-                                        borderColor="purple.500/30"
+                                        borderColor="blue.500/30"
                                         borderRadius="md"
                                         p="3"
                                     >

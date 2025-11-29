@@ -550,8 +550,8 @@ export const RewardsStakingActionModal = ({
                             <VStack gap="4">
                                 <Box
                                     bgGradient="to-br"
-                                    gradientFrom="purple.500/15"
-                                    gradientTo="purple.600/15"
+                                    gradientFrom="blue.500/15"
+                                    gradientTo="blue.600/15"
                                     borderWidth="1px"
                                     borderColor="purple.500/30"
                                     borderRadius="md"
@@ -671,8 +671,8 @@ export const RewardsStakingPendingRewardsModal = ({
                         {canClaim ? (
                             <Box
                                 bgGradient="to-br"
-                                gradientFrom="purple.500/15"
-                                gradientTo="purple.600/15"
+                                gradientFrom="blue.500/15"
+                                gradientTo="blue.600/15"
                                 borderWidth="1px"
                                 borderColor="purple.500/30"
                                 borderRadius="md"

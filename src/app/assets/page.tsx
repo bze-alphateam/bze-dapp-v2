@@ -340,13 +340,21 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
     return (
         <Box
             key={asset.denom}
-            bg="bg.panel"
+            bgGradient="to-br"
+            gradientFrom="blue.500/5"
+            gradientTo="blue.600/5"
             borderWidth="1px"
-            borderColor="border"
+            borderColor="blue.500/15"
             borderRadius="lg"
             overflow="hidden"
             transition="all 0.2s"
             shadow="sm"
+            _hover={{
+                gradientFrom: "blue.500/10",
+                gradientTo: "blue.600/10",
+                borderColor: "blue.500/25",
+                shadow: "md"
+            }}
         >
             {/* Main Asset Info */}
             <Flex
@@ -355,7 +363,6 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                 justify="space-between"
                 cursor="pointer"
                 onClick={() => toggleExpanded(asset.denom)}
-                _hover={{ bg: "bg.muted" }}
             >
                 <HStack gap={3}>
                     <Box
@@ -446,17 +453,17 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                     <Grid gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={3}>
                         <Box
                             bgGradient="to-br"
-                            gradientFrom="purple.500/10"
-                            gradientTo="purple.600/10"
+                            gradientFrom="blue.500/10"
+                            gradientTo="blue.600/10"
                             borderWidth="1px"
-                            borderColor="purple.500/20"
+                            borderColor="blue.500/20"
                             borderRadius="lg"
                             p={4}
                         >
                             <Text color="fg.muted" fontSize="xs" fontWeight="semibold" textTransform="uppercase" mb={2}>
                                 {supplyLabel}
                             </Text>
-                            <HighlightText fontWeight="bold" fontSize="lg" color="purple.600">
+                            <HighlightText fontWeight="bold" fontSize="lg" color="blue.600">
                                 {formattedSupply} {asset.ticker}
                             </HighlightText>
                         </Box>
@@ -751,9 +758,12 @@ export default function AssetsPage() {
                     <Grid templateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap="3">
                         <Box
                             p={4}
-                            bg="bg.panel"
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/8"
+                            gradientTo="blue.600/8"
                             borderRadius="lg"
                             borderWidth="1px"
+                            borderColor="blue.500/20"
                             shadow="sm"
                         >
                             <VStack align="start" gap={2}>
@@ -769,9 +779,12 @@ export default function AssetsPage() {
                         </Box>
                         <Box
                             p={4}
-                            bg="bg.panel"
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/8"
+                            gradientTo="blue.600/8"
                             borderRadius="lg"
                             borderWidth="1px"
+                            borderColor="blue.500/20"
                             shadow="sm"
                         >
                             <VStack align="start" gap={2}>
@@ -787,9 +800,12 @@ export default function AssetsPage() {
                         </Box>
                         <Box
                             p={4}
-                            bg="bg.panel"
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/8"
+                            gradientTo="blue.600/8"
                             borderRadius="lg"
                             borderWidth="1px"
+                            borderColor="blue.500/20"
                             shadow="sm"
                         >
                             <VStack align="start" gap={2}>
@@ -805,9 +821,12 @@ export default function AssetsPage() {
                         </Box>
                         <Box
                             p={4}
-                            bg="bg.panel"
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/8"
+                            gradientTo="blue.600/8"
                             borderRadius="lg"
                             borderWidth="1px"
+                            borderColor="blue.500/20"
                             shadow="sm"
                         >
                             <VStack align="start" gap={2}>
@@ -826,9 +845,12 @@ export default function AssetsPage() {
                     {/* Search Section */}
                     <Box
                         p={6}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="xl"
                         borderWidth="1px"
+                        borderColor="blue.500/20"
                         shadow="sm"
                     >
                         <Box position="relative" w="full" maxW="500px">

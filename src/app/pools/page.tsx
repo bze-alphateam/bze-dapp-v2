@@ -163,15 +163,18 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
 
     return (
         <Box
-            bg="bg.panel"
+            bgGradient="to-br"
+            gradientFrom={isUserPool ? "blue.500/8" : "blue.500/5"}
+            gradientTo={isUserPool ? "blue.600/8" : "blue.600/5"}
             p={4}
             borderRadius="lg"
             borderWidth="1px"
-            borderColor={isUserPool ? "blue.500" : "border"}
+            borderColor={isUserPool ? "blue.500/25" : "blue.500/15"}
             cursor="pointer"
             onClick={() => toLpPage(pool.id)}
             _hover={{
-                bg: "bg.muted",
+                gradientFrom: isUserPool ? "blue.500/12" : "blue.500/8",
+                gradientTo: isUserPool ? "blue.600/12" : "blue.600/8",
                 transform: "translateY(-2px)",
                 shadow: "md"
             }}
@@ -250,7 +253,16 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
 
                 {/* Metrics */}
                 <HStack gap={2}>
-                    <Box flex="1" bg="bg.muted" p={2.5} borderRadius="md" borderWidth="1px">
+                    <Box
+                        flex="1"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/5"
+                        gradientTo="cyan.500/5"
+                        p={2.5}
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderColor="blue.500/15"
+                    >
                         <VStack gap={0.5} align="start">
                             <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
                                 24h Volume
@@ -260,7 +272,16 @@ const MobileLiquidityPoolCard = ({ pool, isUserPool = false, poolData }: Liquidi
                             </HighlightText>
                         </VStack>
                     </Box>
-                    <Box flex="1" bg="bg.muted" p={2.5} borderRadius="md" borderWidth="1px">
+                    <Box
+                        flex="1"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/5"
+                        gradientTo="cyan.500/5"
+                        p={2.5}
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderColor="blue.500/15"
+                    >
                         <VStack gap={0.5} align="start">
                             <Text fontSize="xs" color="fg.muted" fontWeight="semibold" textTransform="uppercase">
                                 Total Liquidity
@@ -402,9 +423,12 @@ export default function LiquidityPoolsPage() {
                     {/* Search and Filter Section */}
                     <Box
                         p={6}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="xl"
                         borderWidth="1px"
+                        borderColor="blue.500/20"
                         shadow="sm"
                     >
                         <VStack gap={4} w="full">
@@ -444,8 +468,10 @@ export default function LiquidityPoolsPage() {
                                         p={3}
                                         borderRadius="lg"
                                         borderWidth="1px"
-                                        borderColor="border"
-                                        bg="bg.panel"
+                                        borderColor="blue.500/15"
+                                        bgGradient="to-br"
+                                        gradientFrom="blue.500/5"
+                                        gradientTo="blue.600/5"
                                         fontSize="sm"
                                     >
                                         {sortOptions.map((option) => (
@@ -480,11 +506,13 @@ export default function LiquidityPoolsPage() {
                                         w="full"
                                         borderCollapse="separate"
                                         borderSpacing="0 4px"
-                                        bg="bg.panel"
+                                        bgGradient="to-br"
+                                        gradientFrom="blue.500/5"
+                                        gradientTo="blue.600/5"
                                         borderRadius="lg"
                                         p={2}
                                         borderWidth="1px"
-                                        borderColor="border"
+                                        borderColor="blue.500/15"
                                     >
                                         <Box as="thead">
                                             <Box as="tr">
@@ -538,11 +566,13 @@ export default function LiquidityPoolsPage() {
                                         w="full"
                                         borderCollapse="separate"
                                         borderSpacing="0 4px"
-                                        bg="bg.panel"
+                                        bgGradient="to-br"
+                                        gradientFrom="blue.500/5"
+                                        gradientTo="blue.600/5"
                                         borderRadius="lg"
                                         p={2}
                                         borderWidth="1px"
-                                        borderColor="border"
+                                        borderColor="blue.500/15"
                                     >
                                         <Box as="thead">
                                             <Box as="tr">
@@ -678,7 +708,7 @@ export default function LiquidityPoolsPage() {
                             )}
                         </Box>
 
-                        {(filteredAndSortedPools.userPools.length === 0 && filteredAndSortedPools.otherPools.length === 0) && (
+                        {(filteredAndSortedPools.userPools.length === 0 && filteredAndSortedPools.otherPools.length === 0 && sortedPools.length > 0) && (
                             <Box
                                 bg="bg.panel"
                                 p={12}
@@ -686,6 +716,7 @@ export default function LiquidityPoolsPage() {
                                 borderWidth="1px"
                                 borderColor="border"
                                 textAlign="center"
+                                w="full"
                             >
                                 <VStack gap={4}>
                                     <Text fontSize="lg" fontWeight="600" color="fg.muted">
@@ -701,6 +732,23 @@ export default function LiquidityPoolsPage() {
                                     >
                                         Clear Search
                                     </Button>
+                                </VStack>
+                            </Box>
+                        )}
+                        {sortedPools.length === 0 && (
+                            <Box
+                                bg="bg.panel"
+                                p={12}
+                                borderRadius="lg"
+                                borderWidth="1px"
+                                borderColor="border"
+                                textAlign="center"
+                                w="full"
+                            >
+                                <VStack gap={4}>
+                                    <Text fontSize="lg" fontWeight="600" color="fg.muted">
+                                        No pools created yet
+                                    </Text>
                                 </VStack>
                             </Box>
                         )}

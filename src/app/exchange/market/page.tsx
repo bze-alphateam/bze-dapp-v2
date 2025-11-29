@@ -682,9 +682,12 @@ const TradingPageContent = () => {
                     {/* Market Header */}
                     <Box
                         p={6}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="xl"
                         borderWidth="1px"
+                        borderColor="blue.500/20"
                         shadow="sm"
                     >
                         <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
@@ -776,9 +779,12 @@ const TradingPageContent = () => {
                     {/* Left: Order Book */}
                     <Box
                         p={5}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="green.500/5"
+                        gradientTo="red.500/5"
                         borderRadius="lg"
                         borderWidth="1px"
+                        borderColor="blue.500/15"
                         shadow="sm"
                     >
                         <Text fontWeight="bold" mb={4} fontSize="md">Order Book</Text>
@@ -793,8 +799,8 @@ const TradingPageContent = () => {
                                     const transformedPrice = uPriceToPrice(ask.price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)
                                     const transformedAmount = uAmountToAmount(ask.amount, baseAsset?.decimals ?? 0)
                                     return (
-                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(ask.price, ORDER_TYPE_SELL, i)}>
-                                            <Text color="red.500">{transformedPrice}</Text>
+                                        <HStack key={i} justify="space-between" fontSize="xs" onClick={() => onOrderBookClick(ask.price, ORDER_TYPE_SELL, i)}>
+                                            <Text color="red.600">{transformedPrice}</Text>
                                             <HighlightText>{transformedAmount}</HighlightText>
                                         </HStack>
                                     )
@@ -807,7 +813,15 @@ const TradingPageContent = () => {
                             </Box>
 
                             {/* Current Price */}
-                            <Box py={3} bg="bg.muted" borderRadius="md" borderWidth="1px">
+                            <Box
+                                py={1}
+                                bgGradient="to-br"
+                                gradientFrom="blue.500/15"
+                                gradientTo="blue.600/15"
+                                borderRadius="md"
+                                borderWidth="1px"
+                                borderColor="blue.500/30"
+                            >
                                 <HStack justify="center" gap={2}>
                                     <Text fontSize="lg" fontWeight="bold" color={priceColor}>
                                         {lastPrice}
@@ -826,8 +840,8 @@ const TradingPageContent = () => {
                                     const transformedPrice = uPriceToPrice(bid.price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0)
                                     const transformedAmount = uAmountToAmount(bid.amount, baseAsset?.decimals ?? 0)
                                     return (
-                                        <HStack key={i} justify="space-between" fontSize="xs" py={1} onClick={() => onOrderBookClick(bid.price, ORDER_TYPE_BUY, i)}>
-                                            <Text color="green.500">{transformedPrice}</Text>
+                                        <HStack key={i} justify="space-between" fontSize="xs" onClick={() => onOrderBookClick(bid.price, ORDER_TYPE_BUY, i)}>
+                                            <Text color="green.600">{transformedPrice}</Text>
                                             <HighlightText>{transformedAmount}</HighlightText>
                                         </HStack>
                                     )
@@ -845,9 +859,12 @@ const TradingPageContent = () => {
                     <VStack gap={4} align="stretch">
                         <Box
                             p={5}
-                            bg="bg.panel"
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/5"
+                            gradientTo="blue.600/5"
                             borderRadius="lg"
                             borderWidth="1px"
+                            borderColor="blue.500/15"
                             shadow="sm"
                             minH="450px"
                         >
@@ -1095,7 +1112,15 @@ const TradingPageContent = () => {
                     {/* Right: Market History/My History & Active Orders */}
                     <VStack gap={4} align="stretch">
                         {/* Market History - Improved */}
-                        <Box bg="bg.panel" borderRadius="md" borderWidth="1px" overflow="hidden">
+                        <Box
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/5"
+                            gradientTo="blue.600/5"
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderColor="blue.500/15"
+                            overflow="hidden"
+                        >
                             <HStack p={3} borderBottomWidth="1px">
                                 <Button
                                     size="xs"
@@ -1115,7 +1140,7 @@ const TradingPageContent = () => {
 
                             <Box maxH="300px" overflowY="auto">
                                 <Table.Root size="sm" variant="outline">
-                                    <Table.Header position='sticky' top={0} bg="bg.panel">
+                                    <Table.Header position='sticky' top={0} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5">
                                         <Table.Row>
                                             <Table.ColumnHeader>
                                                 <Text fontSize="xs" color="fg.muted">Price</Text>
@@ -1173,7 +1198,15 @@ const TradingPageContent = () => {
                         </Box>
 
                         {/* Active Orders - Improved */}
-                        <Box bg="bg.panel" borderRadius="md" borderWidth="1px" overflow="hidden">
+                        <Box
+                            bgGradient="to-br"
+                            gradientFrom="orange.500/5"
+                            gradientTo="yellow.500/5"
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderColor="orange.500/15"
+                            overflow="hidden"
+                        >
                             <HStack justify="space-between" p={3} borderBottomWidth="1px">
                                 <Text fontWeight="bold" fontSize="sm">Your Orders</Text>
                                 {myOrders.length > 0 && (
@@ -1195,7 +1228,7 @@ const TradingPageContent = () => {
                             ) : (
                                 <Box maxH="300px" overflowY="auto">
                                     <Table.Root size="sm" variant="outline">
-                                        <Table.Header position="sticky" top={0} bg="bg.panel">
+                                        <Table.Header position="sticky" top={0} bgGradient="to-br" gradientFrom="orange.500/5" gradientTo="yellow.500/5">
                                             <Table.Row>
                                                 <Table.ColumnHeader>
                                                     <Text fontSize="xs" color="fg.muted">Type</Text>
@@ -1251,7 +1284,15 @@ const TradingPageContent = () => {
                         </Box>
 
                         {/* Balance */}
-                        <Box p={4} bg="bg.panel" borderRadius="md" borderWidth="1px">
+                        <Box
+                            p={4}
+                            bgGradient="to-br"
+                            gradientFrom="green.500/5"
+                            gradientTo="blue.500/5"
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderColor="green.500/15"
+                        >
                             <Text fontWeight="bold" mb={3} fontSize="sm">Balance</Text>
                             <VStack align="stretch" gap={2}>
                                 <HStack justify="space-between">

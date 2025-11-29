@@ -863,11 +863,13 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
                 <Text fontSize="lg" fontWeight="semibold" color="fg.emphasized">Lock LP Shares for Extra Rewards</Text>
                 <Box
                     w="full"
-                    bg="bg.panel"
+                    bgGradient="to-br"
+                    gradientFrom="blue.500/5"
+                    gradientTo="blue.600/5"
                     p="6"
                     rounded="lg"
                     borderWidth="1px"
-                    borderColor="border"
+                    borderColor="blue.500/15"
                     textAlign="center"
                 >
                     <VStack gap="3">
@@ -1259,7 +1261,17 @@ const UserPosition = ({
                 </HStack>
 
                 <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
-                    <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                    <VStack
+                        align="center"
+                        gap="2"
+                        p={{ base: "3", md: "4" }}
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
+                        rounded="lg"
+                        borderWidth="1px"
+                        borderColor="blue.500/20"
+                    >
                         <Text fontSize="sm" color="fg.muted" textAlign="center">LP Shares</Text>
                         <LPTokenLogo
                             baseAssetLogo={baseAsset?.logo || ''}
@@ -1271,7 +1283,17 @@ const UserPosition = ({
                         <HighlightText fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="fg.emphasized">{prettyAmount(uAmountToAmount(userShares, LP_ASSETS_DECIMALS))}</HighlightText>
                         <HighlightText fontSize="xs" color="fg.muted">{prettyAmount(userSharesPercentage)}% of pool</HighlightText>
                     </VStack>
-                    <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                    <VStack
+                        align="center"
+                        gap="2"
+                        p={{ base: "3", md: "4" }}
+                        bgGradient="to-br"
+                        gradientFrom="green.500/8"
+                        gradientTo="blue.500/8"
+                        rounded="lg"
+                        borderWidth="1px"
+                        borderColor="green.500/20"
+                    >
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Shares Assets</Text>
                         <VStack gap="2">
                             <HStack gap="2">
@@ -1294,7 +1316,17 @@ const UserPosition = ({
                             </HStack>
                         </VStack>
                     </VStack>
-                    <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                    <VStack
+                        align="center"
+                        gap="2"
+                        p={{ base: "3", md: "4" }}
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="cyan.500/8"
+                        rounded="lg"
+                        borderWidth="1px"
+                        borderColor="blue.500/20"
+                    >
                         <Text fontSize="sm" color="fg.muted" textAlign="center">Boost Rewards</Text>
                         <HighlightText fontSize={{ base: "md", md: "lg" }} fontWeight="semibold" color="purple.500">${extraRewardsInUsd}</HighlightText>
                         <RewardsStakingButton buttonType={TYPE_REWARDS} flex={0} w={undefined} onClick={() => setShowRewardsModal(true)}>
@@ -1483,25 +1515,25 @@ const PoolDetailsPageContent = () => {
 
                         {/* Pool Stats */}
                         <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Total Liquidity</Text>
                                 <Skeleton asChild loading={!hasPoolData}>
                                     <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdValue || 0)}</HighlightText>
                                 </Skeleton>
                             </VStack>
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Volume (24h)</Text>
                                 <Skeleton asChild loading={!hasPoolData}>
                                     <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdVolume || 0)}</HighlightText>
                                 </Skeleton>
                             </VStack>
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
                                 <Text fontSize="sm" color="fg.muted" textAlign="center">Fees (24h)</Text>
                                 <Skeleton asChild loading={!hasPoolData}>
                                     <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">${prettyAmount(poolData?.usdFees || 0)}</HighlightText>
                                 </Skeleton>
                             </VStack>
-                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bg="bg.panel" rounded="lg" borderWidth="1px" borderColor="border">
+                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
                                 <HStack justify="center">
                                     <Text fontSize="sm" color="fg.muted">APR</Text>
                                     <LuTrendingUp size={16} />
@@ -1513,7 +1545,7 @@ const PoolDetailsPageContent = () => {
                         </Grid>
 
                         {/* Fee Information */}
-                        <Box w="full" bg="bg.panel" p={{ base: "3", md: "4" }} rounded="lg" borderWidth="1px" borderColor="border">
+                        <Box w="full" bgGradient="to-br" gradientFrom="orange.500/5" gradientTo="yellow.500/5" p={{ base: "3", md: "4" }} rounded="lg" borderWidth="1px" borderColor="orange.500/15">
                             <VStack gap={{ base: "3", md: "4" }}>
                                 <HStack w="full" justify="space-between">
                                     <Skeleton asChild loading={!pool}>
