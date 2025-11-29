@@ -195,6 +195,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         //2. get the USD price for each asset
         const pricesMap = new Map<string, BigNumber>();
         pricesMap.set(bzeDenom, bzeUsdPrice)
+        pricesMap.set(usdcDenom, toBigNumber(1))
 
         const existingAssets = Array.from(assetsMap.values())
         const lpDenoms = [];

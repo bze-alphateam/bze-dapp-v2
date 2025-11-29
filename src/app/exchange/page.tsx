@@ -251,11 +251,15 @@ export default function ExchangePage() {
     const [searchTerm, setSearchTerm] = useState('')
     const {markets, getMarketData, isLoading: isLoadingMarkets} = useMarkets()
     const {isVerifiedAsset, denomTicker} = useAssets()
-    const {compareValues} = useAssetsValue()
+    const {compareValues, isLoading: isLoadingAssetsValue} = useAssetsValue()
     const {toMarketPage} = useNavigation()
 
     const sortedMarkets = useMemo(() => {
         if (!markets) return [];
+
+        if (isLoadingAssetsValue) {
+            return [...markets]
+        }
 
         return markets
             .sort((a, b) => {
@@ -269,6 +273,8 @@ export default function ExchangePage() {
                 if (!aVerified && bVerified) return 1;
                 if (aVerified && !bVerified) return -1;
                 if (!aData && !bData) return 0;
+                if (aData!.quote_volume > 0 && bData!.quote_volume === 0) return -1;
+                if (aData!.quote_volume === 0 && bData!.quote_volume > 0) return 1;
 
                 const aVolume = {
                     amount: new BigNumber(aData?.quote_volume || 0),
@@ -280,9 +286,9 @@ export default function ExchangePage() {
                     denom: b.quote
                 }
 
-                return compareValues(aVolume, bVolume)
+                return compareValues(aVolume, bVolume) * (-1)
             })
-    }, [markets, isVerifiedAsset, getMarketData, compareValues])
+    }, [markets, isVerifiedAsset, getMarketData, compareValues, isLoadingAssetsValue])
 
     const filteredMarkets = useMemo(() => {
         if (!sortedMarkets) return [];
