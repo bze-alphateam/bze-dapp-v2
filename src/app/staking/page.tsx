@@ -206,9 +206,12 @@ const StakingPage = () => {
                     {/* Search */}
                     <Box
                         p={6}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="xl"
                         borderWidth="1px"
+                        borderColor="blue.500/20"
                         shadow="sm"
                     >
                         <HStack gap={4} wrap="wrap">
@@ -251,6 +254,10 @@ const StakingPage = () => {
                         borderRadius="lg"
                         borderWidth="1px"
                         shadow="sm"
+                        bgGradient="to-br"
+                        gradientFrom="green.500/8"
+                        gradientTo="blue.500/8"
+                        borderColor="green.500/20"
                     >
                         <Card.Body p={4}>
                             <VStack align="start" gap={2}>
@@ -259,7 +266,7 @@ const StakingPage = () => {
                                 </Text>
                                 <Skeleton asChild loading={summaryLoading}>
                                     <Text fontSize="2xl" fontWeight="bold" letterSpacing="tight">
-                                        ≈${shortNumberFormat(stakedUsdValue)}
+                                        ≈ ${shortNumberFormat(stakedUsdValue)}
                                     </Text>
                                 </Skeleton>
                             </VStack>
@@ -270,6 +277,10 @@ const StakingPage = () => {
                         borderRadius="lg"
                         borderWidth="1px"
                         shadow="sm"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
+                        borderColor="blue.500/20"
                     >
                         <Card.Body p={4}>
                             <VStack align="start" gap={2}>
@@ -292,6 +303,10 @@ const StakingPage = () => {
                         borderRadius="lg"
                         borderWidth="1px"
                         shadow="sm"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="cyan.500/8"
+                        borderColor="blue.500/20"
                     >
                         <Card.Body p={4}>
                             <VStack align="start" gap={2}>

@@ -77,11 +77,17 @@ const BalanceItem = ({asset, onClick}: BalanceItemProps) => {
     return (
         <Box
             p="3"
-            bg="bg.panel"
+            bgGradient="to-br"
+            gradientFrom="blue.500/5"
+            gradientTo="blue.600/5"
             borderRadius="md"
             borderWidth="1px"
-            borderColor="border"
-            _hover={{ bg: 'bg.muted', borderColor: 'border.emphasized' }}
+            borderColor="blue.500/15"
+            _hover={{
+                gradientFrom: "blue.500/10",
+                gradientTo: "blue.600/10",
+                borderColor: "blue.500/25"
+            }}
             transition="all 0.2s"
             onMouseLeave={() => setShowSendButton(false)}
             onMouseEnter={() => setShowSendButton(true)}
@@ -621,10 +627,12 @@ export const WalletSidebarContent = () => {
                 {status === WalletState.Connected &&
                     <Box
                         p="3"
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="md"
                         borderWidth="1px"
-                        borderColor="border"
+                        borderColor="blue.500/20"
                     >
                         <Text fontSize="xs" color="fg.muted" mb="1">
                             {username ?? "Address"}

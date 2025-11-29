@@ -68,18 +68,22 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
         <Box
             p={5}
             borderWidth="1px"
-            borderColor="border.subtle"
             borderRadius="xl"
             cursor="pointer"
             transition="all 0.2s"
             shadow="sm"
+            bgGradient="to-br"
+            gradientFrom="blue.500/5"
+            gradientTo="blue.600/5"
+            borderColor="blue.500/15"
             _hover={{
-                bg: "bg.muted",
+                gradientFrom: "blue.500/10",
+                gradientTo: "blue.600/10",
+                borderColor: "blue.500/25",
                 shadow: "md",
                 transform: "translateY(-2px)"
             }}
             onClick={onClick}
-            bg="bg.panel"
         >
             {/* Desktop View */}
             <SimpleGrid
@@ -188,9 +192,12 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
                 <SimpleGrid columns={2} gap={4}>
                     <Box
                         p={3}
-                        bg="bg.muted"
+                        bgGradient="to-br"
+                        gradientFrom="green.500/8"
+                        gradientTo="blue.500/8"
                         borderRadius="lg"
                         borderWidth="1px"
+                        borderColor="green.500/20"
                     >
                         <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="medium">
                             24h Price
@@ -215,9 +222,12 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
                     <Box
                         p={3}
-                        bg="bg.muted"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="lg"
                         borderWidth="1px"
+                        borderColor="blue.500/20"
                     >
                         <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="medium">
                             24h Volume
@@ -305,9 +315,12 @@ export default function ExchangePage() {
                     {/* Search and Stats */}
                     <Box
                         p={6}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
                         borderRadius="xl"
                         borderWidth="1px"
+                        borderColor="blue.500/20"
                         shadow="sm"
                     >
                         <HStack gap={4} wrap="wrap">
@@ -351,8 +364,12 @@ export default function ExchangePage() {
                     px={6}
                     py={3}
                     hideBelow="md"
-                    bg="bg.muted"
+                    bgGradient="to-br"
+                    gradientFrom="blue.500/5"
+                    gradientTo="blue.600/5"
                     borderRadius="lg"
+                    borderWidth="1px"
+                    borderColor="blue.500/10"
                 >
                     <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
                         Market
@@ -387,9 +404,12 @@ export default function ExchangePage() {
                         textAlign="center"
                         py={16}
                         px={6}
-                        bg="bg.panel"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/5"
+                        gradientTo="blue.600/5"
                         borderRadius="xl"
                         borderWidth="1px"
+                        borderColor="blue.500/15"
                     >
                         <Text color="fg.muted" fontSize="lg" fontWeight="medium">
                             No markets found matching &quot;{searchTerm}&quot;

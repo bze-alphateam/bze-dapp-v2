@@ -127,7 +127,21 @@ const AssetSelector = memo(({
           }}
       >
         <Select.Trigger asChild>
-          <Card.Root variant="outline" p="4" cursor="pointer">
+          <Card.Root
+            variant="outline"
+            p="4"
+            cursor="pointer"
+            bgGradient="to-br"
+            gradientFrom="blue.500/8"
+            gradientTo="blue.600/8"
+            borderColor="blue.500/20"
+            _hover={{
+              gradientFrom: "blue.500/12",
+              gradientTo: "blue.600/12",
+              borderColor: "blue.500/30"
+            }}
+            transition="all 0.2s"
+          >
             <VStack align="start" gap="3" w="full">
               <Text fontSize="sm" color="fg.muted">
                 {placeholder}
@@ -618,6 +632,10 @@ export default function SwapPage() {
               w="full"
               borderWidth="1px"
               shadow="lg"
+              bgGradient="to-br"
+              gradientFrom="blue.500/5"
+              gradientTo="blue.600/5"
+              borderColor="blue.500/20"
             >
               <VStack gap="1" align="stretch">
                 {/* Header with Settings */}
@@ -639,7 +657,15 @@ export default function SwapPage() {
                 <Collapsible.Root open={showSettings}>
                   <Collapsible.Content>
                     <Box px="6" pb="4">
-                      <Card.Root variant="subtle" p="4">
+                      <Card.Root
+                        variant="subtle"
+                        p="4"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/10"
+                        gradientTo="teal.500/10"
+                        borderWidth="1px"
+                        borderColor="blue.500/20"
+                      >
                         <VStack gap="4" align="stretch">
                           <Box>
                             <Text fontSize="sm" fontWeight="semibold" mb="3" color="fg.muted">
@@ -711,11 +737,13 @@ export default function SwapPage() {
                         assetsWithBalanceInfo={assetsWithBalanceInfo}
                     />
                     <Box
-                      bg="bg.muted"
+                      bgGradient="to-br"
+                      gradientFrom="blue.500/10"
+                      gradientTo="blue.600/10"
                       borderRadius="lg"
                       p="4"
                       borderWidth="1px"
-                      borderColor="border.subtle"
+                      borderColor="blue.500/25"
                     >
                       <Input
                           placeholder="0.0"
@@ -772,11 +800,13 @@ export default function SwapPage() {
                         assetsWithBalanceInfo={assetsWithBalanceInfo}
                     />
                     <Box
-                      bg="bg.muted"
+                      bgGradient="to-br"
+                      gradientFrom="blue.500/10"
+                      gradientTo="cyan.500/10"
                       borderRadius="lg"
                       p="4"
                       borderWidth="1px"
-                      borderColor="border.subtle"
+                      borderColor="blue.500/25"
                     >
                       <Input
                           placeholder="0.0"
@@ -802,7 +832,16 @@ export default function SwapPage() {
                 {/* Minimum Output & Price Impact */}
                 {fromAmount && routeResult && (
                     <Box px="6" pt="2">
-                      <Card.Root variant="subtle" p="4" borderRadius="lg">
+                      <Card.Root
+                        variant="subtle"
+                        p="4"
+                        borderRadius="lg"
+                        bgGradient="to-br"
+                        gradientFrom="green.500/8"
+                        gradientTo="blue.500/8"
+                        borderWidth="1px"
+                        borderColor="green.500/20"
+                      >
                         <VStack gap="3" align="stretch">
                           <HStack justify="space-between">
                             <Text fontSize="sm" color="fg.muted" fontWeight="medium">
@@ -842,7 +881,16 @@ export default function SwapPage() {
                 )}
                 {fromAmount && isCalculatingRoute && (
                     <Box px="6" pt="2">
-                      <Card.Root variant="subtle" p="4" borderRadius="lg">
+                      <Card.Root
+                        variant="subtle"
+                        p="4"
+                        borderRadius="lg"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/8"
+                        gradientTo="blue.600/8"
+                        borderWidth="1px"
+                        borderColor="blue.500/20"
+                      >
                         <Text fontSize="sm" color="fg.muted" textAlign="center">
                           Calculating best route...
                         </Text>
@@ -878,7 +926,15 @@ export default function SwapPage() {
                       <Collapsible.Root open={showRoutes}>
                         <Collapsible.Content>
                           <Box mt="3">
-                            <Card.Root variant="subtle" p="3">
+                            <Card.Root
+                              variant="subtle"
+                              p="3"
+                              bgGradient="to-br"
+                              gradientFrom="blue.500/8"
+                              gradientTo="blue.600/8"
+                              borderWidth="1px"
+                              borderColor="blue.500/20"
+                            >
                               {/* Route Path */}
                               <Flex wrap="wrap" gap="2" align="center" justify="center">
                                 {routeResult.path.map((denom, index) => {
