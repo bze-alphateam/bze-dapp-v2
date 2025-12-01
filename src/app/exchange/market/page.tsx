@@ -48,14 +48,22 @@ import {sanitizeNumberInput} from "@/utils/number";
 import {calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount, getMinAmount} from "@/utils/market";
 import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
 import {TradeViewChart} from "@/types/charts";
-import {getChartIntervalsLimit, getChartMinutes} from "@/utils/charts";
+import {
+    CHART_1D,
+    CHART_1Y,
+    CHART_30D,
+    CHART_4H,
+    CHART_7D,
+    getChartIntervalsLimit,
+    getChartMinutes
+} from "@/utils/charts";
 import {LightweightChart} from "@/components/ui/trading/chart";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {useConnectionType} from "@/hooks/useConnectionType";
 import {CONNECTION_TYPE_WS} from "@/types/settings";
 import {blockchainEventManager} from "@/service/blockchain_event_manager";
 import {getMarketOrderBookChangedEvent} from "@/utils/events";
-import {addDebounce} from "@/utils/debounce";
+import {addDebounce, cancelDebounce} from "@/utils/debounce";
 import {HighlightText} from "@/components/ui/highlight";
 
 const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
@@ -182,7 +190,7 @@ const TradingPageContent = () => {
     const {toast} = useToast()
     const {connectionType} = useConnectionType()
 
-    const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
+    const timeframes = [CHART_4H, CHART_1D, CHART_7D, CHART_30D, CHART_1Y];
 
     const lastPrice = useMemo(() => {
         if (marketData && marketData.last_price > 0) {
@@ -276,7 +284,7 @@ const TradingPageContent = () => {
         const ord = await getAddressFullMarketOrders(marketId, address);
         setMyOrders(ord);
     }, [marketId, address])
-    const fetchChartData = useCallback(async () => {
+    const fetchChartData = useCallback(async (timeframe: string) => {
         if (!marketId || marketId === '') return;
 
         const chart = await getTradingViewIntervals(
@@ -286,7 +294,7 @@ const TradingPageContent = () => {
         );
 
         setChartData(chart);
-    }, [marketId, timeframe])
+    }, [marketId])
 
     //on component mount
     const onMount = useCallback(async () => {
@@ -294,7 +302,7 @@ const TradingPageContent = () => {
         fetchMyHistory();
         fetchMarketHistory();
         fetchMyOrders();
-        fetchChartData();
+        fetchChartData(timeframe);
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -411,7 +419,6 @@ const TradingPageContent = () => {
             setSellPrice(calculatePricePerUnit(sellAmount, total, baseAsset?.decimals ?? 0));
         }
     }, [sellPrice, sellAmount, quoteAsset, baseAsset])
-
     const onOrderBookClick = useCallback((price: string, orderType: 'buy' | 'sell', index: number) => {
         const transformedPrice = uPriceToPrice(price, quoteAsset?.decimals ?? 0, baseAsset?.decimals ?? 0);
         setBuyPrice(transformedPrice);
@@ -441,6 +448,12 @@ const TradingPageContent = () => {
         setSellTotal(total);
         setBuyTotal(total);
     }, [quoteAsset, baseAsset, activeOrders])
+    const onTimeframeChange = useCallback((timeframe: string) => {
+        fetchChartData(timeframe);
+        setTimeframe(timeframe)
+        //if a debouce was waiting when we pressed the button, cancel it
+        cancelDebounce(`update-trading-page-chart-${marketId}`);
+    }, [fetchChartData, marketId])
 
     //order submit functions
     const getMatchingOrders = useCallback((orderType: string, uPrice: BigNumber, uAmount: BigNumber): AggregatedOrderSDKType[] => {
@@ -655,7 +668,7 @@ const TradingPageContent = () => {
 
                 // after 3 seconds reload the chart data - chart data comes from Aggregator API - it might get there
                 // with some delay
-                addDebounce(`update-trading-page-chart-${marketId}`, 3000, fetchChartData);
+                addDebounce(`update-trading-page-chart-${marketId}`, 1500, () => fetchChartData(timeframe));
             })
         } else {
             refreshInterval = setInterval(() => {
@@ -879,7 +892,7 @@ const TradingPageContent = () => {
                                             key={tf}
                                             size="xs"
                                             variant={timeframe === tf ? 'solid' : 'ghost'}
-                                            onClick={() => setTimeframe(tf)}
+                                            onClick={() => onTimeframeChange(tf)}
                                         >
                                             {tf}
                                         </Button>
