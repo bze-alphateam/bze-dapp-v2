@@ -65,11 +65,13 @@ const AssetSelector = memo(({
   onSelect,
   placeholder,
   assetsWithBalanceInfo,
+  isLoading,
 }: {
   asset: AssetWithBalance | null;
   onSelect: (asset: AssetWithBalance) => void;
   placeholder: string;
   assetsWithBalanceInfo: AssetWithBalance[];
+  isLoading: boolean;
 }) => {
   // Local search state to avoid parent re-renders
   const [searchTerm, setSearchTerm] = useState('');
@@ -101,8 +103,12 @@ const AssetSelector = memo(({
     });
   }, [filteredAssets]);
 
-  if (!asset) {
+  if (isLoading) {
     return <Box>Loading...</Box>;
+  }
+
+  if (!asset) {
+    return <Box>No asset available</Box>
   }
 
   return (
@@ -748,6 +754,7 @@ export default function SwapPage() {
                         onSelect={setFromAsset}
                         placeholder="From"
                         assetsWithBalanceInfo={assetsWithBalanceInfo}
+                        isLoading={isLoading && assetsWithBalanceInfo.length === 0}
                     />
                     <Box
                       bgGradient="to-br"
@@ -811,6 +818,7 @@ export default function SwapPage() {
                         onSelect={setToAsset}
                         placeholder="To"
                         assetsWithBalanceInfo={assetsWithBalanceInfo}
+                        isLoading={isLoading && assetsWithBalanceInfo.length === 0}
                     />
                     <Box
                       bgGradient="to-br"
