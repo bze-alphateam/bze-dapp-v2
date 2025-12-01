@@ -7,6 +7,7 @@ import {TopNavBar} from "@/components/ui/navigation/navbar";
 import {Toaster} from "@/components/ui/toaster";
 import {AssetsProvider} from "@/contexts/assets_context";
 import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
+import {BetaWarningToast} from "@/components/beta-warning-toast";
 import {getAppName} from "@/constants/settings";
 
 const inter = Inter({
@@ -30,6 +31,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                   <TopNavBar appLabel={getAppName()} />
                     {children}
                   <Toaster />
+                  <BetaWarningToast />
               </AssetsProvider>
             </Provider>
           </body>
