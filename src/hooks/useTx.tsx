@@ -145,7 +145,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
 
         if (!(await canUseClient())) {
-            toast.error(TxStatus.Failed, 'Can not find suitable signing client')
+            toast.error(TxStatus.Failed, 'Can not find suitable signing client. Make sure your wallet is installed, connected and unlocked.')
             return;
         }
 

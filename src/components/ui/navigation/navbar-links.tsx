@@ -1,6 +1,8 @@
 import { Link, Stack, type StackProps, Menu, Text, Portal, Box } from '@chakra-ui/react'
 import NextLink from 'next/link'
 import {useNavigation} from "@/hooks/useNavigation";
+import { LuGlobe, LuCoins, LuFlame, LuFactory } from 'react-icons/lu'
+import type { IconType } from 'react-icons'
 
 interface NavbarLinksProps extends StackProps {
     onLinkClick?: () => void
@@ -16,10 +18,11 @@ const navItems = [
 ]
 
 // Apps dropdown items
-const appsItems = [
-    { name: '🌐 Website', href: 'https://getbze.com', disabled: false },
-    { name: '🔥 Burner', href: 'https://burner.getbze.com', disabled: false },
-    { name: '🔧 Factory', href: '#', disabled: true },
+const appsItems: Array<{ name: string; href: string; disabled: boolean; icon: IconType }> = [
+    { name: 'Website', href: 'https://getbze.com', disabled: false, icon: LuGlobe },
+    { name: 'Staking', href: 'https://staking.getbze.com', disabled: false, icon: LuCoins },
+    { name: 'Burner', href: 'https://burner.getbze.com', disabled: false, icon: LuFlame },
+    { name: 'Factory', href: '#', disabled: true, icon: LuFactory },
 ]
 
 const navSubitems: { [key: string]: string } = {
@@ -82,14 +85,19 @@ export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {
                     Other
                 </Text>
                 <Stack direction="column" gap="4" pl="4">
-                    {appsItems.map((item) => (
-                        item.disabled ? (
+                    {appsItems.map((item) => {
+                        const Icon = item.icon
+                        return item.disabled ? (
                             <Text
                                 key={item.name}
                                 fontWeight="medium"
                                 color="fg.muted"
                                 opacity={0.5}
+                                display="flex"
+                                alignItems="center"
+                                gap="2"
                             >
+                                <Icon size={16} />
                                 {item.name} <Text as="span" fontSize="xs">(coming soon)</Text>
                             </Text>
                         ) : (
@@ -103,15 +111,19 @@ export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {
                                 textDecoration="none"
                                 transition="color 0.2s"
                                 onClick={onLinkClick}
+                                display="flex"
+                                alignItems="center"
+                                gap="2"
                                 _hover={{
                                     color: 'colorPalette.fg',
                                     textDecoration: 'none',
                                 }}
                             >
+                                <Icon size={16} />
                                 {item.name}
                             </Link>
                         )
-                    ))}
+                    })}
                 </Stack>
             </Box>
 
@@ -139,33 +151,40 @@ export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {
                     <Portal>
                         <Menu.Positioner>
                             <Menu.Content>
-                                {appsItems.map((item) => (
-                                    <Menu.Item
-                                        key={item.name}
-                                        value={item.name}
-                                        disabled={item.disabled}
-                                        asChild={!item.disabled}
-                                    >
-                                        {item.disabled ? (
-                                            <Text>
-                                                {item.name} <Text as="span" fontSize="xs" color="fg.muted">(coming soon)</Text>
-                                            </Text>
-                                        ) : (
-                                            <Link
-                                                href={item.href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                textDecoration="none"
-                                                color="inherit"
-                                                display="block"
-                                                width="100%"
-                                                onClick={onLinkClick}
-                                            >
-                                                {item.name}
-                                            </Link>
-                                        )}
-                                    </Menu.Item>
-                                ))}
+                                {appsItems.map((item) => {
+                                    const Icon = item.icon
+                                    return (
+                                        <Menu.Item
+                                            key={item.name}
+                                            value={item.name}
+                                            disabled={item.disabled}
+                                            asChild={!item.disabled}
+                                        >
+                                            {item.disabled ? (
+                                                <Text display="flex" alignItems="center" gap="2">
+                                                    <Icon size={16} />
+                                                    {item.name} <Text as="span" fontSize="xs" color="fg.muted">(coming soon)</Text>
+                                                </Text>
+                                            ) : (
+                                                <Link
+                                                    href={item.href}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    textDecoration="none"
+                                                    color="inherit"
+                                                    display="flex"
+                                                    alignItems="center"
+                                                    gap="2"
+                                                    width="100%"
+                                                    onClick={onLinkClick}
+                                                >
+                                                    <Icon size={16} />
+                                                    {item.name}
+                                                </Link>
+                                            )}
+                                        </Menu.Item>
+                                    )
+                                })}
                             </Menu.Content>
                         </Menu.Positioner>
                     </Portal>

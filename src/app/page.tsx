@@ -245,7 +245,7 @@ AssetSelector.displayName = 'AssetSelector';
 export default function SwapPage() {
   const { denomTicker, getAsset } = useAssets();
   const { getBalanceByDenom } = useBalances();
-  const { pools, liquidAssets } = useLiquidityPools();
+  const { pools, liquidAssets, isLoading } = useLiquidityPools();
   const {toast} = useToast()
   const {tx, progressTrack} = useBZETx()
   const {address} = useChain(getChainName())
@@ -624,6 +624,19 @@ export default function SwapPage() {
                 Trade tokens instantly with the best rates
               </Text>
             </VStack>
+
+            {/* No Liquidity Pools Message */}
+            {!isLoading && liquidAssets.length === 0 && (
+              <Alert.Root status="info">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>No Liquidity Pools Available</Alert.Title>
+                  <Alert.Description>
+                    Liquidity pools will be created soon. Please check back later to start trading.
+                  </Alert.Description>
+                </Alert.Content>
+              </Alert.Root>
+            )}
 
             {/* Swap Form */}
             <Card.Root

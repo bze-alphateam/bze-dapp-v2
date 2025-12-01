@@ -20,9 +20,9 @@ const walletConnect = new WCWallet(
         metadata: {
             name: "BeeZee DEX",
             description: "DEX & More",
-            url: "https://app.getbze.com",
+            url: "https://dex.getbze.com",
             icons: [
-                "https://app.getbze.com/images/logo_320px.png",
+                "https://dex.getbze.com/images/logo_320px.png",
             ],
         },
     }
