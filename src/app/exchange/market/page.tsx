@@ -185,7 +185,7 @@ const TradingPageContent = () => {
     const timeframes = ['4H', '1D', '7D', '30D', '1Y'];
 
     const lastPrice = useMemo(() => {
-        if (marketData) {
+        if (marketData && marketData.last_price > 0) {
             return marketData.last_price;
         }
 
