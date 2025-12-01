@@ -243,9 +243,9 @@ const AssetSelector = memo(({
 AssetSelector.displayName = 'AssetSelector';
 
 export default function SwapPage() {
-  const { assetsLpExcluded, denomTicker, getAsset } = useAssets();
+  const { denomTicker, getAsset } = useAssets();
   const { getBalanceByDenom } = useBalances();
-  const { pools } = useLiquidityPools();
+  const { pools, liquidAssets } = useLiquidityPools();
   const {toast} = useToast()
   const {tx, progressTrack} = useBZETx()
   const {address} = useChain(getChainName())
@@ -260,7 +260,7 @@ export default function SwapPage() {
 
   // Get assets with balance information for display
   const assetsWithBalanceInfo = useMemo(() => {
-    const assetsWithBalance = assetsLpExcluded.map(asset => {
+    const assetsWithBalance = liquidAssets.map(asset => {
       const balance = getBalanceByDenom(asset.denom);
       const balanceAmount = uAmountToBigNumberAmount(balance.amount, asset.decimals);
       return {
@@ -301,7 +301,7 @@ export default function SwapPage() {
 
       return 0;
     });
-  }, [assetsLpExcluded, getBalanceByDenom]);
+  }, [liquidAssets, getBalanceByDenom]);
 
   const [fromAsset, setFromAsset] = useState<typeof assetsWithBalanceInfo[0] | null>(null);
   const [toAsset, setToAsset] = useState<typeof assetsWithBalanceInfo[0] | null>(null);
