@@ -40,7 +40,7 @@ export const Sidebar = ({ children, trigger, ariaLabel }: SidebarProps) => {
                             right: 0,
                             bottom: 0,
                             backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            zIndex: '3',
+                            zIndex: '2',
                             display: 'block',
                         }}
                         onClick={(e) => {
@@ -65,7 +65,7 @@ export const Sidebar = ({ children, trigger, ariaLabel }: SidebarProps) => {
                             backgroundColor: 'var(--chakra-colors-bg-panel)',
                             borderLeft: '1px solid var(--chakra-colors-border-subtle)',
                             boxShadow: window.innerWidth >= 768 ? '-4px 0 12px rgba(0, 0, 0, 0.15)' : 'none',
-                            zIndex: '1001',
+                            zIndex: '2',
                             display: 'flex',
                             flexDirection: 'column',
                             overflow: 'hidden',
