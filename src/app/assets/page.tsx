@@ -711,13 +711,21 @@ export default function AssetsPage() {
     const {isLoading, assetsLpExcluded} = useAssets()
     const {pools} = useLiquidityPools()
 
-    const filteredAssets = () => {
+    const filteredAssets = useMemo(() => {
         if (searchTerm === '') {
             return assetsLpExcluded.sort((token1: Asset, token2: Asset) => {
-                if (isNativeDenom(token1.denom)) {
+                // Native denom should always be first
+                const token1IsNative = isNativeDenom(token1.denom);
+                const token2IsNative = isNativeDenom(token2.denom);
+
+                if (token1IsNative && !token2IsNative) {
                     return -1;
                 }
+                if (!token1IsNative && token2IsNative) {
+                    return 1;
+                }
 
+                // Then verified tokens
                 if (token1.verified && !token2.verified) {
                     return -1;
                 }
@@ -726,6 +734,7 @@ export default function AssetsPage() {
                     return 1;
                 }
 
+                // Finally alphabetically by name
                 return token1.name > token2.name ? 1 : -1;
             })
         } else {
@@ -734,7 +743,7 @@ export default function AssetsPage() {
                 asset.ticker.toLowerCase().includes(searchTerm.toLowerCase())
             )
         }
-    }
+    }, [assetsLpExcluded, searchTerm])
 
     const toggleExpanded = (assetId: string) => {
         setExpandedAsset(assetId !== expandedAsset ? assetId : '')
@@ -869,7 +878,7 @@ export default function AssetsPage() {
                     </Box>
                     {/* Assets List */}
                     <VStack align="stretch" gap={3}>
-                        {filteredAssets().map(asset =>
+                        {filteredAssets.map(asset =>
                             <AssetItem asset={asset} isExpanded={expandedAsset === asset.denom} key={asset.denom} toggleExpanded={toggleExpanded} pools={pools}/>
                         )}
                     </VStack>
