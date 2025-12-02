@@ -5,7 +5,8 @@ import {
     HistogramSeries
 } from 'lightweight-charts';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {Box, Text, useColorModeValue} from "@interchain-ui/react";
+import {Box, Text} from "@chakra-ui/react";
+import {useColorModeValue} from "@/components/ui/color-mode";
 import {getNoOfIntervalsNeeded} from "@/utils/charts";
 import {VStack} from "@chakra-ui/react";
 import {LuChartBar} from "react-icons/lu";
@@ -34,7 +35,7 @@ export const LightweightChart = (props: ChartProps) => {
     const vColor = useColorModeValue('rgba(113,119,117,0.4)', 'rgba(185,183,183,0.3)');
     const gridColor = useColorModeValue('rgba(0,0,0,0.1)', 'rgba(255,255,255,0.05)');
     const textColor = useColorModeValue('#666666', '#a0a0a0');
-    const bgColor = useColorModeValue('#ffffff', 'rgba(0,0,0,0)');
+    const bgColor = 'rgba(0,0,0,0)';
 
     const neededIntervals = useCallback(() => {
         if (!priceData || !props.chartType) {
@@ -254,7 +255,7 @@ export const LightweightChart = (props: ChartProps) => {
         },
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [priceData, vColor, gridColor, textColor, bgColor]
+        [priceData, vColor, gridColor, textColor]
     );
 
     return (
