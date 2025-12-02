@@ -45,7 +45,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
 
               <link rel="icon" href="/images/logo_320px.png"/>
           </head>
-          <body>
+          <body suppressHydrationWarning>
             <GoogleTagManager gtmId="G-7DRJTECDTV"/>
             <Provider>
               <AssetsProvider>
