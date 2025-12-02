@@ -66,6 +66,5 @@ async function getKeplrChainInfo(chainId: string) {
 }
 
 export async function keplrSuggestChain(chainId: string) {
-    // @ts-expect-error keplr potentially undefined
     return await window.keplr?.experimentalSuggestChain(await getKeplrChainInfo(chainId))
 }
