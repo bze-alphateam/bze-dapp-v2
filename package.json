@@ -19,6 +19,7 @@
     "@interchain-kit/keplr-extension": "^0.3.44",
     "@interchain-kit/leap-extension": "^0.3.44",
     "@interchain-kit/react": "^0.3.43",
+    "@next/third-parties": "^16.0.6",
     "bignumber.js": "^9.3.1",
     "chain-registry": "^2.0.78",
     "lightweight-charts": "^5.0.9",
