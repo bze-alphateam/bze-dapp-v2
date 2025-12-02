@@ -713,7 +713,7 @@ const TradingPageContent = () => {
                                     colorPalette="gray"
                                 >
                                     <LuArrowLeft />
-                                    Markets
+                                    <Text display={{ base: 'none', md: 'inline' }}>Markets</Text>
                                 </Button>
                                 <Box h="6" w="1px" bg="border.subtle" />
                                 <HStack gap={3}>
