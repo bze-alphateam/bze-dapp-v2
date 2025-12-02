@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@bze/bzejs": "^1.8.4",
+    "@bze/bzejs": "^1.9.1",
     "@chain-registry/utils": "^2.0.78",
     "@chakra-ui/react": "^3.22.0",
     "@cosmjs/stargate": "^0.35.0",
@@ -38,5 +38,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.5",
     "typescript": "^5"
+  },
+  "overrides": {
+    "axios": "^1.13.2"
   }
 }
