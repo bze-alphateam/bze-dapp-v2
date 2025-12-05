@@ -66,7 +66,7 @@ export function useBalance(denom: string) {
     )
 
     const hasAmount = useCallback((amount: BigNumber|string): boolean => {
-        return balance.amount.gt(amount)
+        return balance.amount.gte(amount)
     }, [balance])
 
     return {
