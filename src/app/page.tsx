@@ -353,6 +353,57 @@ export default function SwapPage() {
     }
   }, [assetsWithBalanceInfo, fromAsset, toAsset]);
 
+  // Recalculate route when assets change
+  useEffect(() => {
+    // Only recalculate if we have a fromAmount and both assets are selected
+    if (!fromAmount || !fromAsset || !toAsset) {
+      return;
+    }
+
+    // Don't recalculate if same asset
+    if (fromAsset.denom === toAsset.denom) {
+      setRouteResult(null);
+      setToAmount('');
+      return;
+    }
+
+    // Recalculate the route with the current fromAmount
+    const amount = toBigNumber(fromAmount);
+    if (amount.isNaN() || amount.lte(0)) {
+      return;
+    }
+
+    const amountInMicro = amountToBigNumberUAmount(amount, fromAsset.decimals);
+    setIsCalculatingRoute(true);
+
+    setTimeout(() => {
+      try {
+        const route = ammRouter.findOptimalRoute(
+          fromAsset.denom,
+          toAsset.denom,
+          amountInMicro,
+          3,
+          true
+        );
+
+        if (route) {
+          setRouteResult(route);
+          const outputAmount = uAmountToBigNumberAmount(route.expectedOutput, toAsset.decimals);
+          setToAmount(outputAmount.toFixed(toAsset.decimals));
+        } else {
+          setRouteResult(null);
+          setToAmount('');
+        }
+      } catch (error) {
+        console.error('Error recalculating route after asset change:', error);
+        setRouteResult(null);
+        setToAmount('');
+      } finally {
+        setIsCalculatingRoute(false);
+      }
+    }, 0);
+  }, [fromAmount, fromAsset, toAsset]);
+
   // Handle fromAmount changes - calculate toAmount
   const handleFromAmountChange = (value: string) => {
     setFromAmount(value);
