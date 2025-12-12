@@ -108,7 +108,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
 
         //calculate how much amount we need to pay for fee in the opposite denomination
-        const expectedAmount = calculatePoolOppositeAmount(pool, gasPayment, pool.base === feeDenom)
+        const expectedAmount = calculatePoolOppositeAmount(pool, gasPayment, pool.base === nativeDenom)
         if (!expectedAmount.isPositive()) {
             return nativeFee;
         }
