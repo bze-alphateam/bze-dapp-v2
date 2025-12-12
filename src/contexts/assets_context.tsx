@@ -89,7 +89,8 @@ const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>,
     }
 
     const feeToLp = usdFees.multipliedBy(pool.fee_dest?.providers || 0)
-    const apr = calculateRewardsStakingApr(feeToLp.dividedBy(usdVolume), usdValue)
+    let apr = calculateRewardsStakingApr(feeToLp.dividedBy(usdVolume), usdValue)
+    if (apr.isNaN()) apr = toBigNumber(0)
 
     return {
         usdValue: usdValue,
