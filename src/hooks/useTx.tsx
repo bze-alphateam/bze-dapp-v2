@@ -13,6 +13,7 @@ import {useCallback, useMemo, useState} from "react";
 import {useLiquidityPools} from "@/hooks/useLiquidityPools";
 import {useSettings} from "@/hooks/useSettings";
 import {calculatePoolOppositeAmount} from "@/utils/liquidity_pool";
+import {toBigNumber} from "@/utils/amount";
 
 interface TxOptions {
     fee?: StdFee | null;
@@ -108,13 +109,19 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
         }
 
         //calculate how much amount we need to pay for fee in the opposite denomination
-        const expectedAmount = calculatePoolOppositeAmount(pool, gasPayment, pool.base === nativeDenom)
+        let expectedAmount = calculatePoolOppositeAmount(pool, gasPayment, pool.base === nativeDenom)
         if (!expectedAmount.isPositive()) {
             return nativeFee;
         }
+        expectedAmount = expectedAmount.multipliedBy(1.5).integerValue(BigNumber.ROUND_FLOOR)
+        //if the fee resulted from swapping the fee amount is lower than 1, it can't be paid.
+        //we have to make sure the blockchain can capture the swap fee.
+        if (expectedAmount.multipliedBy(pool.fee).lt(1)) {
+            expectedAmount = toBigNumber(1).dividedBy(pool.fee).integerValue(BigNumber.ROUND_CEIL)
+        }
 
         return {
-            amount: coins(expectedAmount.multipliedBy(1.5).toFixed(0).toString(), feeDenom),
+            amount: coins(expectedAmount.toFixed(0).toString(), feeDenom),
             gas: gasAmount.multipliedBy(1.5).toFixed(0)
         };
     }, [signingClient, address, feeDenom, getDenomsPool]);
