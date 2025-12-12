@@ -26,6 +26,7 @@ import {LiquidityPoolData} from "@/types/liquidity_pool";
 import {getLiquidityPools} from "@/query/liquidity_pools";
 import {calculatePoolPrice, createPoolId, poolIdFromPoolDenom} from "@/utils/liquidity_pool";
 import {EXCLUDED_MARKETS} from "@/constants/market";
+import {calculateRewardsStakingApr} from "@/utils/staking";
 
 export interface AssetsContextType {
     //assets
@@ -72,17 +73,30 @@ interface AssetsProviderProps {
     children: ReactNode;
 }
 
-const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>, baseAsset?: Asset, quoteAsset?: Asset): LiquidityPoolData => {
+const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>, baseAsset?: Asset, quoteAsset?: Asset, marketData?: MarketData): LiquidityPoolData => {
     const basePrice = prices.get(pool.base) || toBigNumber(0)
     const quotePrice = prices.get(pool.quote) || toBigNumber(0)
     const isComplete = basePrice.gt(0) && quotePrice.gt(0)
+    const usdValue = basePrice.multipliedBy(uAmountToAmount(pool.reserve_base, baseAsset?.decimals || 0)).plus(quotePrice.multipliedBy(uAmountToAmount(pool.reserve_quote, quoteAsset?.decimals || 0)))
+    let usdVolume = basePrice.multipliedBy(marketData?.base_volume || 0)
+    if (!usdVolume.isPositive()) {
+       usdVolume = quotePrice.multipliedBy(marketData?.quote_volume || 0)
+    }
+
+    let usdFees = toBigNumber(marketData?.base_volume || 0).multipliedBy(pool.fee).multipliedBy(basePrice)
+    if (!usdFees.isPositive()) {
+        usdFees = toBigNumber(marketData?.quote_volume || 0).multipliedBy(pool.fee).multipliedBy(quotePrice)
+    }
+
+    const feeToLp = usdFees.multipliedBy(pool.fee_dest?.providers || 0)
+    const apr = calculateRewardsStakingApr(feeToLp.dividedBy(usdVolume), usdValue)
 
     return {
-        usdValue: basePrice.multipliedBy(uAmountToAmount(pool.reserve_base, baseAsset?.decimals || 0)).plus(quotePrice.multipliedBy(uAmountToAmount(pool.reserve_quote, quoteAsset?.decimals || 0))),
-        usdVolume: toBigNumber(0), //TODO: get volume from Aggregator
+        usdValue: usdValue,
+        usdVolume: usdVolume,
         isComplete: isComplete,
-        apr: '0', //TODO: calculate APR
-        usdFees: toBigNumber(0) //calculate fees
+        apr: apr.toFixed(2),
+        usdFees: usdFees
     }
 }
 
@@ -126,6 +140,14 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             if (EXCLUDED_MARKETS[market.market_id]) {
                 return
             }
+            const marketId = createMarketId(market.base, market.quote);
+            if (marketId !== market.market_id) {
+                //this is the case for liquidity pools. They are returned on the same endpoint as market data (tickers endpoint in aggregator).
+                //the market_id of a liquidity pool is {base}_{quote}
+                //the market id of an order book market is {base}/{quote}
+                return;
+            }
+
             newMap.set(market.market_id, market);
         })
 
@@ -259,12 +281,28 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
 
         setEpochs(newMap);
     }, []);
-    const doUpdateLiquidityPools = useCallback((newPools: LiquidityPoolSDKType[]) => {
+    const doUpdateLiquidityPools = useCallback((newPools: LiquidityPoolSDKType[], allTickers: MarketData[]) => {
         const poolsData = new Map<string, LiquidityPoolData>()
         const poolsMap = new Map<string, LiquidityPoolSDKType>()
 
+        //filter only LPs from ticker
+        const tickers = new Map<string, MarketData>
+        allTickers.forEach(ticker => {
+            //create a order book market id from the ticker
+            const marketId = createMarketId(ticker.base, ticker.quote)
+            // if the order book market id is equal to the ticker market id, it means it's an order book market,
+            // not a liquidity pool
+            if (marketId === ticker.market_id) {
+                //this is an order book market, not a liquidity pool
+                return
+            }
+
+            tickers.set(ticker.market_id, ticker)
+        })
+
+
         newPools.map(pool => {
-            poolsData.set(pool.id, getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote)))
+            poolsData.set(pool.id, getPoolData(pool, usdPricesMap, assetsMap.get(pool.base), assetsMap.get(pool.quote), tickers.get(pool.id)))
             poolsMap.set(pool.id, pool)
         })
 
@@ -299,9 +337,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         setConnectionType(conn)
     }, [])
     const updateLiquidityPools = useCallback(async () => {
-        const [pools] = await Promise.all([getLiquidityPools()])
+        const [pools, tickers] = await Promise.all([getLiquidityPools(), getAllTickers()])
 
-        doUpdateLiquidityPools(pools)
+        doUpdateLiquidityPools(pools, tickers)
     }, [doUpdateLiquidityPools])
 
     useEffect(() => {
@@ -313,7 +351,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             doUpdateMarkets(markets)
             doUpdateMarketsData(tickers)
             doUpdateEpochs(epochsInfo.epochs)
-            doUpdateLiquidityPools(pools)
+            doUpdateLiquidityPools(pools, tickers)
 
             setIsLoading(false)
         }

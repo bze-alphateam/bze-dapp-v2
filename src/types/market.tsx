@@ -5,6 +5,7 @@ export const ORDER_TYPE_SELL = 'sell';
 
 export type Market = MarketSDKType
 
+// Aggregator ticker endpoint response item
 export interface MarketData {
     base: string;
     quote: string;
