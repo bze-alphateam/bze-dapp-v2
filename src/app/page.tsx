@@ -47,6 +47,9 @@ import {getChainName} from "@/constants/chain";
 import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {HighlightText} from "@/components/ui/highlight";
 import {sanitizeNumberInput} from "@/utils/number";
+import {getAddressSwapHistory} from "@/query/aggregator";
+import {SwapHistory} from "@/types/aggregator";
+import {addDebounce} from "@/utils/debounce";
 
 const slippagePresets = [0.5, 1, 2];
 
@@ -326,6 +329,8 @@ export default function SwapPage() {
   const [routeResult, setRouteResult] = useState<SwapRouteResult | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [swapHistory, setSwapHistory] = useState<SwapHistory[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Set default assets once they're loaded
   useMemo(() => {
@@ -608,6 +613,31 @@ export default function SwapPage() {
     }
   };
 
+  // Function to refresh swap history
+  const refreshSwapHistory = async () => {
+    if (!address) {
+      setSwapHistory([]);
+      return;
+    }
+
+    setIsLoadingHistory(true);
+    try {
+      const history = await getAddressSwapHistory(address);
+      setSwapHistory(history);
+    } catch (error) {
+      console.error('Error fetching swap history:', error);
+      setSwapHistory([]);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Fetch swap history when address changes
+  useEffect(() => {
+    refreshSwapHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address]);
+
   const handleSwapSubmit = async () => {
     if (!address) {
       toast.error('Please connect your wallet');
@@ -651,6 +681,8 @@ export default function SwapPage() {
           setFromAmount('');
           setToAmount('');
           setRouteResult(null);
+          // Refresh swap history after 1 second
+          addDebounce('refresh-swap-history', 1000, refreshSwapHistory);
         },
         fallbackOnSimulate: false, //we want to show the error message if the tx fails on simulate
       });
@@ -673,6 +705,23 @@ export default function SwapPage() {
 
     return prettyAmount(usdValue);
   };
+
+  // Group swap history by exact timestamp (for multi-hop swaps in same transaction)
+  const groupedSwapHistory = useMemo(() => {
+    const timestampGroups = new Map<string, SwapHistory[]>();
+
+    // Group by exact timestamp
+    swapHistory.forEach((swap) => {
+      const timestampKey = swap.executed_at;
+      if (!timestampGroups.has(timestampKey)) {
+        timestampGroups.set(timestampKey, []);
+      }
+      timestampGroups.get(timestampKey)?.push(swap);
+    });
+
+    // Convert to array (endpoint already returns sorted data)
+    return Array.from(timestampGroups.entries());
+  }, [swapHistory]);
 
   return (
       <Box minH="100vh" bg="bg.subtle">
@@ -1124,6 +1173,158 @@ export default function SwapPage() {
                 </Box>
               </VStack>
             </Card.Root>
+
+            {/* Swap History */}
+            {address && (
+              <Card.Root
+                maxW="480px"
+                mx="auto"
+                w="full"
+                borderWidth="1px"
+                shadow="lg"
+                bgGradient="to-br"
+                gradientFrom="purple.500/5"
+                gradientTo="purple.600/5"
+                borderColor="purple.500/20"
+              >
+                <Box px="6" pt="6" pb="4">
+                  <Text fontSize="lg" fontWeight="semibold">
+                    Your Recent Swaps
+                  </Text>
+                </Box>
+
+                <Box px="6" pb="6">
+                  {swapHistory.length === 0 ? (
+                    isLoadingHistory ? (
+                      <VStack gap="3" py="4">
+                        <Text fontSize="sm" color="fg.muted">Loading swap history...</Text>
+                      </VStack>
+                    ) : (
+                      <VStack gap="3" py="8">
+                        <Text fontSize="sm" color="fg.muted" textAlign="center">
+                          No swap history yet
+                        </Text>
+                        <Text fontSize="xs" color="fg.muted" textAlign="center">
+                          Your swaps will appear here
+                        </Text>
+                      </VStack>
+                    )
+                  ) : (
+                    <Box maxH="400px" overflowY="auto" css={{
+                      '&::-webkit-scrollbar': { width: '8px' },
+                      '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      '&::-webkit-scrollbar-thumb': {
+                        background: 'rgba(155, 155, 155, 0.3)',
+                        borderRadius: '4px',
+                      },
+                      '&::-webkit-scrollbar-thumb:hover': {
+                        background: 'rgba(155, 155, 155, 0.5)',
+                      },
+                    }}>
+                      <VStack gap="3" align="stretch">
+                        {groupedSwapHistory.map(([timestamp, swaps], groupIdx) => {
+                          const date = new Date(parseInt(timestamp));
+                          const dateKey = date.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          });
+                          const time = date.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          });
+
+                          // Check if we need to show date header (when date changes from previous group)
+                          const prevDate = groupIdx > 0
+                            ? new Date(parseInt(groupedSwapHistory[groupIdx - 1][0])).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })
+                            : null;
+                          const showDateHeader = prevDate !== dateKey;
+
+                          return (
+                            <Box key={timestamp}>
+                              {showDateHeader && (
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted" mb="2" px="2">
+                                  {dateKey}
+                                </Text>
+                              )}
+                              <Box
+                                p="3"
+                                bgGradient="to-br"
+                                gradientFrom="blue.500/8"
+                                gradientTo="purple.500/8"
+                                borderRadius="md"
+                                borderWidth="1px"
+                                borderColor="blue.500/20"
+                                _hover={{
+                                  gradientFrom: "blue.500/12",
+                                  gradientTo: "purple.500/12",
+                                }}
+                                transition="all 0.2s"
+                              >
+                                <VStack gap="2" align="stretch">
+                                  <Text fontSize="xs" color="fg.muted" fontWeight="medium">
+                                    {time}
+                                  </Text>
+                                  {swaps.map((swap, idx) => {
+                                    const baseAsset = getAsset(swap.base);
+                                    const quoteAsset = getAsset(swap.quote);
+                                    const isSell = swap.order_type === 'sell';
+                                    const fromAssetData = isSell ? baseAsset : quoteAsset;
+                                    const toAssetData = isSell ? quoteAsset : baseAsset;
+                                    const fromTicker = denomTicker(isSell ? swap.base : swap.quote);
+                                    const toTicker = denomTicker(isSell ? swap.quote : swap.base);
+                                    const fromAmount = isSell ? swap.base_volume : swap.quote_volume;
+                                    const toAmount = isSell ? swap.quote_volume : swap.base_volume;
+
+                                    return (
+                                      <HStack key={`${swap.order_id}-${idx}`} justify="space-between" gap="3">
+                                        <HStack gap="2">
+                                          <TokenLogo
+                                            src={fromAssetData?.logo}
+                                            symbol={fromTicker}
+                                            size="7"
+                                            circular={true}
+                                          />
+                                          <Text fontSize="sm" fontWeight="semibold">
+                                            {prettyAmount(fromAmount.toString())}
+                                          </Text>
+                                          <Text fontSize="sm" fontWeight="medium">
+                                            {fromTicker}
+                                          </Text>
+                                        </HStack>
+                                        <Text fontSize="xs" color="fg.muted">→</Text>
+                                        <HStack gap="2">
+                                          <Text fontSize="sm" fontWeight="semibold" color="purple.500">
+                                            {prettyAmount(toAmount.toString())}
+                                          </Text>
+                                          <Text fontSize="sm" fontWeight="medium" color="purple.500">
+                                            {toTicker}
+                                          </Text>
+                                          <TokenLogo
+                                            src={toAssetData?.logo}
+                                            symbol={toTicker}
+                                            size="7"
+                                            circular={true}
+                                          />
+                                        </HStack>
+                                      </HStack>
+                                    );
+                                  })}
+                                </VStack>
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </VStack>
+                    </Box>
+                  )}
+                </Box>
+              </Card.Root>
+            )}
           </VStack>
         </Container>
       </Box>

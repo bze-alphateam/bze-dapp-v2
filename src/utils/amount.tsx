@@ -38,6 +38,8 @@ export function prettyAmount(amount: number | string | BigNumber | bigint): stri
         return "0";
     }
 
+    if (num.lt(1) && num.gt(0)) return num.toFixed(6);
+
     return Intl.NumberFormat('en', {notation: 'standard'}).format(num.toNumber());
 }
 
