@@ -8,6 +8,7 @@ import {Toaster} from "@/components/ui/toaster";
 import {AssetsProvider} from "@/contexts/assets_context";
 import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
 import {BetaWarningToast} from "@/components/beta-warning-toast";
+import {SecurityAuditWarning} from "@/components/security-audit-warning";
 import {getAppName} from "@/constants/settings";
 import {GoogleTagManager} from "@next/third-parties/google";
 
@@ -54,6 +55,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                     {children}
                   <Toaster />
                   <BetaWarningToast />
+                  <SecurityAuditWarning />
               </AssetsProvider>
             </Provider>
           </body>
