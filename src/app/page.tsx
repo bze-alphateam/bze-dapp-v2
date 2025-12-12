@@ -29,7 +29,13 @@ import {TokenLogo} from "@/components/ui/token_logo";
 import { useAssets } from '@/hooks/useAssets';
 import { useBalances } from '@/hooks/useBalances';
 import { useLiquidityPools } from '@/hooks/useLiquidityPools';
-import {prettyAmount, uAmountToBigNumberAmount, amountToBigNumberUAmount, toBigNumber} from '@/utils/amount';
+import {
+  prettyAmount,
+  uAmountToBigNumberAmount,
+  amountToBigNumberUAmount,
+  toBigNumber,
+  uAmountToAmount
+} from '@/utils/amount';
 import BigNumber from 'bignumber.js';
 import { ammRouter } from '@/service/amm_router';
 import { SwapRouteResult } from '@/types/liquidity_pool';
@@ -893,7 +899,19 @@ export default function SwapPage() {
                               Fee
                             </Text>
                             <Text fontSize="sm" fontWeight="medium">
-                              {routeResult.feesPerHop.length > 0 && prettyAmount(uAmountToBigNumberAmount(routeResult.feesPerHop[0], fromAsset?.decimals ?? 6))} {fromAsset?.ticker || ''}
+                              {routeResult.feesPerHop.length > 0 && uAmountToAmount(routeResult.feesPerHop[0], fromAsset?.decimals ?? 6)} {fromAsset?.ticker || ''}
+                            </Text>
+                          </HStack>
+                          <HStack justify="space-between">
+                            <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+                              Rate
+                            </Text>
+                            <Text fontSize="sm" fontWeight="medium">
+                              1 {fromAsset?.ticker || ''} ≈ {
+                                uAmountToBigNumberAmount(routeResult.expectedOutput, toAsset?.decimals ?? 6)
+                                  .dividedBy(toBigNumber(fromAmount))
+                                  .toFixed(toAsset?.decimals ?? 6)
+                              } {toAsset?.ticker || ''}
                             </Text>
                           </HStack>
                         </VStack>
