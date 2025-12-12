@@ -69,7 +69,7 @@ export function SecurityAuditWarning() {
                 <LuTriangleAlert />
               </Box>
             </HStack>
-            <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
+            <Text fontSize="sm" color="fg.muted" lineHeight="1.6" fontWeight={"bold"}>
               While BeeZee Blockchain is built with security as a top priority and we have full confidence in our code, we&#39;re currently undergoing a professional security audit. Until that process is complete, please keep in mind that some risks may still exist. External audits by independent security experts are a critical step toward ensuring the network is truly bulletproof — and we’re fully committed to doing things the right way.
             </Text>
           </VStack>
