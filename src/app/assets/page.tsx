@@ -33,26 +33,38 @@ import {useAsset, useAssets} from "@/hooks/useAssets";
 import {useAssetMarkets, useMarket} from "@/hooks/useMarkets";
 import {useAssetPrice} from "@/hooks/usePrices";
 import {formatUsdAmount, shortNumberFormat} from "@/utils/formatter";
-import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
+import {prettyAmount, toBigNumber, uAmountToBigNumberAmount} from "@/utils/amount";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
 import {useNavigation} from "@/hooks/useNavigation";
 import {createMarketId} from "@/utils/market";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useLiquidityPools} from "@/hooks/useLiquidityPools";
+import {useAssetLiquidityPools} from "@/hooks/useLiquidityPools";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 import {HighlightText} from "@/components/ui/highlight";
 import {getFactoryDenomAdminAddress} from "@/query/factory";
+import {LiquidityPoolData} from "@/types/liquidity_pool";
 
 const MAX_MARKETS_PER_ASSET = 5;
 
-function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
+function AssetItemLiquidityPool({ pool, asset, poolData }: { pool: LiquidityPoolSDKType, asset: Asset, poolData?: LiquidityPoolData }) {
     const {asset: base, isLoading: baseLoading} = useAsset(pool.base)
     const {asset: quote, isLoading: quoteLoading} = useAsset(pool.quote)
     const {toLpPage} = useNavigation()
-    const {poolsData} = useLiquidityPools()
 
-    const poolData = poolsData.get(pool.id)
     const hasUsdValue = poolData?.isComplete && poolData?.usdValue && poolData.usdValue.gt(0)
+
+    const assetLpVolume = useMemo(() => {
+        const volume = toBigNumber(0)
+        if (!poolData) return volume
+
+        if (poolData.base === asset.denom) {
+            return volume.plus(poolData.baseVolume)
+        } else if (poolData.quote === asset.denom) {
+            return volume.plus(poolData.quoteVolume)
+        }
+
+        return volume
+    },[poolData, asset])
 
     return (
         <Box
@@ -96,31 +108,52 @@ function AssetItemLiquidityPool({ pool }: { pool: LiquidityPoolSDKType }) {
                     </Box>
                 </HStack>
 
-                <Box
-                    textAlign={{ base: 'center', sm: 'right' }}
-                    w={{ base: 'full', sm: 'auto' }}
-                    flexShrink={0}
-                >
-                    <Text fontSize="xs" color="fg.muted" mb={1}>TVL</Text>
-                    {hasUsdValue ? (
-                        <HighlightText fontSize="lg" fontWeight="semibold">
-                            ${shortNumberFormat(poolData.usdValue)}
-                        </HighlightText>
-                    ) : (
-                        <VStack align={{ base: 'flex-start', sm: 'flex-end' }} gap={0.5}>
-                            <Skeleton asChild loading={baseLoading}>
-                                <HighlightText fontSize="sm" fontWeight="medium">
-                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals ?? 0))} {base?.ticker}
-                                </HighlightText>
-                            </Skeleton>
+                {poolData && (
+                    <Flex
+                        gap={4}
+                        align="center"
+                        flexShrink={0}
+                        w={{ base: 'full', sm: 'auto' }}
+                        justify={{ base: 'space-between', sm: 'flex-end' }}
+                    >
+                        <Box textAlign={{ base: 'left', sm: 'right' }}>
+                            <Text fontSize="xs" color="fg.muted">24h Volume</Text>
                             <Skeleton asChild loading={quoteLoading}>
                                 <HighlightText fontSize="sm" fontWeight="medium">
-                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals ?? 0))} {quote?.ticker}
+                                    {prettyAmount(assetLpVolume)} {asset?.ticker}
                                 </HighlightText>
                             </Skeleton>
-                        </VStack>
-                    )}
-                </Box>
+                        </Box>
+                        <Box textAlign="right">
+                            <Text fontSize="xs" color="fg.muted">TVL</Text>
+                            <HStack gap={1} justify={{ base: 'flex-start', sm: 'flex-end' }}>
+                                {hasUsdValue ? (
+                                        <HighlightText fontSize="sm" fontWeight="semibold">
+                                            ${shortNumberFormat(poolData.usdValue)}
+                                        </HighlightText>
+                                    ) : (
+                                        <VStack align={{ base: 'flex-start', sm: 'flex-end' }} gap={0.5}>
+                                            <Skeleton asChild loading={baseLoading}>
+                                                <HighlightText fontSize="sm" fontWeight="medium">
+                                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_base, base?.decimals ?? 0))} {base?.ticker}
+                                                </HighlightText>
+                                            </Skeleton>
+                                            <Skeleton asChild loading={quoteLoading}>
+                                                <HighlightText fontSize="sm" fontWeight="medium">
+                                                    {shortNumberFormat(uAmountToBigNumberAmount(pool.reserve_quote, quote?.decimals ?? 0))} {quote?.ticker}
+                                                </HighlightText>
+                                            </Skeleton>
+                                        </VStack>
+                                    )}
+                            </HStack>
+                        </Box>
+                    </Flex>
+                )}
+                {!poolData && (
+                    <Box textAlign="right" flexShrink={0}>
+                        <Text fontSize="sm" color="fg.muted">No data available</Text>
+                    </Box>
+                )}
             </Flex>
         </Box>
     )
@@ -222,11 +255,12 @@ function AssetItemMarkets({ marketId }: { marketId: string }) {
         </Box>)
 }
 
-function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset, isExpanded: boolean, toggleExpanded: (denom: string) => void, pools: LiquidityPoolSDKType[] }) {
+function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpanded: boolean, toggleExpanded: (denom: string) => void}) {
     const [priceLoadedOnce, setPriceLoadedOnce] = useState(false)
     const [adminAddress, setAdminAddress] = useState<string>("")
 
-    const {assetMarketsData, getAsset24hTradedVolume, assetMarkets} = useAssetMarkets(asset.denom)
+    const {assetMarketsData, asset24hTradedVolume: marketsVolume, assetMarkets} = useAssetMarkets(asset.denom)
+    const {assetPools, asset24HoursVolume: lpVolume, assetPoolsData} = useAssetLiquidityPools(asset.denom)
     const { price, change, isLoading: priceLoading } = useAssetPrice(asset.denom)
 
     const markets = useMemo(() => {
@@ -261,12 +295,6 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
 
         return marketsWithData
     }, [assetMarketsData, assetMarkets, asset])
-
-    const assetPools = useMemo(() => {
-        if (!pools) return [];
-
-        return pools.filter(item => item.base === asset.denom || item.quote === asset.denom).slice(0, MAX_MARKETS_PER_ASSET)
-    }, [pools, asset])
 
     const getTypeColor = useCallback((type: string) => {
         switch (type) {
@@ -321,6 +349,10 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
         if (asset.type === ASSET_TYPE_IBC) return "Supply on BeeZee"
         return "Current Supply"
     }, [asset.type])
+
+    const total24HoursVolume = useMemo(() => {
+        return marketsVolume.plus(lpVolume)
+    }, [marketsVolume, lpVolume])
 
     useEffect(() => {
         //change the state of it only if it wasn't loaded yet
@@ -480,7 +512,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                                 24h Volume
                             </Text>
                             <HighlightText fontWeight="bold" fontSize="lg" color="blue.600">
-                                {prettyAmount(getAsset24hTradedVolume)} {asset.ticker}
+                                {prettyAmount(total24HoursVolume)} {asset.ticker}
                             </HighlightText>
                         </Box>
                     </Grid>
@@ -692,7 +724,7 @@ function AssetItem({ asset, isExpanded, toggleExpanded, pools }: { asset: Asset,
                         {assetPools.length > 0 ? (
                             <VStack align="stretch" gap={2}>
                                 {assetPools.map((pool) => (
-                                    <AssetItemLiquidityPool key={pool.id} pool={pool} />
+                                    <AssetItemLiquidityPool key={pool.id} pool={pool} poolData={assetPoolsData.get(pool.id)} asset={asset} />
                                 ))}
                             </VStack>
                         ) : (
@@ -709,7 +741,6 @@ export default function AssetsPage() {
     const [expandedAsset, setExpandedAsset] = useState<string>('')
     const [searchTerm, setSearchTerm] = useState('')
     const {isLoading, assetsLpExcluded} = useAssets()
-    const {pools} = useLiquidityPools()
 
     const filteredAssets = useMemo(() => {
         if (searchTerm === '') {
@@ -879,7 +910,7 @@ export default function AssetsPage() {
                     {/* Assets List */}
                     <VStack align="stretch" gap={3}>
                         {filteredAssets.map(asset =>
-                            <AssetItem asset={asset} isExpanded={expandedAsset === asset.denom} key={asset.denom} toggleExpanded={toggleExpanded} pools={pools}/>
+                            <AssetItem asset={asset} isExpanded={expandedAsset === asset.denom} key={asset.denom} toggleExpanded={toggleExpanded}/>
                         )}
                     </VStack>
                 </VStack>

@@ -6,7 +6,12 @@ export interface LiquidityPoolData {
     usdValue: BigNumber;
     usdFees: BigNumber; //24h fees in USD
     isComplete: boolean; //is false when one of the assets doesn't have a USD price
-    apr: string,
+    apr: string;
+    poolId: string;
+    base: string;
+    quote: string;
+    baseVolume: BigNumber;
+    quoteVolume: BigNumber;
 }
 
 export interface UserPoolData {

@@ -78,9 +78,11 @@ const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>,
     const quotePrice = prices.get(pool.quote) || toBigNumber(0)
     const isComplete = basePrice.gt(0) && quotePrice.gt(0)
     const usdValue = basePrice.multipliedBy(uAmountToAmount(pool.reserve_base, baseAsset?.decimals || 0)).plus(quotePrice.multipliedBy(uAmountToAmount(pool.reserve_quote, quoteAsset?.decimals || 0)))
-    let usdVolume = basePrice.multipliedBy(marketData?.base_volume || 0)
+    const baseVolume = toBigNumber(marketData?.base_volume || 0)
+    const quoteVolume = toBigNumber(marketData?.quote_volume || 0)
+    let usdVolume = basePrice.multipliedBy(baseVolume)
     if (!usdVolume.isPositive()) {
-       usdVolume = quotePrice.multipliedBy(marketData?.quote_volume || 0)
+       usdVolume = quotePrice.multipliedBy(quoteVolume)
     }
 
     let usdFees = toBigNumber(marketData?.base_volume || 0).multipliedBy(pool.fee).multipliedBy(basePrice)
@@ -97,7 +99,12 @@ const getPoolData = (pool: LiquidityPoolSDKType, prices: Map<string, BigNumber>,
         usdVolume: usdVolume,
         isComplete: isComplete,
         apr: apr.toFixed(2),
-        usdFees: usdFees
+        usdFees: usdFees,
+        poolId: pool.id,
+        base: pool.base,
+        quote: pool.quote,
+        baseVolume: baseVolume,
+        quoteVolume: quoteVolume,
     }
 }
 

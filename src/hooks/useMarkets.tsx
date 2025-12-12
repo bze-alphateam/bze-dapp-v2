@@ -53,7 +53,7 @@ export function useAssetMarkets(denom: string) {
         return [...baseMatches, ...quoteMatches]
     }, [marketsData, denom]);
 
-    const getAsset24hTradedVolume = useMemo((): BigNumber => {
+    const asset24hTradedVolume = useMemo((): BigNumber => {
         return assetMarketsData.reduce((acc, market) => {
             // Only sum base_volume if the asset denom matches the market's base
             if (denom === market.base) {
@@ -74,7 +74,7 @@ export function useAssetMarkets(denom: string) {
         isLoading,
         assetMarkets,
         assetMarketsData,
-        getAsset24hTradedVolume,
+        asset24hTradedVolume,
     }
 }
 

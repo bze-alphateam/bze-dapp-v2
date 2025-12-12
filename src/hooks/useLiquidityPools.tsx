@@ -4,6 +4,7 @@ import {useAssetsContext} from "@/hooks/useAssets";
 import BigNumber from "bignumber.js";
 import {calculatePoolOppositeAmount, createPoolId} from "@/utils/liquidity_pool";
 import {Asset} from "@/types/asset";
+import {LiquidityPoolData} from "@/types/liquidity_pool";
 
 export function useLiquidityPools() {
     const {poolsMap, poolsDataMap, isLoading, assetsMap} = useAssetsContext()
@@ -34,6 +35,48 @@ export function useLiquidityPools() {
         poolsData: poolsDataMap,
         getDenomsPool,
         liquidAssets,
+    }
+}
+
+export function useAssetLiquidityPools(denom: string) {
+    const {poolsMap, poolsDataMap, isLoading} = useAssetsContext()
+    const assetPools = useMemo(() => Array.from(poolsMap.values()).filter(pool => pool.base === denom || pool.quote === denom), [poolsMap, denom])
+
+    const assetPoolsData = useMemo(() => {
+        const newMap = new Map<string, LiquidityPoolData>()
+        if (isLoading || denom === '') return newMap
+
+        assetPools.forEach(pool => {
+            const poolData = poolsDataMap.get(pool.id)
+            if (poolData) {
+                newMap.set(pool.id, poolData)
+            }
+        })
+
+        return newMap
+    }, [assetPools, poolsDataMap, isLoading, denom])
+
+    const asset24HoursVolume = useMemo(() => {
+        let volume = BigNumber(0)
+        if (isLoading || denom === '') return volume
+
+        assetPoolsData.forEach((poolData)=> {
+            if (poolData.base === denom) {
+                volume = volume.plus(poolData.baseVolume)
+            } else if (poolData.quote === denom) {
+                volume = volume.plus(poolData.quoteVolume)
+            }
+        })
+
+        return volume
+    }, [isLoading, assetPoolsData, denom])
+
+
+    return {
+        assetPools,
+        isLoading: isLoading,
+        asset24HoursVolume,
+        assetPoolsData,
     }
 }
 
