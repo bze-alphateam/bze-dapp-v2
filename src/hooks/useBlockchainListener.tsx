@@ -7,7 +7,7 @@ import {
     CURRENT_WALLET_BALANCE_EVENT,
     ORDER_BOOK_CHANGED_EVENT,
     ORDER_EXECUTED_EVENT,
-    SUPPLY_CHANGED_EVENT,
+    SUPPLY_CHANGED_EVENT, SWAP_EXECUTED_EVENT,
     TendermintEvent
 } from "@/types/events";
 import {parseCoins} from "@cosmjs/amino";
@@ -40,9 +40,13 @@ const buildUnsubscribePayload = (id: number, query: string) => {
     };
 }
 
+const getEventKeyValue = (event: TendermintEvent, key: string) => {
+    return event.attributes.find(attribute => attribute.key === key)?.value;
+}
+
 const getMarketId = (event: TendermintEvent) => {
     // market id contains " so we have to remove them
-    return event.attributes.find(attribute => attribute.key === 'market_id')?.value.replaceAll('"', "");
+    return getEventKeyValue(event, 'market_id')?.replaceAll('"', "");
 }
 
 const isAddressTransfer = (address: string, event: TendermintEvent) => {
@@ -57,6 +61,10 @@ const isOrderBookEvent = (event: TendermintEvent) => {
 
 const isOrderExecutedEvent = (event: TendermintEvent) => {
     return event.type.includes('bze.tradebin.OrderExecutedEvent');
+};
+
+const isSwapEvent = (event: TendermintEvent) => {
+    return event.type.includes('bze.tradebin.SwapEvent');
 };
 
 const isCoinbaseEvent = (event: TendermintEvent) => {
@@ -124,6 +132,10 @@ export function useBlockchainListener() {
             }
 
             //add more events not related to markets here, before the market id is extracted
+            if (isSwapEvent(event)) {
+                blockchainEventManager.emit(SWAP_EXECUTED_EVENT)
+                continue;
+            }
 
             const marketId = getMarketId(event)
             if (!marketId) continue;
