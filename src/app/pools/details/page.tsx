@@ -1513,6 +1513,41 @@ const PoolDetailsPageContent = () => {
                             </HStack>
                         </VStack>
 
+                        {/* Exchange Rates */}
+                        <Box w="full" bgGradient="to-br" gradientFrom="purple.500/8" gradientTo="blue.500/8" p={{ base: "3", md: "4" }} rounded="lg" borderWidth="1px" borderColor="purple.500/20">
+                            <HStack justify="space-around" flexWrap="wrap" gap={{ base: "3", md: "4" }}>
+                                <VStack align="center" gap="1">
+                                    <Text fontSize="xs" color="fg.muted" fontWeight="medium">Rate</Text>
+                                    <HStack gap="2">
+                                        <Text fontSize={{ base: "sm", md: "md" }} fontWeight="bold" color="fg.emphasized">1 {baseAsset?.ticker}</Text>
+                                        <Text fontSize={{ base: "sm", md: "md" }} color="fg.muted">=</Text>
+                                        <Skeleton asChild loading={!pool}>
+                                            <Text fontSize={{ base: "sm", md: "md" }} fontWeight="semibold" color="purple.500">
+                                                {pool && baseAsset && quoteAsset
+                                                    ? toBigNumber(poolQuoteReservesAmount).dividedBy(toBigNumber(poolBaseReservesAmount)).toFixed(quoteAsset.decimals)
+                                                    : '0'} {quoteAsset?.ticker}
+                                            </Text>
+                                        </Skeleton>
+                                    </HStack>
+                                </VStack>
+                                <Box h={{ base: "1px", md: "8" }} w={{ base: "full", md: "1px" }} bg="border" />
+                                <VStack align="center" gap="1">
+                                    <Text fontSize="xs" color="fg.muted" fontWeight="medium">Rate</Text>
+                                    <HStack gap="2">
+                                        <Text fontSize={{ base: "sm", md: "md" }} fontWeight="bold" color="fg.emphasized">1 {quoteAsset?.ticker}</Text>
+                                        <Text fontSize={{ base: "sm", md: "md" }} color="fg.muted">=</Text>
+                                        <Skeleton asChild loading={!pool}>
+                                            <Text fontSize={{ base: "sm", md: "md" }} fontWeight="semibold" color="blue.500">
+                                                {pool && baseAsset && quoteAsset
+                                                    ? toBigNumber(poolBaseReservesAmount).dividedBy(toBigNumber(poolQuoteReservesAmount)).toFixed(baseAsset.decimals)
+                                                    : '0'} {baseAsset?.ticker}
+                                            </Text>
+                                        </Skeleton>
+                                    </HStack>
+                                </VStack>
+                            </HStack>
+                        </Box>
+
                         {/* Pool Stats */}
                         <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
                             <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
