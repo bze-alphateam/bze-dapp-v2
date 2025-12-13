@@ -709,6 +709,7 @@ export default function SwapPage() {
   // Group swap history by exact timestamp (for multi-hop swaps in same transaction)
   const groupedSwapHistory = useMemo(() => {
     const timestampGroups = new Map<string, SwapHistory[]>();
+    if (!swapHistory || swapHistory.length === 0) return [];
 
     // Group by exact timestamp
     swapHistory.forEach((swap) => {
