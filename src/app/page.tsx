@@ -623,7 +623,9 @@ export default function SwapPage() {
     setIsLoadingHistory(true);
     try {
       const history = await getAddressSwapHistory(address);
-      setSwapHistory(history);
+      if (history) {
+        setSwapHistory(history);
+      }
     } catch (error) {
       console.error('Error fetching swap history:', error);
       setSwapHistory([]);
