@@ -1,6 +1,6 @@
 'use client'
 import "@interchain-kit/react/styles.css"; // Import styles for the wallet modal
-import {InterchainWalletModal, useChain, useWalletManager} from "@interchain-kit/react";
+import {InterchainWalletModal, useChain} from "@interchain-kit/react";
 import {
     Badge,
     Box,
@@ -24,7 +24,7 @@ import {getChainExplorerURL, getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {stringTruncateFromCenter} from "@/utils/strings";
 import {AssetBalance, useBalances} from "@/hooks/useBalances";
-import {useIBCChains} from "@/hooks/useAssets";
+// import {useIBCChains} from "@/hooks/useAssets";
 import {isIbcDenom, isLpDenom} from "@/utils/denom";
 
 import {amountToUAmount, prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
@@ -446,8 +446,8 @@ export const WalletSidebarContent = () => {
         connect,
     } = useChain(getChainName());
     const {assetsBalances, isLoading: assetsLoading} = useBalances();
-    const walletManager = useWalletManager()
-    const {ibcChains} = useIBCChains()
+    // const walletManager = useWalletManager()
+    // const {ibcChains} = useIBCChains()
 
     const balancesWithoutLps = useMemo(() => {
         if (assetsLoading) return [];
@@ -502,25 +502,27 @@ export const WalletSidebarContent = () => {
         setViewState('send')
     }, [])
 
-    const handleDisconnectAll = async () => {
+    const handleDisconnectAll = useCallback(async () => {
         setIsDisconnecting(true)
         try {
-            const chains = ibcChains.map(data => data.counterparty.chainName).filter(item => item !== "")
-            const currentWallet = walletManager.currentWalletName
-
-            if (!currentWallet) {
-                console.log('No wallet connected')
-                return
-            }
-
-            // Disconnect from each chain
-            for (const chain of chains) {
-                try {
-                    await walletManager.disconnect(currentWallet, chain)
-                } catch (error) {
-                    console.error(`Failed to disconnect from ${chain}:`, error)
-                }
-            }
+            // const chains = ibcChains.map(data => data.counterparty.chainName).filter(item => item !== "")
+            // disable it for now since we don't have ibc chains yet
+            // const chains: string[] = []
+            // const currentWallet = walletManager.currentWalletName
+            //
+            // if (!currentWallet) {
+            //     console.log('No wallet connected')
+            //     return
+            // }
+            //
+            // // Disconnect from each chain
+            // for (const chain of chains) {
+            //     try {
+            //         await walletManager.disconnect(currentWallet, chain)
+            //     } catch (error) {
+            //         console.error(`Failed to disconnect from ${chain}:`, error)
+            //     }
+            // }
 
             console.log('Disconnected from all chains')
         } catch (error) {
@@ -529,7 +531,7 @@ export const WalletSidebarContent = () => {
             disconnect()
             setIsDisconnecting(false)
         }
-    }
+    }, [disconnect])
 
     const renderBalancesView = () => (
         <VStack gap="6" align="stretch">

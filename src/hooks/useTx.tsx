@@ -179,7 +179,7 @@ const useTx = (chainName: string, isCosmos: boolean, isIBC: boolean) => {
                     }
                 }
             } catch (e) {
-                console.error("---->", e);
+                console.error(e);
                 //@ts-expect-error - small chances for e to be undefined
                 if (e.message.includes("Failed to retrieve account from signer")) {
                     disconnect()
