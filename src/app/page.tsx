@@ -874,20 +874,54 @@ export default function SwapPage() {
                       borderWidth="1px"
                       borderColor="blue.500/25"
                     >
-                      <Input
-                          placeholder="0.0"
-                          value={fromAmount}
-                          onChange={(e) => handleFromAmountChange(sanitizeNumberInput(e.target.value))}
-                          fontSize="2xl"
-                          fontWeight="semibold"
-                          textAlign="right"
-                          variant="flushed"
-                          border="none"
-                          px="0"
-                          _focus={{ border: "none" }}
-                      />
+                      <VStack gap="3" align="stretch">
+                        <HStack gap="2">
+                          <Input
+                              placeholder="0.0"
+                              value={fromAmount}
+                              onChange={(e) => handleFromAmountChange(sanitizeNumberInput(e.target.value))}
+                              fontSize="2xl"
+                              fontWeight="semibold"
+                              textAlign="right"
+                              variant="flushed"
+                              border="none"
+                              px="0"
+                              _focus={{ border: "none" }}
+                              flex="1"
+                          />
+                          <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleFromAmountChange(fromAsset?.balance.toString() || '0')}
+                              disabled={!fromAsset || fromAsset.balance.lte(0)}
+                              colorPalette="blue"
+                          >
+                            MAX
+                          </Button>
+                        </HStack>
+                        <HStack justify="space-between" gap="2">
+                          {[25, 50, 75, 100].map((percentage) => (
+                              <Button
+                                  key={percentage}
+                                  size="xs"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (fromAsset) {
+                                      const amount = fromAsset.balance.multipliedBy(percentage).dividedBy(100);
+                                      handleFromAmountChange(amount.toString());
+                                    }
+                                  }}
+                                  disabled={!fromAsset || fromAsset.balance.lte(0)}
+                                  colorPalette="gray"
+                                  flex="1"
+                              >
+                                {percentage}%
+                              </Button>
+                          ))}
+                        </HStack>
+                      </VStack>
                       {fromAmount && calculateUSDValue(fromAmount, fromAsset) && (
-                          <Text fontSize="sm" color="fg.muted" textAlign="right" mt="1">
+                          <Text fontSize="sm" color="fg.muted" textAlign="right" mt="2">
                             ≈ ${calculateUSDValue(fromAmount, fromAsset)} USD
                           </Text>
                       )}
