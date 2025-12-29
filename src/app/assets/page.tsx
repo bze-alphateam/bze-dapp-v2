@@ -586,6 +586,23 @@ function AssetItem({ asset, isExpanded, toggleExpanded }: { asset: Asset, isExpa
                                         gridColumn={{ base: '1', sm: 'span 2' }}
                                     >
                                         <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
+                                            IBC Denom on BeeZee
+                                        </Text>
+                                        <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="teal.600" wordBreak="break-all">
+                                            {asset.denom}
+                                        </Text>
+                                    </Box>
+                                    <Box
+                                        bgGradient="to-br"
+                                        gradientFrom="teal.500/8"
+                                        gradientTo="teal.600/8"
+                                        borderWidth="1px"
+                                        borderColor="teal.500/20"
+                                        borderRadius="md"
+                                        p={3}
+                                        gridColumn={{ base: '1', sm: 'span 2' }}
+                                    >
+                                        <Text color="fg.muted" fontSize="xs" fontWeight="semibold" mb={1}>
                                             Path
                                         </Text>
                                         <Text fontSize="sm" fontFamily="mono" fontWeight="medium" color="teal.600" wordBreak="break-all">
