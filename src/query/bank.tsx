@@ -1,5 +1,6 @@
 import {getRestClient} from "@/query/client";
 import {Coin} from "@bze/bzejs/cosmos/base/v1beta1/coin";
+import {getLockerAddress} from "@/constants/chain";
 
 export async function getAddressBalances(address: string): Promise<Coin[]> {
     try {
@@ -10,6 +11,21 @@ export async function getAddressBalances(address: string): Promise<Coin[]> {
     } catch (e) {
         console.error("failed to get balances",e);
 
+        return [];
+    }
+}
+
+export async function getLockedBalances(): Promise<Coin[]> {
+    try {
+        const lockerAddress = getLockerAddress();
+        if (!lockerAddress) {
+            console.warn("Locker address not configured");
+            return [];
+        }
+
+        return await getAddressBalances(lockerAddress);
+    } catch (e) {
+        console.error("failed to get locked balances", e);
         return [];
     }
 }

@@ -95,3 +95,7 @@ export const getChainExplorerURL = (chainName: string): string => {
 
     return `https://explorer.chaintools.tech/${chainName}`
 }
+
+export const getLockerAddress = (): string => {
+    return process.env.NEXT_PUBLIC_LOCKER_ADDRESS || 'bze1pc5zjcvhx3e8l305zjl72grytfa30r5mdypmw4'
+}

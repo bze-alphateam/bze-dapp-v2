@@ -14,6 +14,7 @@ import {
     Separator,
     Slider,
     Skeleton,
+    Link,
 } from '@chakra-ui/react';
 import {
     LuArrowLeft,
@@ -25,6 +26,7 @@ import {
     LuSettings,
     LuCoins,
     LuClock,
+    LuExternalLink,
 } from 'react-icons/lu';
 import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
@@ -63,6 +65,7 @@ import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards-staking-modals";
 import {HighlightText} from "@/components/ui/highlight";
 import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
+import {useLockedLiquidity} from "@/hooks/useLockedLiquidity";
 
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
@@ -1445,6 +1448,39 @@ const PoolDetailsPageContent = () => {
         reloadStakingData()
     }, [reloadStakingData])
 
+    // Calculate locked in boost rewards
+    const totalLockedInRewards = useMemo(() => {
+        if (!pool?.lp_denom || !rewardsMap) return toBigNumber(0);
+
+        let total = toBigNumber(0);
+        rewardsMap.forEach((reward) => {
+            // Only count rewards for this pool
+            if (reward.staking_denom === pool.lp_denom) {
+                total = total.plus(toBigNumber(reward.staked_amount));
+            }
+        });
+
+        return total;
+    }, [pool?.lp_denom, rewardsMap]);
+
+    const lockedInRewardsAmount = useMemo(() => {
+        return uAmountToAmount(totalLockedInRewards, LP_ASSETS_DECIMALS);
+    }, [totalLockedInRewards]);
+
+    const { price: lpTokenPrice } = useAssetPrice(pool?.lp_denom || '');
+
+    const lockedInRewardsUsdValue = useMemo(() => {
+        if (!lpTokenPrice || lpTokenPrice.lte(0)) return null;
+        return toBigNumber(lockedInRewardsAmount).multipliedBy(lpTokenPrice);
+    }, [lockedInRewardsAmount, lpTokenPrice]);
+
+    // Get locked forever data
+    const {
+        lockedForeverAmount,
+        lockedForeverUsdValue,
+        isLoading: isLoadingLockedForever
+    } = useLockedLiquidity(pool?.lp_denom || '');
+
     // Custom tabs
     const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
         <Button
@@ -1575,6 +1611,51 @@ const PoolDetailsPageContent = () => {
                                 </HStack>
                                 <Skeleton asChild loading={!hasPoolData}>
                                     <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="green.500">{poolData?.apr || 0}%</Text>
+                                </Skeleton>
+                            </VStack>
+                        </Grid>
+
+                        {/* Locked Liquidity Stats */}
+                        <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap={{ base: "3", md: "4" }} w="full">
+                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
+                                <Text fontSize="sm" color="fg.muted" textAlign="center">Locked Forever</Text>
+                                <Skeleton asChild loading={isLoadingLockedForever}>
+                                    <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">
+                                        {lockedForeverUsdValue
+                                            ? `$${prettyAmount(lockedForeverUsdValue)}`
+                                            : `${prettyAmount(lockedForeverAmount)} LP`
+                                        }
+                                    </HighlightText>
+                                </Skeleton>
+                                <Link
+                                    href={`https://burner.getbze.com/coin?coin=${pool?.lp_denom || ''}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    fontSize="xs"
+                                    color="fg.muted"
+                                    display="flex"
+                                    alignItems="center"
+                                    gap="1"
+                                    textDecoration="none"
+                                    transition="color 0.2s"
+                                    _hover={{
+                                        color: 'colorPalette.fg',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    <LuExternalLink size={12} />
+                                    <Text>See in Burner App</Text>
+                                </Link>
+                            </VStack>
+                            <VStack align="center" gap="2" p={{ base: "3", md: "4" }} bgGradient="to-br" gradientFrom="blue.500/5" gradientTo="blue.600/5" rounded="lg" borderWidth="1px" borderColor="blue.500/15">
+                                <Text fontSize="sm" color="fg.muted" textAlign="center">Locked in Boost Rewards</Text>
+                                <Skeleton asChild loading={!rewardsMap || !pool}>
+                                    <HighlightText fontSize={{ base: "lg", md: "xl" }} fontWeight="bold" color="fg.emphasized">
+                                        {lockedInRewardsUsdValue
+                                            ? `$${prettyAmount(lockedInRewardsUsdValue)}`
+                                            : `${prettyAmount(lockedInRewardsAmount)} LP`
+                                        }
+                                    </HighlightText>
                                 </Skeleton>
                             </VStack>
                         </Grid>
