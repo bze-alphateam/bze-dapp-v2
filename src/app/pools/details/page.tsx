@@ -66,6 +66,7 @@ import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards
 import {HighlightText} from "@/components/ui/highlight";
 import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
 import {useLockedLiquidity} from "@/hooks/useLockedLiquidity";
+import {isPoolSupportedByValidator, getValidatorPageUrl} from "@/utils/validator";
 
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">
@@ -1481,6 +1482,14 @@ const PoolDetailsPageContent = () => {
         isLoading: isLoadingLockedForever
     } = useLockedLiquidity(pool?.lp_denom || '');
 
+    // Check if pool is supported by BZE Validator
+    const isValidatorSupported = useMemo(() => {
+        if (!pool) return false;
+        return isPoolSupportedByValidator(pool.base, pool.quote);
+    }, [pool]);
+
+    const validatorPageUrl = useMemo(() => getValidatorPageUrl(), []);
+
     // Custom tabs
     const TabButton = ({ isActive, onClick, children }: { isActive: boolean; onClick: () => void; children: React.ReactNode }) => (
         <Button
@@ -1714,6 +1723,63 @@ const PoolDetailsPageContent = () => {
                         rewardsMap={rewardsMap}
                         onChange={onLiquidityChanged}
                     />
+                )}
+
+                {/* Validator Support Info Box */}
+                {isValidatorSupported && validatorPageUrl && (
+                    <Box
+                        w="full"
+                        bg="bg.surface"
+                        p={{ base: "4", md: "5" }}
+                        rounded="xl"
+                        borderWidth="1px"
+                        borderColor="blue.500/20"
+                        bgGradient="to-br"
+                        gradientFrom="blue.500/3"
+                        gradientTo="blue.600/3"
+                    >
+                        <VStack gap={{ base: "3", md: "4" }} align="start">
+                            <HStack gap="2">
+                                <Box color="blue.500">
+                                    <LuInfo size={18} />
+                                </Box>
+                                <Text fontSize="md" fontWeight="semibold" color="fg.emphasized">
+                                    Supported by BZE Community
+                                </Text>
+                            </HStack>
+
+                            <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
+                                This liquidity pool is supported by BZE Community validator. The entire commission
+                                earned by our validator on the source blockchain is exclusively used to
+                                support this liquidity pool.
+                            </Text>
+
+                            <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
+                                By delegating your coins to BZE Community, you directly contribute to
+                                maintaining deep liquidity for this trading pair while earning staking rewards.
+                            </Text>
+
+                            <Link
+                                href={validatorPageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                w="full"
+                            >
+                                <Button
+                                    w="full"
+                                    variant="outline"
+                                    colorPalette="blue"
+                                    size="sm"
+                                    display="flex"
+                                    alignItems="center"
+                                    gap="2"
+                                >
+                                    <Text>Delegate to BZE Community</Text>
+                                    <LuExternalLink size={14} />
+                                </Button>
+                            </Link>
+                        </VStack>
+                    </Box>
                 )}
 
                 {/* Actions Tabs */}
