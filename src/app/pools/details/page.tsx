@@ -1706,11 +1706,67 @@ const PoolDetailsPageContent = () => {
                                 </Grid>
                             </VStack>
                         </Box>
+
+                        {/* Validator Support Info Box */}
+                        {isValidatorSupported && validatorPageUrl && (
+                            <Box
+                                w="full"
+                                p={{ base: "4", md: "5" }}
+                                rounded="xl"
+                                borderWidth="1px"
+                                borderColor="blue.500/20"
+                                bgGradient="to-br"
+                                gradientFrom="blue.500/3"
+                                gradientTo="blue.600/3"
+                            >
+                                <VStack gap={{ base: "3", md: "4" }} align="start">
+                                    <HStack gap="2">
+                                        <Box color="blue.500">
+                                            <LuInfo size={18} />
+                                        </Box>
+                                        <Text fontSize="md" fontWeight="semibold" color="fg.emphasized">
+                                            Supported by BZE Community
+                                        </Text>
+                                    </HStack>
+
+                                    <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
+                                        This liquidity pool is supported by BZE Community validator. The entire commission
+                                        earned by our validator on the source blockchain is exclusively used to
+                                        support this liquidity pool.
+                                    </Text>
+
+                                    <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
+                                        By delegating your coins to BZE Community, you directly contribute to
+                                        maintaining deep liquidity for this trading pair while earning staking rewards.
+                                    </Text>
+
+                                    <Link
+                                        href={validatorPageUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        w="full"
+                                    >
+                                        <Button
+                                            w="full"
+                                            variant="outline"
+                                            colorPalette="blue"
+                                            size="sm"
+                                            display="flex"
+                                            alignItems="center"
+                                            gap="2"
+                                        >
+                                            <Text>Delegate to BZE Community</Text>
+                                            <LuExternalLink size={14} />
+                                        </Button>
+                                    </Link>
+                                </VStack>
+                            </Box>
+                        )}
                     </VStack>
                 </Box>
 
                 {/* User Position */}
-                {baseAsset && quoteAsset && (
+                {baseAsset && quoteAsset && userShares && toBigNumber(userShares).gt(0) && (
                     <UserPosition
                         userShares={userShares}
                         userReserveBase={userReserveBase}
@@ -1723,63 +1779,6 @@ const PoolDetailsPageContent = () => {
                         rewardsMap={rewardsMap}
                         onChange={onLiquidityChanged}
                     />
-                )}
-
-                {/* Validator Support Info Box */}
-                {isValidatorSupported && validatorPageUrl && (
-                    <Box
-                        w="full"
-                        bg="bg.surface"
-                        p={{ base: "4", md: "5" }}
-                        rounded="xl"
-                        borderWidth="1px"
-                        borderColor="blue.500/20"
-                        bgGradient="to-br"
-                        gradientFrom="blue.500/3"
-                        gradientTo="blue.600/3"
-                    >
-                        <VStack gap={{ base: "3", md: "4" }} align="start">
-                            <HStack gap="2">
-                                <Box color="blue.500">
-                                    <LuInfo size={18} />
-                                </Box>
-                                <Text fontSize="md" fontWeight="semibold" color="fg.emphasized">
-                                    Supported by BZE Community
-                                </Text>
-                            </HStack>
-
-                            <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
-                                This liquidity pool is supported by BZE Community validator. The entire commission
-                                earned by our validator on the source blockchain is exclusively used to
-                                support this liquidity pool.
-                            </Text>
-
-                            <Text fontSize="sm" color="fg.muted" lineHeight="1.6">
-                                By delegating your coins to BZE Community, you directly contribute to
-                                maintaining deep liquidity for this trading pair while earning staking rewards.
-                            </Text>
-
-                            <Link
-                                href={validatorPageUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                w="full"
-                            >
-                                <Button
-                                    w="full"
-                                    variant="outline"
-                                    colorPalette="blue"
-                                    size="sm"
-                                    display="flex"
-                                    alignItems="center"
-                                    gap="2"
-                                >
-                                    <Text>Delegate to BZE Community</Text>
-                                    <LuExternalLink size={14} />
-                                </Button>
-                            </Link>
-                        </VStack>
-                    </Box>
                 )}
 
                 {/* Actions Tabs */}
