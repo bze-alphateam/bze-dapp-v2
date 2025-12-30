@@ -60,6 +60,7 @@ export function BlockchainListenerWrapper() {
 
             //on balance change refresh balances
             const balanceUnsubscribe = blockchainEventManager.subscribe(CURRENT_WALLET_BALANCE_EVENT, () => {
+                console.log('[issue-check] CURRENT_WALLET_BALANCE_EVENT received, scheduling updateBalances');
                 //use debounce to avoid multiple calls to updateBalances
                 addDebounce('refresh-wallet-func', 1000, updateBalances)
             })

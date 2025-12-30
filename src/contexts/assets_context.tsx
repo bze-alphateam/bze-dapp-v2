@@ -332,6 +332,7 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         return doUpdateMarketsData(newMarkets)
     }, [doUpdateMarketsData]);
     const updateBalances = useCallback(async () => {
+        console.log('[issue-check] updateBalances() called at', new Date().toISOString());
         if (!address) return;
 
         const newBalances = await getAddressBalances(address)
