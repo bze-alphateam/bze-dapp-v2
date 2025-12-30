@@ -96,7 +96,26 @@ export function useBlockchainListener() {
     const [isConnected, setIsConnected] = useState(false);
 
     const maxReconnectAttempts = 10;
-    const {address} = useChain(getChainName())
+    const {address: rawAddress} = useChain(getChainName())
+
+    // Cache the last known good address to work around interchain-kit losing wallet state
+    const lastKnownAddressRef = useRef<string | undefined>(undefined);
+
+    // Use cached address if current address is undefined but we had one before
+    const address = rawAddress || lastKnownAddressRef.current;
+
+    // Update cache when we have a valid address
+    useEffect(() => {
+        if (rawAddress && rawAddress !== '') {
+            lastKnownAddressRef.current = rawAddress;
+            console.log('[issue-check] Cached address:', rawAddress);
+        }
+    }, [rawAddress]);
+
+    // Track address changes
+    useEffect(() => {
+        console.log('[issue-check] useChain rawAddress:', rawAddress, 'using address:', address);
+    }, [rawAddress, address]);
 
     //filters tendermint events and dispatches internal ones
     const onBlockEvent = useCallback((events: TendermintEvent[]) => {
