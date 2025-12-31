@@ -108,29 +108,15 @@ export function useBlockchainListener() {
     useEffect(() => {
         if (rawAddress && rawAddress !== '') {
             lastKnownAddressRef.current = rawAddress;
-            console.log('[issue-check] Cached address:', rawAddress);
         }
     }, [rawAddress]);
-
-    // Track address changes
-    useEffect(() => {
-        console.log('[issue-check] useChain rawAddress:', rawAddress, 'using address:', address);
-    }, [rawAddress, address]);
 
     //filters tendermint events and dispatches internal ones
     const onBlockEvent = useCallback((events: TendermintEvent[]) => {
         if (!events) return;
 
-        console.log('[issue-check] onBlockEvent called with', events.length, 'events, checking for address:', address);
-
         for (const event of events) {
-            // Log all transfer events
-            if (event.type === 'transfer') {
-                console.log('[issue-check] Transfer event found:', event);
-            }
-
             if (isAddressTransfer(address ?? '', event)) {
-                console.log('[issue-check] Balance change detected for address:', address, 'at', new Date().toISOString());
                 //the current address balance changed
                 blockchainEventManager.emit(CURRENT_WALLET_BALANCE_EVENT)
                 continue;
@@ -148,7 +134,6 @@ export function useBlockchainListener() {
                 const mintedAmount = getMintedAmount(event);
                 for (const coin of mintedAmount) {
                     if (coin.denom !== getChainNativeAssetDenom()) {
-                        console.log(`Minted ${coin.amount} ${coin.denom}`)
                         // if at least 1 coin was minted that is not the native asset, we should emit ONLY ONE
                         // supply changed event.
                         blockchainEventManager.emit(SUPPLY_CHANGED_EVENT)
@@ -178,18 +163,13 @@ export function useBlockchainListener() {
     }, [address])
 
     const subscribeTxEvents = useCallback((walletAddress: string) => {
-        console.log('[issue-check] subscribeTxEvents called with address:', walletAddress, 'wsOpen:', wsRef.current?.readyState === WebSocket.OPEN, 'alreadySubscribed:', subscribedToTxRef.current);
-
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-            console.log('[issue-check] Cannot subscribe - WebSocket not open');
             return;
         }
         if (subscribedToTxRef.current) {
-            console.log('[issue-check] Already subscribed to Tx events, skipping');
             return;
         }
         if (!walletAddress || walletAddress === '') {
-            console.log('[issue-check] Cannot subscribe - no wallet address');
             return;
         }
 
@@ -197,20 +177,16 @@ export function useBlockchainListener() {
         const recipientQuery = `tm.event='Tx' AND transfer.recipient='${walletAddress}'`;
         const recipientPayload = buildSubscribePayload(TX_RECIPIENT_SUBSCRIPTION_ID, recipientQuery);
         wsRef.current.send(JSON.stringify(recipientPayload));
-        console.log('[issue-check] Sent recipient subscription:', recipientQuery);
 
         // Subscribe to sender events
         const senderQuery = `tm.event='Tx' AND transfer.sender='${walletAddress}'`;
         const senderPayload = buildSubscribePayload(TX_SENDER_SUBSCRIPTION_ID, senderQuery);
         wsRef.current.send(JSON.stringify(senderPayload));
-        console.log('[issue-check] Sent sender subscription:', senderQuery);
 
         subscribedToTxRef.current = true;
     }, []);
 
     const unsubscribeTxEvents = useCallback((walletAddress: string) => {
-        console.log('[issue-check] unsubscribeTxEvents called with address:', walletAddress);
-
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
         if (!subscribedToTxRef.current) return;
 
@@ -218,13 +194,11 @@ export function useBlockchainListener() {
         const recipientQuery = `tm.event='Tx' AND transfer.recipient='${walletAddress}'`;
         const recipientPayload = buildUnsubscribePayload(TX_RECIPIENT_SUBSCRIPTION_ID, recipientQuery);
         wsRef.current.send(JSON.stringify(recipientPayload));
-        console.log('[issue-check] Sent recipient unsubscribe:', recipientQuery);
 
         // Unsubscribe from sender events
         const senderQuery = `tm.event='Tx' AND transfer.sender='${walletAddress}'`;
         const senderPayload = buildUnsubscribePayload(TX_SENDER_SUBSCRIPTION_ID, senderQuery);
         wsRef.current.send(JSON.stringify(senderPayload));
-        console.log('[issue-check] Sent sender unsubscribe:', senderQuery);
 
         subscribedToTxRef.current = false;
     }, []);
@@ -267,42 +241,30 @@ export function useBlockchainListener() {
         wsRef.current = new WebSocket(`${settings.endpoints.rpcEndpoint}/websocket`);
 
         wsRef.current.onopen = () => {
-            console.log('[issue-check] WebSocket OPENED at', new Date().toISOString());
-
             // Subscribe to NewBlock events
             const blockPayload = buildSubscribePayload(BLOCK_SUBSCRIPTION_ID, "tm.event='NewBlock'");
             wsRef.current?.send(JSON.stringify(blockPayload));
-            console.log('[issue-check] Subscribed to NewBlock events');
 
             // Subscribe to Tx events if address is available
             if (address && address !== '') {
                 subscribeTxEvents(address);
-                console.log('[issue-check] Subscribed to Tx events for address:', address);
             }
 
             // Reset reconnect attempts on successful connection
             reconnectAttemptsRef.current = 0;
             setIsConnected(true); // Set connected
-            console.log('WebSocket connected');
         };
 
         wsRef.current.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            // Log all non-NewBlock messages to debug
-            if (!data?.result?.data?.value?.result_finalize_block?.events) {
-                console.log('[issue-check] Non-NewBlock WS message received:', data);
-            }
-
             //finalize block events
             if (data?.result?.data?.value?.result_finalize_block?.events) {
-                console.log('[issue-check] NewBlock event received at', new Date().toISOString());
                 onBlockEvent(data.result.data.value.result_finalize_block.events)
             }
 
             //tx events from NewBlock
             if (data?.result?.data?.value?.txs_results) {
-                console.log('[issue-check] Tx events from NewBlock at', new Date().toISOString(), 'count:', data.result.data.value.txs_results.length);
                 for (const txResult of data.result.data.value.txs_results) {
                     if (txResult?.events) {
                         onBlockEvent(txResult.events)
@@ -312,26 +274,21 @@ export function useBlockchainListener() {
 
             //tx events from Tx subscription
             if (data?.result?.data?.value?.TxResult?.result?.events) {
-                console.log('[issue-check] Tx subscription event received at', new Date().toISOString());
                 onBlockEvent(data.result.data.value.TxResult.result.events)
             }
         };
 
         wsRef.current.onclose = (event) => {
-            console.log('[issue-check] WebSocket CLOSED at', new Date().toISOString(), 'code:', event.code, 'reason:', event.reason);
-            console.log('WebSocket disconnected', event.code, event.reason);
             subscribedToTxRef.current = false;
             setIsConnected(false);
 
             // Only reconnect if it wasn't a manual close (code 1000)
             if (event.code !== 1000 && shouldReconnectRef.current) {
-                console.log('[issue-check] Will attempt reconnect');
                 reconnect();
             }
         };
 
         wsRef.current.onerror = (error) => {
-            console.error('[issue-check] WebSocket ERROR at', new Date().toISOString(), error);
             console.error('WebSocket error:', error);
             setIsConnected(false);
             // Close the connection to trigger reconnect via onclose
@@ -344,21 +301,16 @@ export function useBlockchainListener() {
         const currentAddress = address ?? '';
         const previousAddress = previousAddressRef.current ?? '';
 
-        console.log('[issue-check] Address effect running - current:', currentAddress, 'previous:', previousAddress, 'subscribedToTx:', subscribedToTxRef.current);
-
         // Address changed
         if (currentAddress !== previousAddress) {
-            console.log('[issue-check] Address CHANGED from', previousAddress, 'to', currentAddress);
 
             // Unsubscribe from old address
             if (previousAddress !== '') {
-                console.log('[issue-check] Unsubscribing from old address:', previousAddress);
                 unsubscribeTxEvents(previousAddress);
             }
 
             // Subscribe to new address
             if (currentAddress !== '') {
-                console.log('[issue-check] Subscribing to new address:', currentAddress);
                 subscribeTxEvents(currentAddress);
             }
 
