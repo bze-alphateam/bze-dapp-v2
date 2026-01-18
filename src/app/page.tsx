@@ -23,6 +23,7 @@ import {
   LuChevronDown,
   LuChevronUp,
   LuArrowRight,
+  LuInfo,
 } from 'react-icons/lu';
 import { useState, useMemo, memo, useEffect } from 'react';
 import {TokenLogo} from "@/components/ui/token_logo";
@@ -1033,10 +1034,27 @@ export default function SwapPage() {
                           </HStack>
                           <HStack justify="space-between">
                             <Text fontSize="sm" color="fg.muted" fontWeight="medium">
-                              Fee
+                              Swap Fee
                             </Text>
                             <Text fontSize="sm" fontWeight="medium">
                               {routeResult.feesPerHop.length > 0 && uAmountToAmount(routeResult.feesPerHop[0], fromAsset?.decimals ?? 6)} {fromAsset?.ticker || ''}
+                            </Text>
+                          </HStack>
+                          <HStack justify="space-between">
+                            <Tooltip
+                              content="This fee is paid to the network. Starting with network upgrade 8.1.0, you will be able to pay it in your preferred token."
+                              showArrow
+                              openDelay={100}
+                            >
+                              <Box as="span" display="inline-flex" alignItems="center" gap="1" cursor="help">
+                                <Text fontSize="sm" color="fg.muted" fontWeight="medium">
+                                  Taker Fee
+                                </Text>
+                                <LuInfo size={14} color="var(--chakra-colors-fg-muted)" />
+                              </Box>
+                            </Tooltip>
+                            <Text fontSize="sm" fontWeight="medium">
+                              0.1 BZE
                             </Text>
                           </HStack>
                           <HStack justify="space-between">

@@ -14,7 +14,8 @@ import {
     Flex,
     Table, Alert,
 } from '@chakra-ui/react';
-import { LuTrendingUp, LuTrendingDown, LuActivity, LuArrowLeft, LuX } from 'react-icons/lu';
+import { LuTrendingUp, LuTrendingDown, LuActivity, LuArrowLeft, LuX, LuInfo } from 'react-icons/lu';
+import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {useMarket} from "@/hooks/useMarkets";
 import {useAsset} from "@/hooks/useAssets";
@@ -1315,6 +1316,50 @@ const TradingPageContent = () => {
                                 <HStack justify="space-between">
                                     <Text fontSize="xs" color="fg.muted">{quoteAsset?.ticker}</Text>
                                     <HighlightText fontSize="xs" fontWeight="medium">{displayQuoteBalance}</HighlightText>
+                                </HStack>
+                            </VStack>
+                        </Box>
+
+                        {/* Trading Fees Info */}
+                        <Box
+                            p={4}
+                            bgGradient="to-br"
+                            gradientFrom="blue.500/5"
+                            gradientTo="blue.600/5"
+                            borderRadius="md"
+                            borderWidth="1px"
+                            borderColor="blue.500/15"
+                        >
+                            <HStack gap={2} mb={2}>
+                                <LuInfo size={14} color="var(--chakra-colors-blue-500)" />
+                                <Text fontSize="xs" fontWeight="semibold" color="fg.muted">Trading Fees</Text>
+                            </HStack>
+                            <VStack gap={1} align="stretch">
+                                <HStack justify="space-between">
+                                    <Tooltip
+                                        content="Fee paid when your order is filled immediately (market order or matching existing orders). Starting with network upgrade 8.1.0, you will be able to pay it in your preferred token."
+                                        showArrow
+                                        openDelay={100}
+                                    >
+                                        <Box as="span" display="inline-flex" alignItems="center" gap="1" cursor="help">
+                                            <Text fontSize="xs" color="fg.muted">Taker Fee</Text>
+                                            <LuInfo size={12} color="var(--chakra-colors-fg-muted)" />
+                                        </Box>
+                                    </Tooltip>
+                                    <Text fontSize="xs" fontWeight="medium">0.1 BZE</Text>
+                                </HStack>
+                                <HStack justify="space-between">
+                                    <Tooltip
+                                        content="Fee paid when your order is placed in the order book and filled later. Starting with network upgrade 8.1.0, you will be able to pay it in your preferred token."
+                                        showArrow
+                                        openDelay={100}
+                                    >
+                                        <Box as="span" display="inline-flex" alignItems="center" gap="1" cursor="help">
+                                            <Text fontSize="xs" color="fg.muted">Maker Fee</Text>
+                                            <LuInfo size={12} color="var(--chakra-colors-fg-muted)" />
+                                        </Box>
+                                    </Tooltip>
+                                    <Text fontSize="xs" fontWeight="medium">0.001 BZE</Text>
                                 </HStack>
                             </VStack>
                         </Box>
