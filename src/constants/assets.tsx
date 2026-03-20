@@ -25,6 +25,7 @@ export const EXCLUDED_ASSETS: { [key: string]: boolean } = {
 
 export const STABLE_COINS: { [key: string]: boolean } = {
     "factory/testbz1z3mkcr2jz424w6m49frgjmy9uhlrx69p4cvrgf/uusdt": true,
+    "factory/bze1z3mkcr2jz424w6m49frgjmy9uhlrx69phqwg3l/testusd": true,
     "ibc/6490A7EAB61059BFC1CDDEB05917DD70BDF3A611654162A1A47DB930D40D8AF4": true,
 }
 

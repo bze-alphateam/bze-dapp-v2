@@ -173,7 +173,17 @@ const populateIBCAsset = async (asset: Asset): Promise<Asset | undefined> => {
         return asset;
     }
 
-    //3. we could not find the asset in the chain registry, so we set some default values
+    //3. We could not find the asset in chain registry, let's check our registry maybe we can at least have a nice display denom and proper decimals
+    // by "our registry" we mean the asset can be defined in BZE's assets.json in chain registry
+    const localAsset = await populateAssetFromBZEChainRegistryAssetList(asset)
+    if (localAsset) {
+        //it is an IBC asset, so we can say it's verified if it was added to the chain registry
+        localAsset.verified = true
+
+        return localAsset
+    }
+
+    //4. we could not find the asset in the chain registry and not even in our own asset list in chain registry, so we set some default values
 
     // if the denom is not IBC or other format (smart contracts, etc) we set the name and ticker to the base denom from
     // the IBC trace. This base denom is the denom of the coin on the other chain, NOT on ours.
@@ -197,6 +207,14 @@ const populateAssetFromChainRegistry = async (asset: Asset): Promise<Asset | und
         return populateIBCAsset(asset)
     }
 
+    if (isNativeDenom(asset.denom) || isFactoryDenom(asset.denom)) {
+        return populateAssetFromBZEChainRegistryAssetList(asset)
+    }
+
+    return undefined
+}
+
+const populateAssetFromBZEChainRegistryAssetList = async (asset: Asset): Promise<Asset | undefined> => {
     const data = getAssetLists().find((item) => item.chainName.toLowerCase() === getChainName().toLowerCase())
     if (!data) {
         return undefined;
@@ -207,16 +225,12 @@ const populateAssetFromChainRegistry = async (asset: Asset): Promise<Asset | und
         return undefined;
     }
 
-    if (isNativeDenom(asset.denom) || isFactoryDenom(asset.denom)) {
-        asset.decimals = getExponentByDenomFromAsset(assetData, assetData.display) ?? 0
-        asset.name = assetData.name
-        asset.ticker = assetData.display.toUpperCase()
-        asset.logo = isNativeDenom(asset.denom) ? BZE_CIRCLE_LOGO : assetData.logoURIs?.svg ?? assetData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
+    asset.decimals = getExponentByDenomFromAsset(assetData, assetData.display) ?? 0
+    asset.name = assetData.name
+    asset.ticker = assetData.display.toUpperCase()
+    asset.logo = isNativeDenom(asset.denom) ? BZE_CIRCLE_LOGO : assetData.logoURIs?.svg ?? assetData.logoURIs?.png ?? TOKEN_LOGO_PLACEHOLDER
 
-        return asset
-    }
-
-    return undefined
+    return asset
 }
 
 const populateAssetFromBlockchainMetadata = (asset: Asset,  meta: MetadataSDKType|undefined): Asset => {
