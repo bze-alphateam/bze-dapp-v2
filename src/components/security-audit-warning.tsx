@@ -5,7 +5,7 @@ import { Box, Button, HStack, Text, VStack } from '@chakra-ui/react';
 import { LuTriangleAlert, LuShield } from 'react-icons/lu';
 
 const AUDIT_WARNING_KEY = 'bze-audit-warning-acknowledged';
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const TWENTY_FOUR_HOURS = 3 * 24 * 60 * 60 * 1000; // 3 * 24 hours in milliseconds
 
 export function SecurityAuditWarning() {
   const [showWarning, setShowWarning] = useState(false);

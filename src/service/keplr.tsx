@@ -37,7 +37,7 @@ async function getKeplrTestnetChainInfo() {
         return JSON.parse(cachedData);
     }
 
-    const url = 'https://raw.githubusercontent.com/faneaatiku/keplr-chain-registry/main/cosmos/bzetestnet.json';
+    const url = 'https://raw.githubusercontent.com/faneaatiku/keplr-chain-registry/refs/heads/patch-2/cosmos/bzetestnet.json';
     try {
         const response = await fetch(url);
         if (!response.ok) {

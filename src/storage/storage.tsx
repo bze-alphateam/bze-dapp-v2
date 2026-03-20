@@ -112,5 +112,5 @@ export const setKeyExpiry = (key: string, expiry: Date): boolean => {
 
 
 const prefixedKey = (key: string): string => {
-    return `1-${getChainId()}:${key}`;
+    return `3-${getChainId()}:${key}`;
 }
