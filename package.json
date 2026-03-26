@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@bze/bze-ui-kit": "^0.2.2",
+    "@bze/bze-ui-kit": "^0.4.0",
     "@bze/bzejs": "^1.9.1",
     "@chain-registry/utils": "^2.0.78",
     "@chakra-ui/react": "^3.22.0",
