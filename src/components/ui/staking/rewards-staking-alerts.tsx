@@ -1,8 +1,7 @@
 import {Box, HStack, Text, VStack} from "@chakra-ui/react";
 import React, {useMemo} from "react";
-import {prettyAmount, uAmountToAmount} from "@/utils/amount";
-import {useEpochs} from "@/hooks/useEpochs";
-import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
+import {prettyAmount, uAmountToAmount, useEpochs} from "@bze/bze-ui-kit";
+import {ExtendedPendingUnlockParticipantSDKType} from "@bze/bze-ui-kit";
 import {RewardsStakingIcon} from "@/components/ui/staking/rewards-staking-buttons";
 
 export const TYPE_REWARDS = 'rewards'

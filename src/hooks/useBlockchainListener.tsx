@@ -1,18 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {getSettings} from "@/storage/settings";
+import {getSettings, getChainName, blockchainEventManager, CURRENT_WALLET_BALANCE_EVENT, ORDER_BOOK_CHANGED_EVENT, ORDER_EXECUTED_EVENT, SUPPLY_CHANGED_EVENT, SWAP_EXECUTED_EVENT, TendermintEvent, getChainNativeAssetDenom} from "@bze/bze-ui-kit";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {blockchainEventManager} from "@/service/blockchain_event_manager";
-import {
-    CURRENT_WALLET_BALANCE_EVENT,
-    ORDER_BOOK_CHANGED_EVENT,
-    ORDER_EXECUTED_EVENT,
-    SUPPLY_CHANGED_EVENT, SWAP_EXECUTED_EVENT,
-    TendermintEvent
-} from "@/types/events";
 import {parseCoins} from "@cosmjs/amino";
 import {coins} from "@cosmjs/stargate";
-import {getChainNativeAssetDenom} from "@/constants/assets";
 
 const BLOCK_SUBSCRIPTION_ID = 1;
 const TX_RECIPIENT_SUBSCRIPTION_ID = 2;

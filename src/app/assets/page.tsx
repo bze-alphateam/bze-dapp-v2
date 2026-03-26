@@ -25,24 +25,12 @@ import {
     LuSearch,
     LuFactory,
 } from 'react-icons/lu'
-import {Asset} from "@/types/asset";
-import {ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE} from "@/constants/assets";
-import {isNativeDenom} from "@/utils/denom";
+import {Asset, ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE, isNativeDenom, useAsset, useAssets, useAssetPrice, formatUsdAmount, shortNumberFormat, prettyAmount, toBigNumber, uAmountToBigNumberAmount, createMarketId, HighlightText, getFactoryDenomAdminAddress, LiquidityPoolData, useAssetLiquidityPools, useAssetMarkets, useMarket} from "@bze/bze-ui-kit";
 import {TokenLogo} from "@/components/ui/token_logo";
-import {useAsset, useAssets} from "@/hooks/useAssets";
-import {useAssetMarkets, useMarket} from "@/hooks/useMarkets";
-import {useAssetPrice} from "@/hooks/usePrices";
-import {formatUsdAmount, shortNumberFormat} from "@/utils/formatter";
-import {prettyAmount, toBigNumber, uAmountToBigNumberAmount} from "@/utils/amount";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
 import {useNavigation} from "@/hooks/useNavigation";
-import {createMarketId} from "@/utils/market";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useAssetLiquidityPools} from "@/hooks/useLiquidityPools";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {HighlightText} from "@/components/ui/highlight";
-import {getFactoryDenomAdminAddress} from "@/query/factory";
-import {LiquidityPoolData} from "@/types/liquidity_pool";
 
 const MAX_MARKETS_PER_ASSET = 5;
 

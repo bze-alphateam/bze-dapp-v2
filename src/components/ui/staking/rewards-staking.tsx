@@ -15,17 +15,11 @@ import {
 } from "@chakra-ui/react";
 import {LuClock, LuCoins, LuLock, LuShield, LuTrendingUp} from "react-icons/lu";
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {useAsset} from "@/hooks/useAssets";
-import {calculateRewardsStakingApr, calculateRewardsStakingPendingRewards} from "@/utils/staking";
+import {useAsset, calculateRewardsStakingApr, calculateRewardsStakingPendingRewards, shortNumberFormat, isLpDenom, prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount, useAssetPrice, removeLeadingZeros} from "@bze/bze-ui-kit";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {shortNumberFormat} from "@/utils/formatter";
-import {isLpDenom} from "@/utils/denom";
-import {prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
 import BigNumber from "bignumber.js";
-import {useAssetPrice} from "@/hooks/usePrices";
-import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
-import {removeLeadingZeros} from "@/utils/strings";
+import {ExtendedPendingUnlockParticipantSDKType} from "@bze/bze-ui-kit";
 import {
     RewardStakingAlert,
     TYPE_REWARDS,

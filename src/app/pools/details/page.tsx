@@ -30,43 +30,30 @@ import {
 } from 'react-icons/lu';
 import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
-import {Asset, LP_ASSETS_DECIMALS} from "@/types/asset";
+import {
+    Asset, LP_ASSETS_DECIMALS,
+    useAsset, useAssets, useAssetPrice,
+    amountToBigNumberUAmount, amountToUAmount, prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount,
+    shortNumberFormat, sanitizeNumberInput, toPercentage, removeLeadingZeros,
+    useBalance, useBZETx, useToast, getChainName,
+    AddressRewardsStaking, ExtendedPendingUnlockParticipantSDKType,
+    calculateRewardsStakingPendingRewards,
+    PrettyBalance, useAssetsValue, HighlightText,
+    isPoolSupportedByValidator, getValidatorPageUrl,
+    useLiquidityPool,
+} from "@bze/bze-ui-kit";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useLiquidityPool} from "@/hooks/useLiquidityPools";
-import {useAsset, useAssets} from "@/hooks/useAssets";
-import {useAssetPrice} from "@/hooks/usePrices";
-import {
-    amountToBigNumberUAmount,
-    amountToUAmount,
-    prettyAmount,
-    toBigNumber,
-    uAmountToAmount,
-    uAmountToBigNumberAmount
-} from "@/utils/amount";
-import {shortNumberFormat} from "@/utils/formatter";
 import BigNumber from "bignumber.js";
-import {sanitizeNumberInput, toPercentage} from "@/utils/number";
-import {removeLeadingZeros} from "@/utils/strings";
-import {useBalance} from "@/hooks/useBalances";
-import {useBZETx} from "@/hooks/useTx";
-import {useToast} from "@/hooks/useToast";
 import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {AddressRewardsStaking, ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
 import {RewardsStakingUnlockAlerts, TYPE_REWARDS} from "@/components/ui/staking/rewards-staking-alerts";
 import {useRewardsStakingData} from "@/hooks/useRewardsStakingData";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
-import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
-import {PrettyBalance} from "@/types/balance";
-import {useAssetsValue} from "@/hooks/useAssetsValue";
 import {RewardsStakingPendingRewardsModal} from "@/components/ui/staking/rewards-staking-modals";
-import {HighlightText} from "@/components/ui/highlight";
 import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
 import {useLockedLiquidity} from "@/hooks/useLockedLiquidity";
-import {isPoolSupportedByValidator, getValidatorPageUrl} from "@/utils/validator";
 
 const AssetDisplay = ({ asset, amount, usdValue }: { asset?: Asset; amount: string; usdValue: BigNumber }) => (
     <VStack bg="bg.surface" p="4" rounded="lg" flex="1" align="center" gap="3">

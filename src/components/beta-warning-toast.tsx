@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@bze/bze-ui-kit';
 
 const BETA_WARNING_KEY = 'bze-beta-warning-shown';
 

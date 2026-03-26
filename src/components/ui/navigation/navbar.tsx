@@ -4,19 +4,11 @@ import {Box, Button, ClientOnly, Container, HStack, Image, Skeleton, Spacer, Tex
 import {NavbarLinks} from './navbar-links'
 import {useColorModeValue} from "@/components/ui/color-mode";
 import {LuWallet} from "react-icons/lu";
-import {SettingsToggle} from "@/components/ui/settings";
-import {Sidebar} from "@/components/ui/sidebar/sidebar";
-import {WalletSidebarContent} from "@/components/ui/sidebar/wallet-sidebar";
+import {SettingsToggle, Sidebar, WalletSidebarContent, useAssets, useBalance, getChainName, shortNumberFormat, uAmountToBigNumberAmount, getChainNativeAssetDenom} from "@bze/bze-ui-kit";
 import {MobileNavbarLinks} from "@/components/ui/navigation/mobile-navbar-links";
-import {useAssets} from "@/hooks/useAssets";
-import {useBalance} from "@/hooks/useBalances";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
 import {WalletState} from "@interchain-kit/core";
 import {useMemo} from "react";
-import {shortNumberFormat} from "@/utils/formatter";
-import {uAmountToBigNumberAmount} from "@/utils/amount";
-import {getChainNativeAssetDenom} from "@/constants/assets";
 
 interface TopNavBarProps {
     appLabel?: string;

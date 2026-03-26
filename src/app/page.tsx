@@ -27,30 +27,10 @@ import {
 } from 'react-icons/lu';
 import { useState, useMemo, memo, useEffect } from 'react';
 import {TokenLogo} from "@/components/ui/token_logo";
-import { useAssets } from '@/hooks/useAssets';
-import { useBalances } from '@/hooks/useBalances';
-import { useLiquidityPools } from '@/hooks/useLiquidityPools';
-import {
-  prettyAmount,
-  uAmountToBigNumberAmount,
-  amountToBigNumberUAmount,
-  toBigNumber,
-  uAmountToAmount
-} from '@/utils/amount';
+import {useAssets, useBalances, prettyAmount, uAmountToBigNumberAmount, amountToBigNumberUAmount, toBigNumber, uAmountToAmount, ammRouter, SwapRouteResult, useToast, useBZETx, getChainName, useAssetsValue, HighlightText, sanitizeNumberInput, getAddressSwapHistory, SwapHistory, addDebounce, useLiquidityPools} from "@bze/bze-ui-kit";
 import BigNumber from 'bignumber.js';
-import { ammRouter } from '@/service/amm_router';
-import { SwapRouteResult } from '@/types/liquidity_pool';
-import {useToast} from "@/hooks/useToast";
 import {bze} from "@bze/bzejs";
-import {useBZETx} from "@/hooks/useTx";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {useAssetsValue} from "@/hooks/useAssetsValue";
-import {HighlightText} from "@/components/ui/highlight";
-import {sanitizeNumberInput} from "@/utils/number";
-import {getAddressSwapHistory} from "@/query/aggregator";
-import {SwapHistory} from "@/types/aggregator";
-import {addDebounce} from "@/utils/debounce";
 
 const slippagePresets = [0.5, 1, 2];
 
@@ -265,7 +245,7 @@ export default function SwapPage() {
   const {toast} = useToast()
   const {tx, progressTrack} = useBZETx()
   const {address} = useChain(getChainName())
-  const {totalUsdValue} = useAssetsValue()
+  const {denomUsdValue} = useAssetsValue()
 
   // Update AMM router whenever pools change
   useEffect(() => {
@@ -699,10 +679,7 @@ export default function SwapPage() {
   const calculateUSDValue = (amount: string, asset: typeof assetsWithBalanceInfo[0] | null) => {
     if (!asset || !amount) return null;
 
-    const usdValue = totalUsdValue([{
-      denom: asset.denom,
-      amount: toBigNumber(amount)
-    }]);
+    const usdValue = denomUsdValue(asset.denom, toBigNumber(amount));
 
     if (!usdValue || usdValue.lte(0)) return null;
 

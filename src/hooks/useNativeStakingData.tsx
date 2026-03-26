@@ -2,19 +2,14 @@
 
 import {useCallback, useEffect, useState} from "react";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {NativeStakingData} from "@/types/staking";
 import {
-    getAddressNativeDelegatedBalance,
-    getAddressNativeTotalRewards, getAddressUnbondingDelegationsSummary,
-    getAnnualProvisions,
-    getDistributionParams,
-    getStakingParams,
-    getStakingPool
-} from "@/query/staking";
-import {calcNativeStakingApr, parseUnbondingDays} from "@/utils/staking";
+    getChainName, NativeStakingData,
+    getAddressNativeDelegatedBalance, getAddressNativeTotalRewards, getAddressUnbondingDelegationsSummary,
+    getAnnualProvisions, getDistributionParams, getStakingParams, getStakingPool,
+    calcNativeStakingApr, parseUnbondingDays,
+    useAssets,
+} from "@bze/bze-ui-kit";
 import BigNumber from "bignumber.js";
-import {useAssets} from "@/hooks/useAssets";
 
 export function useNativeStakingData() {
     const [isLoading, setIsLoading] = useState(true)
