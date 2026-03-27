@@ -11,7 +11,7 @@ import { keplrWallet } from "@interchain-kit/keplr-extension";
 import { leapWallet } from "@interchain-kit/leap-extension";
 import { WCWallet } from "@interchain-kit/core";
 
-import {getAssetLists, getWalletChainsNames} from "@/constants/chain";
+import {getAssetLists, getWalletChainsNames} from "@bze/bze-ui-kit";
 
 const walletConnect = new WCWallet(
     undefined,

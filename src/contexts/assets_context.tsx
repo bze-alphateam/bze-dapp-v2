@@ -1,32 +1,35 @@
 'use client';
 
-import {createContext, useState, ReactNode, useEffect, useCallback} from 'react';
-import {Asset, ChainAssets, IBCData, LP_ASSETS_DECIMALS} from '@/types/asset';
-import {getChainAssets} from "@/service/assets_factory";
-import {Market, MarketData} from '@/types/market';
-import {createMarketId} from "@/utils/market";
-import {getMarketHistory, getMarkets} from "@/query/markets";
-import {getAllTickers} from "@/query/aggregator";
+import {useState, ReactNode, useEffect, useCallback} from 'react';
+import {
+    Asset, ChainAssets, IBCData, LP_ASSETS_DECIMALS,
+    getChainAssets,
+    AssetsContext,
+    Market, MarketData,
+    createMarketId,
+    getMarketHistory, getMarkets,
+    getAllTickers,
+    Balance,
+    getChainName,
+    getAddressBalances,
+    getChainNativeAssetDenom, getUSDCDenom,
+    getBZEUSDPrice,
+    getEpochsInfo,
+    CONNECTION_TYPE_NONE, ConnectionType,
+    toBigNumber, uAmountToAmount, uAmountToBigNumberAmount, uPriceToBigNumberPrice,
+    isLpDenom,
+    addDebounce,
+    LiquidityPoolData,
+    getLiquidityPools,
+    calculatePoolPrice, createPoolId, poolIdFromPoolDenom,
+    EXCLUDED_MARKETS,
+    calculateRewardsStakingApr,
+} from "@bze/bze-ui-kit";
 import {Coin} from "@bze/bzejs/cosmos/base/v1beta1/coin";
 import BigNumber from "bignumber.js";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {getAddressBalances} from "@/query/bank";
-import {Balance} from "@/types/balance";
-import {getChainNativeAssetDenom, getUSDCDenom} from "@/constants/assets";
-import {getBZEUSDPrice} from "@/query/prices";
 import {EpochInfoSDKType} from "@bze/bzejs/bze/epochs/epoch";
-import {getEpochsInfo} from "@/query/epoch";
-import {CONNECTION_TYPE_NONE, ConnectionType} from "@/types/settings";
-import {toBigNumber, uAmountToAmount, uAmountToBigNumberAmount, uPriceToBigNumberPrice} from "@/utils/amount";
-import {isLpDenom} from "@/utils/denom";
-import {addDebounce} from "@/utils/debounce";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {LiquidityPoolData} from "@/types/liquidity_pool";
-import {getLiquidityPools} from "@/query/liquidity_pools";
-import {calculatePoolPrice, createPoolId, poolIdFromPoolDenom} from "@/utils/liquidity_pool";
-import {EXCLUDED_MARKETS} from "@/constants/market";
-import {calculateRewardsStakingApr} from "@/utils/staking";
 
 export interface AssetsContextType {
     //assets
@@ -67,7 +70,7 @@ export interface AssetsContextType {
     updateConnectionType: (conn: ConnectionType) => void;
 }
 
-export const AssetsContext = createContext<AssetsContextType | undefined>(undefined);
+// AssetsContext is imported from @bze/bze-ui-kit
 
 interface AssetsProviderProps {
     children: ReactNode;

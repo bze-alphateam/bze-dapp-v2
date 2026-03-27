@@ -11,16 +11,10 @@ import {
 } from "@chakra-ui/react";
 import {LuClock, LuCoins, LuGift, LuInfinity, LuLock, LuLockOpen, LuShield, LuTrendingUp} from "react-icons/lu";
 import React, {useMemo, useState} from "react";
-import {NativeStakingData} from "@/types/staking";
-import {useAssets} from "@/hooks/useAssets";
-import {prettyAmount, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
-import {shortNumberFormat} from "@/utils/formatter";
-import {openExternalLink} from "@/utils/functions";
-import {useToast} from "@/hooks/useToast";
+import {useAssets, prettyAmount, uAmountToAmount, uAmountToBigNumberAmount, shortNumberFormat, openExternalLink, useToast, getChainName, useSDKTx} from "@bze/bze-ui-kit";
+import {NativeStakingData} from "@bze/bze-ui-kit";
 import {cosmos} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {useSDKTx} from "@/hooks/useTx";
 import {TokenLogo} from "@/components/ui/token_logo";
 import {
     RewardStakingAlert,

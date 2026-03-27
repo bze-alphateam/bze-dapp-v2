@@ -2,16 +2,8 @@
 
 import { useBlockchainListener } from '@/hooks/useBlockchainListener';
 import {useEffect} from "react";
-import {useAssetsContext} from "@/hooks/useAssets";
-import {blockchainEventManager} from "@/service/blockchain_event_manager";
-import {
-    CURRENT_WALLET_BALANCE_EVENT,
-    ORDER_EXECUTED_EVENT,
-    SUPPLY_CHANGED_EVENT,
-    SWAP_EXECUTED_EVENT
-} from "@/types/events";
-import {addDebounce, addMultipleDebounce} from "@/utils/debounce";
-import {CONNECTION_TYPE_NONE, CONNECTION_TYPE_POLLING, CONNECTION_TYPE_WS} from "@/types/settings";
+import {useAssetsContext} from "@bze/bze-ui-kit";
+import {blockchainEventManager, CURRENT_WALLET_BALANCE_EVENT, ORDER_EXECUTED_EVENT, SUPPLY_CHANGED_EVENT, SWAP_EXECUTED_EVENT, addDebounce, addMultipleDebounce, CONNECTION_TYPE_NONE, CONNECTION_TYPE_POLLING, CONNECTION_TYPE_WS} from "@bze/bze-ui-kit";
 
 const POLLING_INTERVAL = 10 * 1000;
 

@@ -16,16 +16,9 @@ import {
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useLiquidityPools} from "@/hooks/useLiquidityPools";
+import {useAsset, useAssets, toBigNumber, useBalances, calculateUserPoolData, shortNumberFormat, HighlightText, LiquidityPoolData, useLiquidityPools} from "@bze/bze-ui-kit";
 import {useNavigation} from "@/hooks/useNavigation";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {useAsset, useAssets} from "@/hooks/useAssets";
-import {toBigNumber} from "@/utils/amount";
-import {useBalances} from "@/hooks/useBalances";
-import {calculateUserPoolData} from "@/utils/liquidity_pool";
-import {shortNumberFormat} from "@/utils/formatter";
-import {LiquidityPoolData} from "@/types/liquidity_pool";
-import {HighlightText} from "@/components/ui/highlight";
 
 
 type SortField = 'volume24h' | 'totalLiquidity' | 'apr'

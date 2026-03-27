@@ -17,55 +17,32 @@ import {
 import { LuTrendingUp, LuTrendingDown, LuActivity, LuArrowLeft, LuX, LuInfo } from 'react-icons/lu';
 import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
-import {useMarket} from "@/hooks/useMarkets";
-import {useAsset} from "@/hooks/useAssets";
 import {
-    amountToBigNumberUAmount,
-    prettyAmount, priceToBigNumberUPrice,
-    toBigNumber,
-    uAmountToAmount, uAmountToBigNumberAmount,
-    uPriceToPrice
-} from "@/utils/amount";
-import {
-    getAddressFullMarketOrders,
-    getMarketBuyOrders,
-    getMarketHistory,
-    getMarketSellOrders
-} from "@/query/markets";
-import {ActiveOrders, ORDER_TYPE_BUY, ORDER_TYPE_SELL} from "@/types/market";
-import {HistoryOrder} from "@/types/aggregator";
-import {getAddressHistory, getTradingViewIntervals} from "@/query/aggregator";
+    useMarket, useAsset,
+    amountToBigNumberUAmount, prettyAmount, priceToBigNumberUPrice, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount, uPriceToPrice,
+    getAddressFullMarketOrders, getMarketBuyOrders, getMarketHistory, getMarketSellOrders,
+    ActiveOrders, ORDER_TYPE_BUY, ORDER_TYPE_SELL,
+    HistoryOrder,
+    getAddressHistory, getTradingViewIntervals,
+    getChainName,
+    formatUsdAmount, intlDateFormat,
+    useBalance, useBZETx, useToast, useAssetPrice,
+    sanitizeNumberInput,
+    calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount, getMinAmount,
+    TradeViewChart,
+    CHART_1D, CHART_1Y, CHART_30D, CHART_4H, CHART_7D, getChartIntervalsLimit, getChartMinutes,
+    useConnectionType, CONNECTION_TYPE_WS,
+    blockchainEventManager, getMarketOrderBookChangedEvent,
+    addDebounce, cancelDebounce,
+    HighlightText,
+} from "@bze/bze-ui-kit";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
 import {AggregatedOrderSDKType, HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {formatUsdAmount, intlDateFormat} from "@/utils/formatter";
-import {useBalance} from "@/hooks/useBalances";
-import {useBZETx} from "@/hooks/useTx";
-import {useToast} from "@/hooks/useToast";
-import {bze} from "@bze/bzejs"
-import {useAssetPrice} from "@/hooks/usePrices";
+import {bze} from "@bze/bzejs";
 import BigNumber from "bignumber.js";
-import {sanitizeNumberInput} from "@/utils/number";
-import {calculateAmountFromPrice, calculatePricePerUnit, calculateTotalAmount, getMinAmount} from "@/utils/market";
 import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
-import {TradeViewChart} from "@/types/charts";
-import {
-    CHART_1D,
-    CHART_1Y,
-    CHART_30D,
-    CHART_4H,
-    CHART_7D,
-    getChartIntervalsLimit,
-    getChartMinutes
-} from "@/utils/charts";
 import {LightweightChart} from "@/components/ui/trading/chart";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useConnectionType} from "@/hooks/useConnectionType";
-import {CONNECTION_TYPE_WS} from "@/types/settings";
-import {blockchainEventManager} from "@/service/blockchain_event_manager";
-import {getMarketOrderBookChangedEvent} from "@/utils/events";
-import {addDebounce, cancelDebounce} from "@/utils/debounce";
-import {HighlightText} from "@/components/ui/highlight";
 
 const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
 

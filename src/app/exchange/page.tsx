@@ -17,19 +17,11 @@ import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icon
 import {useCallback, useMemo, useState} from 'react'
 import NextLink from "next/link";
 import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useMarkets} from "@/hooks/useMarkets";
-import {useAsset, useAssets} from "@/hooks/useAssets";
-import {createMarketId} from "@/utils/market";
-import {useAssetsValue} from "@/hooks/useAssetsValue";
+import {useAsset, useAssets, createMarketId, useAssetPrice, prettyAmount, formatUsdAmount, HighlightText, MarketData, useAssetsValue, useMarkets} from "@bze/bze-ui-kit";
 import {MarketSDKType} from "@bze/bzejs/bze/tradebin/store";
-import {MarketData} from "@/types/market";
-import {prettyAmount} from "@/utils/amount";
-import {useAssetPrice} from "@/hooks/usePrices";
 import BigNumber from "bignumber.js";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
-import {formatUsdAmount} from "@/utils/formatter";
 import {useNavigation} from "@/hooks/useNavigation";
-import {HighlightText} from "@/components/ui/highlight";
 
 interface MarketRowProps {
     market: MarketSDKType

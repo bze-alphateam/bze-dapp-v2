@@ -7,7 +7,7 @@ import {
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Box, Text} from "@chakra-ui/react";
 import {useColorModeValue} from "@/components/ui/color-mode";
-import {getNoOfIntervalsNeeded} from "@/utils/charts";
+import {getNoOfIntervalsNeeded} from "@bze/bze-ui-kit";
 import {VStack} from "@chakra-ui/react";
 import {LuChartBar} from "react-icons/lu";
 

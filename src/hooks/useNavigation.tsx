@@ -1,6 +1,6 @@
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import {useCallback, useMemo} from "react";
-import {createMarketId} from "@/utils/market";
+import {createMarketId} from "@bze/bze-ui-kit";
 
 const ID_PARAM = 'id'
 

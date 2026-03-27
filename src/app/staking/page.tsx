@@ -17,15 +17,11 @@ import {useNativeStakingData} from "@/hooks/useNativeStakingData";
 import {NativeStakingCard} from "@/components/ui/staking/native-staking";
 import {RewardsStakingBox} from "@/components/ui/staking/rewards-staking";
 import {useRewardsStakingData} from "@/hooks/useRewardsStakingData";
-import {useAssets} from "@/hooks/useAssets";
+import {useAssets, prettyAmount, uAmountToBigNumberAmount, shortNumberFormat, calculateRewardsStakingPendingRewards, useAssetsValue} from "@bze/bze-ui-kit";
 import BigNumber from "bignumber.js";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {RewardsStakingActionModal} from "@/components/ui/staking/rewards-staking-modals";
-import {PrettyBalance} from "@/types/balance";
-import {prettyAmount, uAmountToBigNumberAmount} from "@/utils/amount";
-import {useAssetsValue} from "@/hooks/useAssetsValue";
-import {shortNumberFormat} from "@/utils/formatter";
-import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
+import {PrettyBalance} from "@bze/bze-ui-kit";
 
 //150 seconds
 const STAKING_DATA_RELOAD_INTERVAL = 150_000;

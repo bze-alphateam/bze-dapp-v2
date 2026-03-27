@@ -4,13 +4,15 @@ import { Inter } from "next/font/google"
 
 import {Provider} from "@/components/ui/provider";
 import {TopNavBar} from "@/components/ui/navigation/navbar";
-import {Toaster} from "@/components/ui/toaster";
+import {Toaster, TestnetBanner, setStorageKeyVersion, setDefaultTxMemo, getAppName} from "@bze/bze-ui-kit";
 import {AssetsProvider} from "@/contexts/assets_context";
 import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
 import {BetaWarningToast} from "@/components/beta-warning-toast";
 import {SecurityAuditWarning} from "@/components/security-audit-warning";
-import {getAppName} from "@/constants/settings";
 import {GoogleTagManager} from "@next/third-parties/google";
+
+setStorageKeyVersion('3');
+setDefaultTxMemo('dex.getbze.com');
 
 const inter = Inter({
   subsets: ["latin"],
@@ -56,6 +58,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                   <Toaster />
                   <BetaWarningToast />
                   <SecurityAuditWarning />
+                  <TestnetBanner />
               </AssetsProvider>
             </Provider>
           </body>

@@ -17,27 +17,17 @@ import {
 import {LuGift, LuLockOpen, LuTrendingUp, LuPercent} from "react-icons/lu";
 import React, {useCallback, useMemo, useState} from "react";
 import {StakingRewardParticipantSDKType, StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
-import {useAsset, useAssets} from "@/hooks/useAssets";
-import {useAssetPrice} from "@/hooks/usePrices";
-import {shortNumberFormat} from "@/utils/formatter";
-import {amountToBigNumberUAmount, prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount} from "@/utils/amount";
-import {calculateRewardsStakingPendingRewards} from "@/utils/staking";
-import {removeLeadingZeros} from "@/utils/strings";
-import {ExtendedPendingUnlockParticipantSDKType} from "@/types/staking";
-import {useBalance} from "@/hooks/useBalances";
-import {sanitizeNumberInput} from "@/utils/number";
+import {useAsset, useAssets, useAssetPrice, shortNumberFormat, amountToBigNumberUAmount, prettyAmount, toBigNumber, uAmountToAmount, uAmountToBigNumberAmount, calculateRewardsStakingPendingRewards, removeLeadingZeros, useBalance, sanitizeNumberInput, useBZETx, getChainName, useToast} from "@bze/bze-ui-kit";
+import {ExtendedPendingUnlockParticipantSDKType} from "@bze/bze-ui-kit";
 import BigNumber from "bignumber.js";
-import {useBZETx} from "@/hooks/useTx";
 import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {useToast} from "@/hooks/useToast";
 import {
     RewardsStakingUnlockAlerts,
     RewardStakingAlert, TYPE_BALANCE, TYPE_REWARDS,
     TYPE_STAKING, TYPE_UNLOCK
 } from "@/components/ui/staking/rewards-staking-alerts";
-import {PrettyBalance} from "@/types/balance";
+import {PrettyBalance} from "@bze/bze-ui-kit";
 import { EncodeObject } from "interchainjs/types";
 import {RewardsStakingButton} from "@/components/ui/staking/rewards-staking-buttons";
 

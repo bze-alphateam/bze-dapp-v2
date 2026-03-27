@@ -1,8 +1,7 @@
 import { Link, Stack, type StackProps, Menu, Text, Portal, Box } from '@chakra-ui/react'
 import NextLink from 'next/link'
 import {useNavigation} from "@/hooks/useNavigation";
-import { LuGlobe, LuCoins, LuFlame, LuFactory } from 'react-icons/lu'
-import type { IconType } from 'react-icons'
+import {getEcosystemApps} from '@bze/bze-ui-kit'
 
 interface NavbarLinksProps extends StackProps {
     onLinkClick?: () => void
@@ -17,13 +16,8 @@ const navItems = [
     { name: 'Assets', href: '/assets' },
 ]
 
-// Apps dropdown items
-const appsItems: Array<{ name: string; href: string; disabled: boolean; icon: IconType }> = [
-    { name: 'Website', href: 'https://getbze.com', disabled: false, icon: LuGlobe },
-    { name: 'Staking', href: 'https://staking.getbze.com', disabled: false, icon: LuCoins },
-    { name: 'Burner', href: 'https://burner.getbze.com', disabled: false, icon: LuFlame },
-    { name: 'Factory', href: '#', disabled: true, icon: LuFactory },
-]
+// Apps dropdown items — sourced from bze-ui-kit, overridable via env vars
+const appsItems = getEcosystemApps()
 
 const navSubitems: { [key: string]: string } = {
     "/exchange/market": "/exchange",

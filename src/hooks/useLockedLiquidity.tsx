@@ -1,9 +1,6 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {getLockedBalances} from '@/query/bank';
+import {getLockedBalances, toBigNumber, uAmountToAmount, LP_ASSETS_DECIMALS, useAssetPrice} from "@bze/bze-ui-kit";
 import {Coin} from "@bze/bzejs/cosmos/base/v1beta1/coin";
-import {toBigNumber, uAmountToAmount} from "@/utils/amount";
-import {LP_ASSETS_DECIMALS} from "@/types/asset";
-import {useAssetPrice} from "@/hooks/usePrices";
 
 export function useLockedLiquidity(lpDenom: string) {
     const [lockedBalances, setLockedBalances] = useState<Coin[]>([]);

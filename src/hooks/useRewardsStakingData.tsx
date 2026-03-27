@@ -1,11 +1,9 @@
 "use client";
 
 import {useCallback, useEffect, useMemo, useState} from "react";
-import {getAddressStakingRewards, getStakingRewards} from "@/query/rewards";
+import {getAddressStakingRewards, getStakingRewards, getChainName, AddressRewardsStaking} from "@bze/bze-ui-kit";
 import {StakingRewardSDKType} from "@bze/bzejs/bze/rewards/store";
 import {useChain} from "@interchain-kit/react";
-import {getChainName} from "@/constants/chain";
-import {AddressRewardsStaking} from "@/types/staking";
 
 export function useRewardsStakingData() {
     const [isLoading, setIsLoading] = useState(true)
