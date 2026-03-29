@@ -250,9 +250,9 @@ export const RewardsStakingActionModal = ({
             amount: uStakeAmount.toString()
         })
 
-        await tx([msg])
+        const success = await tx([msg])
 
-        if (onActionPerformed) {
+        if (success && onActionPerformed) {
             onActionPerformed()
         }
 
@@ -625,9 +625,9 @@ export const RewardsStakingPendingRewardsModal = ({
         })
 
         setIsClaiming(true)
-        await tx(msgs)
+        const success = await tx(msgs)
         setIsClaiming(false)
-        onClaimSuccess?.()
+        if (success) onClaimSuccess?.()
     }, [address, canClaim, onClaimSuccess, pendingRewardsIds, toast, tx])
 
     return (

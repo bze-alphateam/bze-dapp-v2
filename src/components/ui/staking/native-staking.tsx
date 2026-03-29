@@ -94,12 +94,14 @@ export const NativeStakingCard = ({ stakingData, isLoading, onClaimSuccess }: Na
             })
         })
 
-        await tx(msgs);
+        const success = await tx(msgs);
 
         setPendingClaim(false)
-        closeModal()
-        if (onClaimSuccess) {
-            onClaimSuccess()
+        if (success) {
+            closeModal()
+            if (onClaimSuccess) {
+                onClaimSuccess()
+            }
         }
     }
 
