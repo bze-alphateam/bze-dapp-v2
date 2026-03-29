@@ -53,7 +53,6 @@ const system = createSystem(defaultConfig, {
 export function Provider({ children, ...props }: ColorModeProviderProps & { children: React.ReactNode }) {
     return (
         <ChainProvider
-            //@ts-expect-error wallets
             wallets={[keplrWallet, leapWallet, walletConnect]}
             signerOptions={{
                 preferredSignType: () => {
