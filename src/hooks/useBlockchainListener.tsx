@@ -74,7 +74,8 @@ export function useBlockchainListener() {
         let unsubscribe: (() => void) | null = null;
 
         subscribeToBlockchainEvents(rpcEndpoint, "tm.event='NewBlock'", (result: unknown) => {
-            const value = (result as any)?.data?.value;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const value = (result as Record<string, any>)?.data?.value;
 
             if (value?.result_finalize_block?.events) {
                 dispatchEvents(address ?? '', value.result_finalize_block.events);
@@ -113,7 +114,8 @@ export function useBlockchainListener() {
         const senderQuery = `tm.event='Tx' AND transfer.sender='${address}'`;
 
         const handleTx = (result: unknown) => {
-            const events = (result as any)?.data?.value?.TxResult?.result?.events;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const events = (result as Record<string, any>)?.data?.value?.TxResult?.result?.events;
             if (events) {
                 dispatchEvents(address, events);
             }

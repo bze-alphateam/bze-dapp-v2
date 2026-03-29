@@ -667,7 +667,6 @@ export default function SwapPage() {
           // Refresh swap history after 1 second
           addDebounce('refresh-swap-history', 1000, refreshSwapHistory);
         },
-        fallbackOnSimulate: false, //we want to show the error message if the tx fails on simulate
       });
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
