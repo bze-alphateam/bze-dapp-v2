@@ -1,6 +1,6 @@
 # BZE DEX (dex.getbze.com)
 
-Next.js 15 decentralized exchange frontend for the BeeZee blockchain. React 19, Chakra UI v3, Recharts.
+Next.js 16 decentralized exchange frontend for the BeeZee blockchain. React 19, Chakra UI v3, Recharts.
 
 ## Architecture
 
