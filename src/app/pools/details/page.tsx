@@ -203,10 +203,10 @@ const AddLiquidityTab = ({baseAsset, quoteAsset, pool, calculateSharesFromAmount
             minLpTokens: minExpectedShares.toFixed(0),
         })
 
-        await tx([msg])
+        const success = await tx([msg])
 
         setIsSubmitting(false)
-        if (onAddLiquiditySuccess) onAddLiquiditySuccess()
+        if (success && onAddLiquiditySuccess) onAddLiquiditySuccess()
         //eslint-disable-next-line
     }, [pool, addLiquidityBaseAmount, addLiquidityQuoteAmount, addLiquiditySlippage, expectedShares, quoteBalance, baseBalance, baseAsset, quoteAsset, address])
 
@@ -476,10 +476,10 @@ const RemoveLiquidityTab = ({pool, userShares, userReserveBase, userReserveQuote
             minQuote: minQuoteUAmount.toFixed(0),
         });
 
-        await tx([msg]);
+        const success = await tx([msg]);
 
         setIsSubmitting(false);
-        onRemove();
+        if (success) onRemove();
     }, [pool, address, removeAmount, userShares, removeSlippage, minimumBaseAmount, minimumQuoteAmount, baseAsset, quoteAsset, toast, tx, onRemove]);
 
     return (
@@ -840,12 +840,14 @@ const LockTab = ({ pool, userShares, rewardsMap, addressData, onLockSuccess }: L
             amount: lockUAmount.toFixed(0),
         });
 
-        await tx([msg]);
+        const success = await tx([msg]);
 
         setIsSubmitting(false);
-        setLockAmount('');
-        setSelectedRewardId('');
-        if (onLockSuccess) onLockSuccess();
+        if (success) {
+            setLockAmount('');
+            setSelectedRewardId('');
+            if (onLockSuccess) onLockSuccess();
+        }
     }, [pool, address, selectedReward, lockAmount, userShares, userActiveStake, isRewardActive, toast, tx, onLockSuccess]);
 
     if (eligibleRewards.length === 0) {
@@ -1238,9 +1240,9 @@ const UserPosition = ({
         })
 
         setIsUnstaking(true);
-        await tx([msg]);
+        const success = await tx([msg]);
         setIsUnstaking(false);
-        if (onChange) onChange();
+        if (success && onChange) onChange();
     }, [address, onChange, rewardsMap, toast, tx])
 
     return (
