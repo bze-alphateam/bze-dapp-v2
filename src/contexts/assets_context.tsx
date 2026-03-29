@@ -23,6 +23,7 @@ import {
     getLiquidityPools,
     calculatePoolPrice, createPoolId, poolIdFromPoolDenom,
     EXCLUDED_MARKETS,
+    EXCLUDED_ASSETS,
     calculateRewardsStakingApr,
 } from "@bze/bze-ui-kit";
 import {Coin} from "@bze/bzejs/cosmos/base/v1beta1/coin";
@@ -140,6 +141,13 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
             if (EXCLUDED_MARKETS[marketId]) {
                 return
             }
+            // Automatically exclude any market whose base or quote is an excluded asset.
+            // This prevents a market from appearing with a missing asset name/ticker when
+            // one side has been excluded from the asset list but the market wasn't manually
+            // added to EXCLUDED_MARKETS.
+            if (EXCLUDED_ASSETS[market.base] || EXCLUDED_ASSETS[market.quote]) {
+                return
+            }
             newMap.set(marketId, market);
         })
 
@@ -149,6 +157,9 @@ export function AssetsProvider({ children }: AssetsProviderProps) {
         const newMap = new Map<string, MarketData>();
         newMarkets.forEach(market => {
             if (EXCLUDED_MARKETS[market.market_id]) {
+                return
+            }
+            if (EXCLUDED_ASSETS[market.base] || EXCLUDED_ASSETS[market.quote]) {
                 return
             }
             const marketId = createMarketId(market.base, market.quote);
