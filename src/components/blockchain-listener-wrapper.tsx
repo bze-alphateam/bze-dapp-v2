@@ -2,14 +2,15 @@
 
 import { useBlockchainListener } from '@/hooks/useBlockchainListener';
 import {useEffect} from "react";
-import {useAssetsContext} from "@bze/bze-ui-kit";
+import {useAssetsContext, useWalletHealthCheck} from "@bze/bze-ui-kit";
 import {blockchainEventManager, CURRENT_WALLET_BALANCE_EVENT, ORDER_EXECUTED_EVENT, SUPPLY_CHANGED_EVENT, SWAP_EXECUTED_EVENT, addDebounce, addMultipleDebounce, CONNECTION_TYPE_NONE, CONNECTION_TYPE_POLLING, CONNECTION_TYPE_WS} from "@bze/bze-ui-kit";
 
 const POLLING_INTERVAL = 10 * 1000;
 
 export function BlockchainListenerWrapper() {
     const {isConnected} = useBlockchainListener();
-    const {updateBalances, updateMarketsData, updateConnectionType, updateAssets, updateLiquidityPools} = useAssetsContext()
+    const {updateBalances, updateMarketsData, updateConnectionType, updateAssets, updateLiquidityPools} = useAssetsContext();
+    useWalletHealthCheck();
 
     useEffect(() => {
         //will call this to trigger the connection type change to NONE after (polling_interval * 2) seconds
