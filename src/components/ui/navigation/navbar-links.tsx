@@ -1,7 +1,7 @@
 import { Link, Stack, type StackProps, Menu, Text, Portal, Box } from '@chakra-ui/react'
 import NextLink from 'next/link'
 import {useNavigation} from "@/hooks/useNavigation";
-import {getEcosystemApps} from '@bze/bze-ui-kit'
+import {getEcosystemApps, useIsInHub} from '@bze/bze-ui-kit'
 
 interface NavbarLinksProps extends StackProps {
     onLinkClick?: () => void
@@ -16,9 +16,6 @@ const navItems = [
     { name: 'Assets', href: '/assets' },
 ]
 
-// Apps dropdown items — sourced from bze-ui-kit, overridable via env vars
-const appsItems = getEcosystemApps()
-
 const navSubitems: { [key: string]: string } = {
     "/exchange/market": "/exchange",
     "/pools/details": "/pools",
@@ -26,6 +23,10 @@ const navSubitems: { [key: string]: string } = {
 
 export const NavbarLinks = ({ onLinkClick, ...props }: NavbarLinksProps) => {
     const {navigate, currentPathName} = useNavigation()
+    // useIsInHub triggers a re-render when the Hub handshake resolves,
+    // ensuring getEcosystemApps() sees the correct isInHub() state.
+    useIsInHub()
+    const appsItems = getEcosystemApps()
 
     const handleClick = (path: string) => {
         navigate(path)
