@@ -52,6 +52,10 @@ npm run build   # Production build
 npm run lint    # ESLint + type check
 ```
 
+## Patches
+
+`patches/@interchain-kit+store+0.9.1.patch` — fixes `@interchain-kit/store` passing `{}` instead of `undefined` as signOptions in `ChainWalletStore.getOfflineSigner()`, which caused Keplr to override custom fee denoms. PR submitted upstream: https://github.com/hyperweb-io/interchain-kit/pull/XXX. Remove this patch once the fix is released upstream.
+
 ## Environment variables
 
 See `@bze/bze-ui-kit` README for the full list of `NEXT_PUBLIC_*` env vars. Copy `.env.dist` from the lib as a starting template.
