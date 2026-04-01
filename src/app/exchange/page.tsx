@@ -154,36 +154,28 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
             {/* Mobile View */}
             <VStack align="stretch" gap={4} hideFrom="md">
-                <HStack justify="space-between" align="center">
-                    <HStack gap={3}>
-                        <LPTokenLogo
-                            baseAssetLogo={baseAsset?.logo || ''}
-                            quoteAssetLogo={quoteAsset?.logo || ''}
-                            baseAssetSymbol={baseAsset?.ticker || market.base}
-                            quoteAssetSymbol={quoteAsset?.ticker || market.quote}
-                            size="10"
-                        />
-                        <VStack align="start" gap={1}>
-                            <HStack gap={2}>
-                                <Text fontWeight="bold" fontSize="md" letterSpacing="tight">
-                                    {baseAsset?.ticker}/{quoteAsset?.ticker}
-                                </Text>
-                                {isVerifiedMarket && (<VerifiedBadge />)}
-                            </HStack>
-                        </VStack>
-                    </HStack>
-                    <Button
-                        size="sm"
-                        colorPalette="blue"
-                        fontWeight="semibold"
-                    >
-                        Trade
-                    </Button>
+                <HStack gap={3}>
+                    <LPTokenLogo
+                        baseAssetLogo={baseAsset?.logo || ''}
+                        quoteAssetLogo={quoteAsset?.logo || ''}
+                        baseAssetSymbol={baseAsset?.ticker || market.base}
+                        quoteAssetSymbol={quoteAsset?.ticker || market.quote}
+                        size="10"
+                    />
+                    <VStack align="start" gap={1}>
+                        <HStack gap={2}>
+                            <Text fontWeight="bold" fontSize="md" letterSpacing="tight">
+                                {baseAsset?.ticker}/{quoteAsset?.ticker}
+                            </Text>
+                            {isVerifiedMarket && (<VerifiedBadge />)}
+                        </HStack>
+                    </VStack>
                 </HStack>
 
-                <SimpleGrid columns={2} gap={4}>
+                <VStack gap={3}>
                     <Box
                         p={3}
+                        w="full"
                         bgGradient="to-br"
                         gradientFrom="green.500/8"
                         gradientTo="blue.500/8"
@@ -214,6 +206,7 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
 
                     <Box
                         p={3}
+                        w="full"
                         bgGradient="to-br"
                         gradientFrom="blue.500/8"
                         gradientTo="blue.600/8"
@@ -233,7 +226,16 @@ const MarketRow = ({ market, marketData, onClick }: MarketRowProps) => {
                             </Text>
                         )}
                     </Box>
-                </SimpleGrid>
+                </VStack>
+
+                <Button
+                    size="sm"
+                    colorPalette="blue"
+                    fontWeight="semibold"
+                    w="full"
+                >
+                    Trade <LuArrowRight />
+                </Button>
             </VStack>
         </Box>
     )
