@@ -15,8 +15,7 @@ import {
     NativeSelectField, Spacer,
 } from '@chakra-ui/react'
 import { LuSearch, LuChevronUp, LuChevronDown, LuUser } from 'react-icons/lu'
-import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useAsset, useAssets, toBigNumber, useBalances, calculateUserPoolData, shortNumberFormat, HighlightText, LiquidityPoolData, useLiquidityPools} from "@bze/bze-ui-kit";
+import {useAsset, useAssets, toBigNumber, useBalances, calculateUserPoolData, shortNumberFormat, HighlightText, LiquidityPoolData, useLiquidityPools, LPTokenLogo} from "@bze/bze-ui-kit";
 import {useNavigation} from "@/hooks/useNavigation";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 

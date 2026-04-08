@@ -11,7 +11,14 @@ import { keplrWallet } from "@interchain-kit/keplr-extension";
 import { leapWallet } from "@interchain-kit/leap-extension";
 import { WCWallet } from "@interchain-kit/core";
 
-import {getAssetLists, getWalletChainsNames} from "@bze/bze-ui-kit";
+import {getAssetLists, getWalletChainsNames, EvmProvider, createEvmConfig} from "@bze/bze-ui-kit";
+
+const evmConfig = createEvmConfig({
+    projectId: '7e8510ae772ef527bd711c9bc02f0cb7',
+    appName: 'BeeZee DEX',
+    appUrl: 'https://dex.getbze.com',
+    appIcon: 'https://dex.getbze.com/images/logo_320px.png',
+});
 
 const walletConnect = new WCWallet(
     undefined,
@@ -62,11 +69,13 @@ export function Provider({ children, ...props }: ColorModeProviderProps & { chil
             chains={getWalletChainsNames()}
             assetLists={getAssetLists()}
         >
-            <ChakraProvider value={system}>
-                <ColorModeProvider {...props} >
-                    {children}
-                </ColorModeProvider>
-            </ChakraProvider>
+            <EvmProvider config={evmConfig}>
+                <ChakraProvider value={system}>
+                    <ColorModeProvider {...props} >
+                        {children}
+                    </ColorModeProvider>
+                </ChakraProvider>
+            </EvmProvider>
         </ChainProvider>
       )
 }

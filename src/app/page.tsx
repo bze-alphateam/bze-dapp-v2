@@ -16,7 +16,6 @@ import {
   createListCollection,
   Alert,
 } from '@chakra-ui/react';
-import { Tooltip } from '@/components/ui/tooltip';
 import {
   LuArrowUpDown,
   LuSettings,
@@ -26,8 +25,7 @@ import {
   LuInfo,
 } from 'react-icons/lu';
 import { useState, useMemo, memo, useEffect } from 'react';
-import {TokenLogo} from "@/components/ui/token_logo";
-import {useAssets, useBalances, prettyAmount, uAmountToBigNumberAmount, amountToBigNumberUAmount, toBigNumber, uAmountToAmount, ammRouter, SwapRouteResult, useToast, useBZETx, getChainName, useAssetsValue, HighlightText, sanitizeNumberInput, getAddressSwapHistory, SwapHistory, addDebounce, useLiquidityPools} from "@bze/bze-ui-kit";
+import {useAssets, useBalances, prettyAmount, uAmountToBigNumberAmount, amountToBigNumberUAmount, toBigNumber, uAmountToAmount, ammRouter, SwapRouteResult, useToast, useBZETx, getChainName, useAssetsValue, HighlightText, sanitizeNumberInput, getAddressSwapHistory, SwapHistory, addDebounce, useLiquidityPools, TokenLogo, Tooltip} from "@bze/bze-ui-kit";
 import BigNumber from 'bignumber.js';
 import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";

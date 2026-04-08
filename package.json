@@ -10,9 +10,10 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@bze/bze-ui-kit": "^3.0.3",
+    "@bze/bze-ui-kit": "^3.2.0",
     "@bze/bzejs": "^3.0.0",
     "@chain-registry/utils": "^2.0.178",
+    "@chain-registry/v2": "^1.71.237",
     "@chakra-ui/react": "^3.22.0",
     "@emotion/react": "^11.14.0",
     "@interchain-kit/core": "0.10.1",
@@ -22,6 +23,8 @@
     "@interchain-kit/react": "0.10.1",
     "@interchain-kit/store": "^0.9.1",
     "@next/third-parties": "^16.0.6",
+    "@tanstack/react-query": "^5.96.2",
+    "@wagmi/core": "^3.4.2",
     "bignumber.js": "^9.3.1",
     "chain-registry": "^2.0.178",
     "lightweight-charts": "^5.0.9",
@@ -31,7 +34,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
-    "recharts": "^3.1.0"
+    "recharts": "^3.1.0",
+    "viem": "^2.47.10",
+    "wagmi": "^3.6.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
