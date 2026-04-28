@@ -28,7 +28,6 @@ import {
     LuClock,
     LuExternalLink,
 } from 'react-icons/lu';
-import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {
     Asset, LP_ASSETS_DECIMALS,
@@ -41,9 +40,9 @@ import {
     PrettyBalance, useAssetsValue, HighlightText,
     isPoolSupportedByValidator, getValidatorPageUrl,
     useLiquidityPool,
+    TokenLogo, LPTokenLogo,
+    Tooltip,
 } from "@bze/bze-ui-kit";
-import {TokenLogo} from "@/components/ui/token_logo";
-import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import BigNumber from "bignumber.js";
 import {bze} from "@bze/bzejs";
 import {useChain} from "@interchain-kit/react";

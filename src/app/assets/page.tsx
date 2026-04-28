@@ -25,11 +25,9 @@ import {
     LuSearch,
     LuFactory,
 } from 'react-icons/lu'
-import {Asset, ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE, isNativeDenom, useAsset, useAssets, useAssetPrice, formatUsdAmount, shortNumberFormat, prettyAmount, toBigNumber, uAmountToBigNumberAmount, createMarketId, HighlightText, getFactoryDenomAdminAddress, LiquidityPoolData, useAssetLiquidityPools, useAssetMarkets, useMarket} from "@bze/bze-ui-kit";
-import {TokenLogo} from "@/components/ui/token_logo";
+import {Asset, ASSET_TYPE_FACTORY, ASSET_TYPE_IBC, ASSET_TYPE_NATIVE, isNativeDenom, useAsset, useAssets, useAssetPrice, formatUsdAmount, shortNumberFormat, prettyAmount, toBigNumber, uAmountToBigNumberAmount, createMarketId, HighlightText, getFactoryDenomAdminAddress, LiquidityPoolData, useAssetLiquidityPools, useAssetMarkets, useMarket, TokenLogo, LPTokenLogo} from "@bze/bze-ui-kit";
 import {VerifiedBadge} from "@/components/ui/badge/verified";
 import {useNavigation} from "@/hooks/useNavigation";
-import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 import {LiquidityPoolSDKType} from "@bze/bzejs/bze/tradebin/store";
 
 const MAX_MARKETS_PER_ASSET = 5;

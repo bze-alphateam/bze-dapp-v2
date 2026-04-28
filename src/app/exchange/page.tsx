@@ -16,8 +16,7 @@ import {
 import { LuSearch, LuTrendingUp, LuTrendingDown, LuArrowRight } from 'react-icons/lu'
 import {useCallback, useMemo, useState} from 'react'
 import NextLink from "next/link";
-import {LPTokenLogo} from "@/components/ui/lp_token_logo";
-import {useAsset, useAssets, createMarketId, useAssetPrice, prettyAmount, formatUsdAmount, HighlightText, MarketData, useAssetsValue, useMarkets} from "@bze/bze-ui-kit";
+import {useAsset, useAssets, createMarketId, useAssetPrice, prettyAmount, formatUsdAmount, HighlightText, MarketData, useAssetsValue, useMarkets, LPTokenLogo} from "@bze/bze-ui-kit";
 import {MarketSDKType} from "@bze/bzejs/bze/tradebin/store";
 import BigNumber from "bignumber.js";
 import {VerifiedBadge} from "@/components/ui/badge/verified";

@@ -15,7 +15,6 @@ import {
     Table, Alert,
 } from '@chakra-ui/react';
 import { LuTrendingUp, LuTrendingDown, LuActivity, LuArrowLeft, LuX, LuInfo } from 'react-icons/lu';
-import { Tooltip } from '@/components/ui/tooltip';
 import {useNavigationWithParams} from "@/hooks/useNavigation";
 import {
     useMarket, useAsset,
@@ -35,6 +34,8 @@ import {
     blockchainEventManager, getMarketOrderBookChangedEvent,
     addDebounce, cancelDebounce,
     HighlightText,
+    LPTokenLogo,
+    Tooltip,
 } from "@bze/bze-ui-kit";
 import {useChain} from "@interchain-kit/react";
 import {AggregatedOrderSDKType, HistoryOrderSDKType, OrderSDKType} from "@bze/bzejs/bze/tradebin/store";
@@ -42,7 +43,6 @@ import {bze} from "@bze/bzejs";
 import BigNumber from "bignumber.js";
 import {FillOrderItem} from "@bze/bzejs/bze/tradebin/tx";
 import {LightweightChart} from "@/components/ui/trading/chart";
-import {LPTokenLogo} from "@/components/ui/lp_token_logo";
 
 const {createOrder, fillOrders} = bze.tradebin.MessageComposer.withTypeUrl;
 
