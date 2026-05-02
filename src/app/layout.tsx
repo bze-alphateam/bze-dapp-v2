@@ -8,7 +8,6 @@ import {Toaster, TestnetBanner, HubConnectorInit, SettingsProvider, setStorageKe
 import {AssetsProvider} from "@/contexts/assets_context";
 import {BlockchainListenerWrapper} from "@/components/blockchain-listener-wrapper";
 import {BetaWarningToast} from "@/components/beta-warning-toast";
-import {SecurityAuditWarning} from "@/components/security-audit-warning";
 import {GoogleTagManager} from "@next/third-parties/google";
 
 setStorageKeyVersion('3');
@@ -59,7 +58,6 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
                   <Toaster />
                   <HubConnectorInit />
                   <BetaWarningToast />
-                  <SecurityAuditWarning />
                   <TestnetBanner />
               </AssetsProvider>
               </SettingsProvider>
